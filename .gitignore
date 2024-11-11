@@ -1,0 +1,11 @@
+# Ignore all .csv files
+*.csv
+
+# Ignore specific folders or files
+data/anime_with_embeddings.csv
+data/manga_with_embeddings.csv
+
+# Ignore virtual environments and cache
+__pycache__/
+env/
+.venv/
