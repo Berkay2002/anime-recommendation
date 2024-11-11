@@ -4,7 +4,7 @@ import numpy as np
 import os
 
 # MongoDB Connection
-MONGODB_URI = os.getenv("MONGODB_URI", "your_mongodb_uri_here")  # Replace with your actual MongoDB URI
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://Admin:Admin@recommendation-cluster.mza82o4.mongodb.net/?retryWrites=true&w=majority&appName=recommendation-cluster")
 DATABASE_NAME = "animeDB"  # Database name
 ANIME_COLLECTION = "anime"  # Collection with main anime data
 RECOMMENDATION_COLLECTION = "recommendations"  # Collection to store precomputed recommendations
@@ -16,6 +16,7 @@ anime_collection = db[ANIME_COLLECTION]
 recommendation_collection = db[RECOMMENDATION_COLLECTION]
 
 # Step 1: Retrieve All Anime Embeddings
+print("Fetching anime data from MongoDB...")
 anime_data = list(anime_collection.find({}, {"_id": 1, "title": 1, "bert_embedding": 1}))
 
 # Convert embeddings to a numpy array for similarity calculation
@@ -24,6 +25,7 @@ titles = [anime["title"] for anime in anime_data]
 anime_ids = [anime["_id"] for anime in anime_data]
 
 # Step 2: Compute Similarity Matrix
+print("Calculating cosine similarity matrix...")
 similarity_matrix = cosine_similarity(embeddings)
 
 # Step 3: Store Recommendations Based on Similarity
@@ -36,11 +38,11 @@ for idx, anime_id in enumerate(anime_ids):
     # Get top 5 most similar anime (excluding itself)
     top_similar = [
         {
-            "anime_id": str(anime_ids[i[0]]),
+            "anime_id": str(anime_ids[i[0]]),  # Use str() to ensure compatibility with MongoDB ObjectIds
             "title": titles[i[0]],
             "similarity_score": i[1],
         }
-        for i in similarity_scores[1:6]
+        for i in similarity_scores[1:6]  # Skip the first entry, which is the anime itself
     ]
 
     # Create a recommendation entry for this anime
@@ -51,7 +53,12 @@ for idx, anime_id in enumerate(anime_ids):
     })
 
 # Step 4: Insert Recommendations into MongoDB
+print("Inserting recommendations into MongoDB...")
 try:
+    # Clear the existing collection to avoid duplicates
+    recommendation_collection.delete_many({})
+
+    # Insert new recommendations
     recommendation_collection.insert_many(recommendations)
     print(f"Inserted {len(recommendations)} recommendation documents into MongoDB.")
 except Exception as e:
