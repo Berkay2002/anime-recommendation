@@ -1,0 +1,1 @@
+API call functions (e.g., animeService.js for data fetching)
