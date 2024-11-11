@@ -1,40 +1,36 @@
-import pandas as pd
 import json
-from bert_service import get_embeddings  # Import the batch processing function
-import numpy as np
 import os
+from bert_service import get_embeddings  # Import the batch processing function
 
-# Step 1: Load anime data
-csv_file_path = "../data/Top_Anime_data.csv"  # Adjust this path if necessary
-df = pd.read_csv(csv_file_path)
+# Step 1: Load anime data from JSON
+json_file_path = "../data/anime_data.json"  # Path to your original JSON file
+with open(json_file_path, "r") as json_file:
+    anime_data = json.load(json_file)
 
 # Step 2: Prepare Text Data for Embedding Generation
-# Replace NaN with empty string to avoid errors in embedding generation
-df["description"] = df["description"].fillna("")
+# Collect all descriptions, handling any missing values
+descriptions = [anime.get("description", "") for anime in anime_data]
 
 # Step 3: Generate BERT Embeddings in Batches
 print("Generating embeddings in batches...")
-descriptions = df["description"].tolist()  # Get a list of all descriptions
 batch_size = 8  # Set batch size (adjust based on memory capacity)
 
 # Get embeddings for all descriptions using batch processing
 embeddings = get_embeddings(descriptions, batch_size=batch_size)
 
-# Step 4: Add Embeddings to DataFrame
-# Convert the list of embeddings back into the DataFrame
-df["bert_embedding"] = [embedding.tolist() for embedding in embeddings]  # Convert np arrays to lists for JSON compatibility
+# Step 4: Add Embeddings to the Anime Data
+# Add the generated embeddings to each anime record in the original JSON data
+for anime, embedding in zip(anime_data, embeddings):
+    anime["bert_embedding"] = embedding.tolist()  # Convert np arrays to lists for JSON compatibility
 
-# Step 5: Save Data with Embeddings to JSON
-json_file_path = "../data/anime_with_embeddings.json"  # Adjust this path if necessary
+# Step 5: Save Data with Embeddings to a New JSON File
+output_json_file_path = "../data/anime_with_embeddings.json"  # Path to save JSON with embeddings
 
 # Ensure the output directory exists
-os.makedirs(os.path.dirname(json_file_path), exist_ok=True)
+os.makedirs(os.path.dirname(output_json_file_path), exist_ok=True)
 
-# Convert DataFrame to JSON format
-anime_data_with_embeddings = df.to_dict(orient="records")
+# Save the modified data to a new JSON file
+with open(output_json_file_path, "w") as output_json_file:
+    json.dump(anime_data, output_json_file, indent=2)
 
-# Save the data with embeddings as a JSON file
-with open(json_file_path, "w") as json_file:
-    json.dump(anime_data_with_embeddings, json_file, indent=2)
-
-print(f"Data with embeddings successfully saved to {json_file_path}")
+print(f"Data with embeddings successfully saved to {output_json_file_path}")
