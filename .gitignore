@@ -9,3 +9,6 @@ data/manga_with_embeddings.csv
 __pycache__/
 env/
 .venv/
+
+node_modules/
+```
