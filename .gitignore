@@ -11,4 +11,6 @@ env/
 .venv/
 
 node_modules/
-```
+
+# Ignore all .json files in the backend/data folder
+backend/data/*.json
