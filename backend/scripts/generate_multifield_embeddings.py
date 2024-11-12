@@ -12,7 +12,7 @@ else:
 
 # Step 1: Load Anime Data
 print("Loading anime data...")
-with open("../data/anime_bert_data.json", "r") as f:
+with open("C:/Users/berka/Masters/TNM108/project/anime-recommendation/backend/data/anime_data.json", "r") as f:
     anime_data = json.load(f)
 
 # Fields to generate embeddings for
@@ -37,15 +37,24 @@ embeddings = {}
 for field in fields:
     embeddings[field] = generate_field_embedding(field_texts[field], field_name=field)
 
-# Step 5: Add Individual BERT Embeddings to Anime Data
+# Step 5: Add Individual BERT Embeddings and Titles to Anime Data
 for idx, anime in enumerate(anime_data):
-    anime["bert_description"] = embeddings["Description"][idx].tolist()
-    anime["bert_genres"] = embeddings["Genres"][idx].tolist()
-    anime["bert_demographic"] = embeddings["Demographic"][idx].tolist()
-    anime["bert_rating"] = embeddings["Rating"][idx].tolist()
+    anime_embeddings = {
+        "bert_description": embeddings["Description"][idx].tolist(),
+        "bert_genres": embeddings["Genres"][idx].tolist(),
+        "bert_demographic": embeddings["Demographic"][idx].tolist(),
+        "bert_rating": embeddings["Rating"][idx].tolist(),
+    }
+    anime_data[idx].update(anime_embeddings)
+    
+    # Include title fields
+    anime["English"] = anime.get("English", "")
+    anime["Japanese"] = anime.get("Japanese", "")
+    anime["Synonyms"] = anime.get("Synonyms", "")
+    anime["Title"] = anime.get("Title", "")  # Add this line if 'Title' exists
 
 # Step 6: Save Updated Anime Data with Individual BERT Embeddings
-output_path = "../data/anime_individual_embeddings.json"
+output_path = "C:/Users/berka/Masters/TNM108/project/anime-recommendation/backend/data/anime_individual_embeddings.json"
 with open(output_path, "w") as f:
     json.dump(anime_data, f, indent=2)
 print(f"Individual BERT embeddings saved to {output_path}")

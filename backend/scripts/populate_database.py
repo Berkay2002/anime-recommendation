@@ -1,87 +1,67 @@
 from pymongo import MongoClient
 import json
-import os
 
-# MongoDB URI and Database/Collection Names
+# MongoDB Connection Details
 MONGODB_URI = "mongodb+srv://Admin:Admin@recommendation-cluster.mza82o4.mongodb.net/?retryWrites=true&w=majority&appName=recommendation-cluster"
 DATABASE_NAME = "animeDB"
-GENERAL_COLLECTION_NAME = "anime_general"
-SINGLE_EMBEDDING_COLLECTION_NAME = "anime_single_embeddings"
+ANIME_COLLECTION_NAME = "anime_collection"
 
 # Connect to MongoDB
 client = MongoClient(MONGODB_URI)
 db = client[DATABASE_NAME]
-general_collection = db[GENERAL_COLLECTION_NAME]
-embedding_collection = db[SINGLE_EMBEDDING_COLLECTION_NAME]
+anime_collection = db[ANIME_COLLECTION_NAME]
 
-# Load the general anime data
-with open("../data/anime_data.json", "r") as f:
-    general_data = json.load(f)
-
-# Load the embeddings data
-with open("../data/anime_single_embedded.json", "r") as f:
-    embeddings_data = json.load(f)
-
-# Load the multi-field embeddings data
-with open("../data/anime_multifield_embedded.json", "r") as f:
-    multifield_embeddings_data = json.load(f)
+# Load the anime data that contains titles and other fields
+with open("C:/Users/berka/Masters/TNM108/project/anime-recommendation/backend/data/anime_data.json", "r") as f:
+    anime_data = json.load(f)
 
 # Load the individual BERT embeddings data
-with open("../data/anime_individual_embeddings.json", "r") as f:
+with open("C:/Users/berka/Masters/TNM108/project/anime-recommendation/backend/data/anime_individual_embeddings.json", "r") as f:
     individual_embeddings_data = json.load(f)
 
-# Check data consistency
-if len(general_data) != len(embeddings_data) != len(individual_embeddings_data):
-    raise ValueError("Mismatch in number of entries between general_data, embeddings_data, and individual_embeddings_data.")
+# Ensure both data lists have the same length
+if len(anime_data) != len(individual_embeddings_data):
+    raise ValueError("Mismatch in number of entries between 'anime_data.json' and 'anime_individual_embeddings.json'.")
 
-# Clear existing collections to prevent duplicates
-general_collection.delete_many({})
-embedding_collection.delete_many({})
-
-# Create a new collection for multi-field embeddings
-multifield_embedded_collection_NAME = "anime_multifield_embedded"
-multifield_embedded_collection = db[multifield_embedded_collection_NAME]
+# Clear existing collection to prevent duplicates
+anime_collection.delete_many({})
 
 # Insert data into MongoDB
-for idx, (general, embedding, individual) in enumerate(zip(general_data, embeddings_data, individual_embeddings_data)):
-    # Assign a unique identifier
-    general["anime_id"] = idx
+for idx, (anime, embeddings) in enumerate(zip(anime_data, individual_embeddings_data)):
+    # Retrieve the title from 'anime_data'
+    title = (anime.get("English") or
+             anime.get("Japanese") or
+             anime.get("Synonyms") or
+             anime.get("Title") or
+             "")
+    
+    if not title:
+        print(f"Warning: Missing 'title' for anime at index {idx}.")
+        continue  # Skip this anime due to missing title
 
-    # Add individual BERT embeddings
-    general["bert_description"] = individual.get("bert_description")
-    general["bert_genres"] = individual.get("bert_genres")
-    general["bert_demographic"] = individual.get("bert_demographic")
-    general["bert_rating"] = individual.get("bert_rating")
-    
-    # Insert general data with individual embeddings
-    general_collection.insert_one(general)
-    
-    # Insert single embedding data
-    bert_embedding = embedding.get("bert_embedding")
-    if bert_embedding:
-        title = general.get("English") or general.get("Synonyms") or general.get("Japanese") or ""
-        embedding_doc = {
-            "anime_id": idx,
-            "title": title,
-            "bert_embedding": bert_embedding
-        }
-        embedding_collection.insert_one(embedding_doc)
-    else:
-        print(f"Warning: Missing 'bert_embedding' for anime at index {idx}.")
-    
-    # Insert into multi-field embeddings collection
-    multifield_doc = {
-        "_id": idx,
+    # Check for missing embeddings
+    if not all([
+        embeddings.get("bert_description"),
+        embeddings.get("bert_genres"),
+        embeddings.get("bert_demographic"),
+        embeddings.get("bert_rating")
+    ]):
+        print(f"Warning: Missing embeddings for anime at index {idx}.")
+        continue  # Skip this anime due to missing embeddings
+
+    # Prepare the document to insert
+    anime_doc = {
         "anime_id": idx,
         "title": title,
-        "bert_description": individual.get("bert_description"),
-        "bert_genres": individual.get("bert_genres"),
-        "bert_demographic": individual.get("bert_demographic"),
-        "bert_rating": individual.get("bert_rating")
+        # Embeddings for each field
+        "bert_description": embeddings["bert_description"],
+        "bert_genres": embeddings["bert_genres"],
+        "bert_demographic": embeddings["bert_demographic"],
+        "bert_rating": embeddings["bert_rating"],
     }
-    multifield_embedded_collection.insert_one(multifield_doc)
 
-print(f"Inserted {len(general_data)} documents into '{GENERAL_COLLECTION_NAME}' and '{SINGLE_EMBEDDING_COLLECTION_NAME}' collections.")
-print(f"Inserted {len(multifield_embeddings_data)} documents into '{multifield_embedded_collection_NAME}' collection.")
+    anime_collection.insert_one(anime_doc)
+
+print(f"Inserted {anime_collection.count_documents({})} documents into '{ANIME_COLLECTION_NAME}' collection.")
 
 client.close()
