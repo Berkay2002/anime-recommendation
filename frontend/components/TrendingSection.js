@@ -59,7 +59,7 @@ export default function TrendingSection() {
 
     return () => container.removeEventListener('scroll', handleScroll);
   }, [trendingAnime]);
-
+// test
 return (
     <section className="relative">
         <h3 className="text-xl font-semibold text-gray-800 mb-4">Trending</h3>
