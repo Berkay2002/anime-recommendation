@@ -74,7 +74,7 @@ return (
             )}
 
             <div
-                className="flex space-x-4 overflow-hidden scrollbar-hide"
+                className="flex space-x-4 overflow-hidden scrollbar-hide pl-4"
                 ref={containerRef}
                 style={{
                     display: 'flex',
@@ -102,7 +102,7 @@ return (
                                 }}
                             >
                                 <Image
-                                    src={anime.image_url}
+                                    src={anime.image_url || '/placeholder.png'}
                                     alt={anime.title}
                                     width={266}
                                     height={400}
