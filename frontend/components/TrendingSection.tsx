@@ -81,8 +81,13 @@ export default function TrendingSection() {
 
   return (
     <section className="relative">
-        <h3 className="text-xl font-semibold text-white mt-4 ml-9">Trending</h3>
-        <div className="relative flex items-center overflow-visible">
+      <div className="ml-9 mt-4">
+        <h3 className="text-xl font-bold text-white pb-1 inline-block relative">
+          Trending
+          <span className="absolute bottom-0 left-0 w-[550%] h-[2.5px] bg-teal-500 mt-1 rounded-full"></span>
+        </h3>
+      </div>       
+      <div className="relative flex items-center overflow-visible">
 
             <div
                 className="flex space-x-4 overflow-hidden scrollbar-hide pl-6 h-350"
