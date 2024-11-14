@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from 'react';
 import AnimeCard from './AnimeCard';
 import ScrollButton from './ScrollButton';
 import SectionHeader from './SectionHeader';
@@ -14,9 +15,16 @@ interface Anime {
   Popularity?: number;
 }
 
-export default function TrendingSection() {
+interface TrendingSectionProps {
+  onSelectAnime: (anime: Anime) => void;
+  selectedAnimeIds: number[];
+}
+
+export default function TrendingSection({ onSelectAnime, selectedAnimeIds }: TrendingSectionProps) {
   const [trendingAnime, loading, error] = useFetchData<Anime[]>('/api/anime/features?sortBy=Popularity');
   const { containerRef, cardRef, showLeftArrow, showRightArrow, scrollLeft, scrollRight } = useScroll();
+
+  const filteredAnime = trendingAnime?.filter(anime => !selectedAnimeIds.includes(anime.anime_id));
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error loading data</div>;
@@ -35,8 +43,8 @@ export default function TrendingSection() {
             scrollBehavior: 'smooth',
           }}
         >
-          {trendingAnime?.map((anime) => (
-            <AnimeCard key={anime.anime_id} anime={anime} cardRef={cardRef} />
+          {filteredAnime?.map((anime) => (
+            <AnimeCard key={anime.anime_id} anime={anime} cardRef={cardRef} onSelect={onSelectAnime} />
           ))}
         </div>
 
@@ -49,8 +57,8 @@ export default function TrendingSection() {
           display: none;
         }
         .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
+          -ms-overflow-style: none; /* IE and Edge */
+          scrollbar-width: none; /* Firefox */
         }
       `}</style>
     </section>

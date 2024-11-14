@@ -1,15 +1,15 @@
-// /frontend/app/layout.tsx
-import React from 'react';
+import Navbar from '../components/Navbar';
 import '../styles/globals.css';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) { // Added type for children
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
         {/* Meta tags and favicons can go here */}
       </head>
       <body className="bg-background text-white">
-        {children} {/* Ensure children are rendered here */}
+        <Navbar />
+        {children}
       </body>
     </html>
   );

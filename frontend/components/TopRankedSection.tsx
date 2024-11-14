@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from 'react';
 import AnimeCard from './AnimeCard';
 import ScrollButton from './ScrollButton';
 import SectionHeader from './SectionHeader';
@@ -14,9 +15,16 @@ interface Anime {
   Rank?: number;
 }
 
-export default function TopRankedSection() {
+interface TopRankedSectionProps {
+  onSelectAnime: (anime: Anime) => void;
+  selectedAnimeIds: number[];
+}
+
+export default function TopRankedSection({ onSelectAnime, selectedAnimeIds }: TopRankedSectionProps) {
   const [topRankedAnime, loading, error] = useFetchData<Anime[]>('/api/anime/features?sortBy=Rank');
   const { containerRef, cardRef, showLeftArrow, showRightArrow, scrollLeft, scrollRight } = useScroll();
+
+  const filteredAnime = topRankedAnime?.filter(anime => !selectedAnimeIds.includes(anime.anime_id));
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error loading data</div>;
@@ -35,8 +43,8 @@ export default function TopRankedSection() {
             scrollBehavior: 'smooth',
           }}
         >
-          {topRankedAnime?.map((anime) => (
-            <AnimeCard key={anime.anime_id} anime={anime} cardRef={cardRef} />
+          {filteredAnime?.map((anime) => (
+            <AnimeCard key={anime.anime_id} anime={anime} cardRef={cardRef} onSelect={onSelectAnime} />
           ))}
         </div>
 
@@ -49,8 +57,8 @@ export default function TopRankedSection() {
           display: none;
         }
         .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
+          -ms-overflow-style: none; /* IE and Edge */
+          scrollbar-width: none; /* Firefox */
         }
       `}</style>
     </section>
