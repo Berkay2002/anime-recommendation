@@ -11,11 +11,11 @@ interface Anime {
   English?: string;
   Japanese?: string;
   image_url?: string;
-  Popularity?: number;
+  Rank?: number;
 }
 
-export default function TrendingSection() {
-  const [trendingAnime, loading, error] = useFetchData<Anime[]>('/api/anime/features?sortBy=Popularity');
+export default function TopRankedSection() {
+  const [topRankedAnime, loading, error] = useFetchData<Anime[]>('/api/anime/features?sortBy=Rank');
   const { containerRef, cardRef, showLeftArrow, showRightArrow, scrollLeft, scrollRight } = useScroll();
 
   if (loading) return <div>Loading...</div>;
@@ -23,7 +23,7 @@ export default function TrendingSection() {
 
   return (
     <section className="relative">
-      <SectionHeader title="Trending" />
+      <SectionHeader title="Top Ranked" />
       <div className="relative flex items-center overflow-visible">
         <div
           className="flex space-x-4 overflow-hidden scrollbar-hide pl-6 h-350"
@@ -35,7 +35,7 @@ export default function TrendingSection() {
             scrollBehavior: 'smooth',
           }}
         >
-          {trendingAnime?.map((anime) => (
+          {topRankedAnime?.map((anime) => (
             <AnimeCard key={anime.anime_id} anime={anime} cardRef={cardRef} />
           ))}
         </div>

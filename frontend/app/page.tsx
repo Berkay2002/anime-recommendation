@@ -1,8 +1,8 @@
-// /frontend/app/page.tsx
 "use client";
 
 import Link from 'next/link';
 import TrendingSection from '../components/TrendingSection';
+import TopRankedSection from '../components/TopRankedSection';
 import SearchBar from '../components/SearchBar';
 
 const HomePage: React.FC = () => {
@@ -16,6 +16,7 @@ const HomePage: React.FC = () => {
     <div className="space-y-8">
       <SearchBar onSearch={handleSearch} />
       <TrendingSection />
+      <TopRankedSection />
       {/* You can add more sections here if needed */}
     </div>
   );
