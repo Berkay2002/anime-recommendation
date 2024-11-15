@@ -1,10 +1,10 @@
 // frontend/components/RecommendedSection.tsx
 
 import { useState, useEffect } from 'react';
-import AnimeCard from './AnimeCard';
 import SectionHeader from './SectionHeader';
 import { useScroll } from '../hooks/useScroll';
 import ScrollButton from './ScrollButton';
+import AnimatedAnimeCard from './AnimatedAnimeCard';
 
 interface Anime {
   anime_id: number;
@@ -88,13 +88,13 @@ export default function RecommendedSection({ selectedAnimeIds, onSelectAnime }: 
           }}
         >
           {recommendedAnime.map((anime) => (
-            <AnimeCard
-              key={anime.anime_id}
-              anime={anime}
-              cardRef={cardRef}
-              iconType="plus"
-              onSelect={onSelectAnime}
-            />
+            <AnimatedAnimeCard
+            key={anime.anime_id}
+            anime={anime}
+            cardRef={cardRef}
+            iconType="plus"
+            onSelect={onSelectAnime}
+          />            
           ))}
         </div>
   

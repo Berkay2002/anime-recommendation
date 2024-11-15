@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import AnimeCard from './AnimeCard';
+import AnimatedAnimeCard from './AnimeCard';
 import ScrollButton from './ScrollButton';
 import SectionHeader from './SectionHeader';
 import { useFetchData } from '../hooks/useFetchData';
@@ -44,7 +44,7 @@ export default function TopRankedSection({ onSelectAnime, selectedAnimeIds }: To
           }}
         >
           {filteredAnime?.map((anime) => (
-            <AnimeCard
+            <AnimatedAnimeCard
             key={anime.anime_id}
             anime={anime}
             cardRef={cardRef}

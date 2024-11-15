@@ -3,8 +3,8 @@
 
 import { useEffect } from 'react';
 import Cookies from 'js-cookie';
-import AnimeCard from './AnimeCard';
 import SectionHeader from './SectionHeader';
+import AnimatedAnimeCard from './AnimatedAnimeCard';
 
 interface Anime {
   anime_id: number;
@@ -32,13 +32,13 @@ export default function YourChoiceSection({ selectedAnime, onRemoveAnime }: Your
       <SectionHeader title="Your Choice" />
       <div className="flex space-x-4 overflow-hidden pl-6 h-350">
         {selectedAnime.map((anime) => (
-          <AnimeCard
-            key={anime.anime_id}
-            anime={anime}
-            cardRef={{ current: null }}
-            iconType="minus"
-            onRemove={onRemoveAnime}
-          />
+        <AnimatedAnimeCard
+          key={anime.anime_id}
+          anime={anime}
+          cardRef={{ current: null }}
+          iconType="minus"
+          onSelect={onRemoveAnime}
+        />
         ))}
       </div>
     </section>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import AnimeCard from './AnimeCard';
+import AnimatedAnimeCard from './AnimeCard';
 import ScrollButton from './ScrollButton';
 import SectionHeader from './SectionHeader';
 import { useFetchData } from '../hooks/useFetchData';
@@ -44,13 +44,13 @@ export default function TrendingSection({ onSelectAnime, selectedAnimeIds }: Tre
           }}
         >
           {filteredAnime?.map((anime) => (
-            <AnimeCard
-            key={anime.anime_id}
-            anime={anime}
-            cardRef={cardRef}
-            iconType="plus"
-            onSelect={onSelectAnime}
-          />
+            <AnimatedAnimeCard
+              key={anime.anime_id}
+              anime={anime}
+              cardRef={cardRef}
+              iconType="plus"
+              onSelect={onSelectAnime}
+            />
           ))}
         </div>
 
