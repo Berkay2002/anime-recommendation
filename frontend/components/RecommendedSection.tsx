@@ -1,3 +1,5 @@
+// frontend/components/RecommendedSection.tsx
+
 import { useState, useEffect } from 'react';
 import AnimeCard from './AnimeCard';
 import SectionHeader from './SectionHeader';
@@ -48,11 +50,16 @@ export default function RecommendedSection({ selectedAnimeIds }: RecommendedSect
       };
 
       const worker = new Worker(new URL('./worker.js', import.meta.url));
-      worker.postMessage({ selectedEmbedding, allEmbeddings: allAnime, selectedTitle: selectedAnime.title });
+      worker.postMessage({
+        selectedEmbedding,
+        allEmbeddings: allAnime,
+        selectedTitle: selectedAnime.title,
+        selectedAnimeIds, // Pass selectedAnimeIds to the worker
+      });
 
       worker.onmessage = function (e) {
         const similarities = e.data;
-        const recommendedAnime = similarities.slice(0, 10).map(sim => allAnime.find(anime => anime.anime_id === sim.anime_id));
+        const recommendedAnime = similarities.slice(0, 10).map(sim => allAnime.find(anime => anime.anime_id === sim.anime_id)).filter(Boolean) as Anime[];
         setRecommendedAnime(recommendedAnime);
         worker.terminate();
       };

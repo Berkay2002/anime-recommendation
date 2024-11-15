@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
+import Cookies from 'js-cookie';
 import AnimeCard from './AnimeCard';
 import SectionHeader from './SectionHeader';
 
@@ -14,6 +15,12 @@ interface YourChoiceSectionProps {
 }
 
 export default function YourChoiceSection({ selectedAnime }: YourChoiceSectionProps) {
+  useEffect(() => {
+    // Save user choices to cookies whenever they change
+    console.log('Saving user choices to cookies:', selectedAnime);
+    Cookies.set('userChoices', JSON.stringify(selectedAnime), { expires: 7 });
+  }, [selectedAnime]);
+
   return (
     <section className="relative">
       <SectionHeader title="Your Choice" />
