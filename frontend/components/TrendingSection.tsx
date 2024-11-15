@@ -44,7 +44,13 @@ export default function TrendingSection({ onSelectAnime, selectedAnimeIds }: Tre
           }}
         >
           {filteredAnime?.map((anime) => (
-            <AnimeCard key={anime.anime_id} anime={anime} cardRef={cardRef} onSelect={onSelectAnime} />
+            <AnimeCard
+            key={anime.anime_id}
+            anime={anime}
+            cardRef={cardRef}
+            iconType="plus"
+            onSelect={onSelectAnime}
+          />
           ))}
         </div>
 

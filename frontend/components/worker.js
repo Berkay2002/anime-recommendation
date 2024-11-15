@@ -72,6 +72,6 @@ self.onmessage = function (e) {
   // Sort by similarity score in descending order
   filteredSimilarities.sort((a, b) => b.similarity - a.similarity);
 
-  // Return top 10 recommendations
-  self.postMessage(filteredSimilarities.slice(0, 10));
+  // Return top 30 recommendations
+  self.postMessage(filteredSimilarities.slice(0, 30)); // Increase to 30 recommendations
 };

@@ -1,7 +1,8 @@
+// AnimeCard.tsx
 import Link from 'next/link';
 import Image from 'next/image';
 import { MutableRefObject, useState } from 'react';
-import { FaPlus } from 'react-icons/fa'; 
+import { FaPlus, FaMinus } from 'react-icons/fa';
 
 interface Anime {
   anime_id: number;
@@ -12,16 +13,24 @@ interface Anime {
 
 interface AnimeCardProps {
   anime: Anime;
-  cardRef: MutableRefObject<HTMLDivElement>;
-  onSelect: (anime: Anime) => void;
+  cardRef: MutableRefObject<HTMLDivElement | null>;
+  iconType: 'plus' | 'minus';
+  onSelect?: (anime: Anime) => void;
+  onRemove?: (anime: Anime) => void;
 }
 
-const AnimeCard: React.FC<AnimeCardProps> = ({ anime, cardRef, onSelect }) => {
+const AnimeCard: React.FC<AnimeCardProps> = ({ anime, cardRef, iconType, onSelect, onRemove }) => {
   const [visible, setVisible] = useState(true);
 
   const handleClick = () => {
     setVisible(false);
-    setTimeout(() => onSelect(anime), 300); // Delay to allow fade-out animation
+    setTimeout(() => {
+      if (iconType === 'plus' && onSelect) {
+        onSelect(anime);
+      } else if (iconType === 'minus' && onRemove) {
+        onRemove(anime);
+      }
+    }, 300);
   };
 
   return (
@@ -31,7 +40,7 @@ const AnimeCard: React.FC<AnimeCardProps> = ({ anime, cardRef, onSelect }) => {
         style={{
           transform: 'scale(1)',
           transition: 'transform 0.3s ease',
-          color: 'black'
+          color: 'black',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'scale(1.05)';
@@ -61,7 +70,11 @@ const AnimeCard: React.FC<AnimeCardProps> = ({ anime, cardRef, onSelect }) => {
             handleClick();
           }}
         >
-          <FaPlus className="text-black" />
+          {iconType === 'plus' ? (
+            <FaPlus color="black" />
+          ) : (
+            <FaMinus color="black" />
+          )}
         </div>
       </div>
     </div>

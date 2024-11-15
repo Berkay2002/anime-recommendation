@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import AnimeCard from './AnimeCard';
 import SectionHeader from './SectionHeader';
+import { useScroll } from '../hooks/useScroll';
+import ScrollButton from './ScrollButton';
 
 interface Anime {
   anime_id: number;
@@ -19,12 +21,14 @@ interface Anime {
 
 interface RecommendedSectionProps {
   selectedAnimeIds: number[];
+  onSelectAnime: (anime: Anime) => void;
 }
 
-export default function RecommendedSection({ selectedAnimeIds }: RecommendedSectionProps) {
+export default function RecommendedSection({ selectedAnimeIds, onSelectAnime }: RecommendedSectionProps) {
   const [recommendedAnime, setRecommendedAnime] = useState<Anime[]>([]);
   const [visible, setVisible] = useState(false);
   const [allAnime, setAllAnime] = useState<Anime[]>([]);
+  const { containerRef, cardRef, showLeftArrow, showRightArrow, scrollLeft, scrollRight } = useScroll();
 
   useEffect(() => {
     // Fetch all anime features including BERT embeddings
@@ -59,7 +63,10 @@ export default function RecommendedSection({ selectedAnimeIds }: RecommendedSect
 
       worker.onmessage = function (e) {
         const similarities = e.data;
-        const recommendedAnime = similarities.slice(0, 10).map(sim => allAnime.find(anime => anime.anime_id === sim.anime_id)).filter(Boolean) as Anime[];
+        const recommendedAnime = similarities
+          .slice(0, 30) // Increase to 30 recommendations
+          .map(sim => allAnime.find(anime => anime.anime_id === sim.anime_id))
+          .filter(Boolean) as Anime[];
         setRecommendedAnime(recommendedAnime);
         worker.terminate();
       };
@@ -69,11 +76,48 @@ export default function RecommendedSection({ selectedAnimeIds }: RecommendedSect
   return (
     <section className={`relative ${visible ? 'fade-in' : 'hidden'}`}>
       <SectionHeader title="Recommended" />
-      <div className="flex space-x-4 overflow-hidden pl-6 h-350">
-        {recommendedAnime.map((anime) => (
-          <AnimeCard key={anime.anime_id} anime={anime} cardRef={{ current: null }} onSelect={() => {}} />
-        ))}
+      <div className="relative flex items-center overflow-visible">
+        <div
+          className="flex space-x-4 overflow-hidden scrollbar-hide pl-6 h-350"
+          ref={containerRef}
+          style={{
+            display: 'flex',
+            gap: '0.3rem',
+            overflowX: 'auto',
+            scrollBehavior: 'smooth',
+          }}
+        >
+          {recommendedAnime.map((anime) => (
+            <AnimeCard
+              key={anime.anime_id}
+              anime={anime}
+              cardRef={cardRef}
+              iconType="plus"
+              onSelect={onSelectAnime}
+            />
+          ))}
+        </div>
+  
+        <ScrollButton direction="left" onClick={scrollLeft} show={showLeftArrow} />
+        <ScrollButton direction="right" onClick={scrollRight} show={showRightArrow} />
       </div>
+  
+      <style jsx>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none; /* IE and Edge */
+          scrollbar-width: none; /* Firefox */
+        }
+        .fade-in {
+          animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
     </section>
   );
 }

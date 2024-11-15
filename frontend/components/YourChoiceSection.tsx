@@ -1,3 +1,6 @@
+// YourChoiceSection.tsx
+"use client";
+
 import { useEffect } from 'react';
 import Cookies from 'js-cookie';
 import AnimeCard from './AnimeCard';
@@ -12,21 +15,30 @@ interface Anime {
 
 interface YourChoiceSectionProps {
   selectedAnime: Anime[];
+  onRemoveAnime: (anime: Anime) => void;
 }
 
-export default function YourChoiceSection({ selectedAnime }: YourChoiceSectionProps) {
+export default function YourChoiceSection({ selectedAnime, onRemoveAnime }: YourChoiceSectionProps) {
   useEffect(() => {
     // Save user choices to cookies whenever they change
     console.log('Saving user choices to cookies:', selectedAnime);
     Cookies.set('userChoices', JSON.stringify(selectedAnime), { expires: 7 });
   }, [selectedAnime]);
 
+  if (selectedAnime.length === 0) return null;
+
   return (
     <section className="relative">
       <SectionHeader title="Your Choice" />
       <div className="flex space-x-4 overflow-hidden pl-6 h-350">
         {selectedAnime.map((anime) => (
-          <AnimeCard key={anime.anime_id} anime={anime} cardRef={{ current: null }} onSelect={() => {}} />
+          <AnimeCard
+            key={anime.anime_id}
+            anime={anime}
+            cardRef={{ current: null }}
+            iconType="minus"
+            onRemove={onRemoveAnime}
+          />
         ))}
       </div>
     </section>
