@@ -14,10 +14,11 @@ interface AnimatedAnimeCardProps {
   anime: Anime;
   cardRef: React.RefObject<HTMLDivElement>;
   iconType: 'plus' | 'minus';
-  onSelect: (anime: Anime) => void;
+  onSelect?: (anime: Anime) => void;
+  onRemove?: (anime: Anime) => void;
 }
 
-const AnimatedAnimeCard: React.FC<AnimatedAnimeCardProps> = ({ anime, cardRef, iconType, onSelect }) => {
+const AnimatedAnimeCard: React.FC<AnimatedAnimeCardProps> = ({ anime, cardRef, iconType, onSelect, onRemove }) => {
   return (
     <motion.div
       key={anime.anime_id}
@@ -30,6 +31,7 @@ const AnimatedAnimeCard: React.FC<AnimatedAnimeCardProps> = ({ anime, cardRef, i
         cardRef={cardRef}
         iconType={iconType}
         onSelect={onSelect}
+        onRemove={onRemove}
       />
     </motion.div>
   );

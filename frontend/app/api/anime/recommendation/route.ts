@@ -1,6 +1,6 @@
 // /frontend/app/api/anime/recommendations/route.ts
 
-import clientPromise from '../../../../../lib/mongodb';
+import clientPromise from '../../../../lib/mongodb';
 import { NextResponse } from 'next/server';
 
 interface SimilarAnime {
