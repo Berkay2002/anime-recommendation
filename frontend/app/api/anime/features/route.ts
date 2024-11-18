@@ -1,8 +1,5 @@
-// /frontend/app/api/anime/features/route.ts
-
 import clientPromise from '../../../../lib/mongodb';
 import { NextResponse } from 'next/server';
-import { Db, MongoClient } from 'mongodb';
 
 interface Anime {
   English?: string;
@@ -41,10 +38,10 @@ export async function GET(request: Request) {
 
     const sortOrder = sortOptions[sortBy] || -1;
 
-    const client: MongoClient = await clientPromise;
-    const db: Db = client.db('animeDB');
+    const client = await clientPromise;
+    const db = client.db('animeDB');
 
-    const features: Anime[] = await db
+    const features = await db
       .collection('anime_general')
       .find({
         Popularity: { $exists: true },
@@ -74,16 +71,20 @@ export async function GET(request: Request) {
         bert_demographic: 1,
         bert_themes: 1,
       })
-      .sort({ [sortBy]: sortOrder } as { [key: string]: 1 | -1 }) // Apply dynamic sort
+      .sort({ [sortBy]: sortOrder })
       .limit(30)
       .toArray();
 
-    const formattedAnime: Anime[] = features.map(anime => ({
+    // Standardize fields for all anime
+    const formattedFeatures = features.map((anime) => ({
       ...anime,
-      title: anime.English || anime.Synonyms || anime.Japanese || "Unknown Title"
+      title: anime.English || anime.Synonyms || anime.Japanese || 'Unknown Title',
+      Genres: typeof anime.Genres === 'string' ? anime.Genres.split(',').map((g) => g.trim()) : anime.Genres,
+      Studios: typeof anime.Studios === 'string' ? anime.Studios.split(',').map((s) => s.trim()) : anime.Studios,
+      themes: Array.isArray(anime.themes) ? anime.themes : [],
     }));
 
-    return NextResponse.json(formattedAnime);
+    return NextResponse.json(formattedFeatures);
   } catch (error) {
     console.error('Failed to fetch trending anime:', error);
     return NextResponse.json(

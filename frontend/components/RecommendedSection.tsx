@@ -11,35 +11,73 @@ interface Anime {
   English?: string;
   Japanese?: string;
   image_url?: string;
-  // Add other necessary fields
+  bert_description: number[];
+  bert_genres: number[];
+  bert_demographic: number[];
+  bert_rating: number[];
+  bert_themes: number[];
+  title: string;
 }
 
 interface RecommendedSectionProps {
-  selectedAnimeIds: number[];
   onSelectAnime: (anime: Anime) => void;
+  selectedAnimeIds: number[];
 }
 
-export default function RecommendedSection({ selectedAnimeIds, onSelectAnime }: RecommendedSectionProps) {
+export default function RecommendedSection({ onSelectAnime, selectedAnimeIds }: RecommendedSectionProps) {
   const [recommendedAnime, setRecommendedAnime] = useState<Anime[]>([]);
+  const [visible, setVisible] = useState(false);
+  const [allAnime, setAllAnime] = useState<Anime[]>([]);
   const { containerRef, cardRef, showLeftArrow, showRightArrow, scrollLeft, scrollRight } = useScroll();
 
-  useEffect(() => {
-    if (selectedAnimeIds.length > 0) {
-      fetch(`/api/anime/recommendation?ids=${selectedAnimeIds.join(',')}`)
-        .then((res) => res.json())
-        .then((data: Anime[]) => setRecommendedAnime(data))
-        .catch((error) => console.error('Failed to fetch recommendations:', error));
-    } else {
-      setRecommendedAnime([]);
-    }
-  }, [selectedAnimeIds]);
 
-  if (recommendedAnime.length === 0) return null;
+  useEffect(() => {
+    // Fetch all anime features including BERT embeddings
+    fetch('/api/anime/features')
+      .then((res) => res.json())
+      .then((data: Anime[]) => setAllAnime(data))
+      .catch((error) => console.error('Failed to fetch anime features:', error));
+  }, []);
+
+  useEffect(() => {
+    if (selectedAnimeIds.length > 0 && allAnime.length > 0) {
+      setVisible(true);
+
+      const selectedAnime = allAnime.find(anime => selectedAnimeIds.includes(anime.anime_id));
+      if (!selectedAnime) return;
+
+      const selectedEmbedding = {
+        bert_description: selectedAnime.bert_description,
+        bert_genres: selectedAnime.bert_genres,
+        bert_demographic: selectedAnime.bert_demographic,
+        bert_rating: selectedAnime.bert_rating,
+        bert_themes: selectedAnime.bert_themes,
+      };
+
+      const worker = new Worker('/worker.js');
+      worker.postMessage({
+        selectedEmbedding,
+        allEmbeddings: allAnime,
+        selectedTitle: selectedAnime.title,
+        selectedAnimeIds, // Pass selectedAnimeIds to the worker
+      });
+
+      worker.onmessage = function (e) {
+        const similarities = e.data;
+        const recommendedAnime = similarities
+          .slice(0, 30) // Increase to 30 recommendations
+          .map(sim => allAnime.find(anime => anime.anime_id === sim.anime_id))
+          .filter(Boolean) as Anime[];
+        setRecommendedAnime(recommendedAnime);
+        worker.terminate();
+      };
+    }
+  }, [selectedAnimeIds, allAnime]);
 
   return (
     <section className="relative fade-in">
       <SectionHeader title="Recommended" />
-      <div className="relative flex items-center overflow-visible">
+      <div className="relative flex items-center">
         <div
           className="flex space-x-4 overflow-hidden scrollbar-hide pl-6 h-350"
           ref={containerRef}
@@ -61,6 +99,7 @@ export default function RecommendedSection({ selectedAnimeIds, onSelectAnime }: 
           ))}
         </div>
 
+        {/* Position ScrollButtons absolutely within the parent div */}
         <ScrollButton direction="left" onClick={scrollLeft} show={showLeftArrow} />
         <ScrollButton direction="right" onClick={scrollRight} show={showRightArrow} />
       </div>
@@ -79,6 +118,9 @@ export default function RecommendedSection({ selectedAnimeIds, onSelectAnime }: 
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
+        }
+        .relative {
+          position: relative;
         }
       `}</style>
     </section>

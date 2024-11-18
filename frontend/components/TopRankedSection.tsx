@@ -66,6 +66,13 @@ export default function TopRankedSection({ onSelectAnime, selectedAnimeIds }: To
           -ms-overflow-style: none; /* IE and Edge */
           scrollbar-width: none; /* Firefox */
         }
+                  .fade-in {
+          animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
       `}</style>
     </section>
   );
