@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import RecommendationList from '../../../components/RecommendationList';
 
 interface Anime {
   anime_id: number;
@@ -19,6 +20,7 @@ interface Anime {
   bert_description: number[];
   bert_genres: number[];
   bert_demographic: number[];
+  bert_rating: number[];
   bert_themes: number[];
 }
 
@@ -42,6 +44,7 @@ export default function AnimeDetailPage() {
   const [reviews, setReviews] = useState<string[]>([]);
   const [generalFeatures, setGeneralFeatures] = useState<Anime[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [recommendedAnime, setRecommendedAnime] = useState<Anime[]>([]);
 
   useEffect(() => {
     async function fetchGeneralFeatures() {
@@ -119,6 +122,15 @@ export default function AnimeDetailPage() {
     fetchReviews();
   }, [id]);
 
+  useEffect(() => {
+    if (recommendations.length > 0 && generalFeatures.length > 0) {
+      const animeList = recommendations
+        .map((rec) => generalFeatures.find((anime) => anime.anime_id === rec.anime_id))
+        .filter(Boolean) as Anime[];
+      setRecommendedAnime(animeList);
+    }
+  }, [recommendations, generalFeatures]);
+
   if (loading) {
     return <p className="container mx-auto p-4">Loading...</p>;
   }
@@ -132,8 +144,8 @@ export default function AnimeDetailPage() {
               <Image
                 src={anime.image_url || "/placeholder.jpg"}
                 alt={anime.title || "Anime Image"}
-                width={266}
-                height={400}
+                width={200}
+                height={300}
                 className="object-cover w-full h-full rounded-lg"
               />
             </div>
@@ -153,19 +165,11 @@ export default function AnimeDetailPage() {
             </div>
           </div>
           <h2 className="mt-8 text-xl font-semibold">Recommendations:</h2>
-          {recommendations && recommendations.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-              {recommendations.map((rec) => (
-                <div key={rec.anime_id} className="bg-white shadow rounded p-2">
-                  <Link href={`/anime/${rec.anime_id}`} className="text-blue-500 hover:underline">
-                    <h3 className="text-lg font-semibold">{rec.title || "Untitled"}</h3>
-                  </Link>
-                  <p className="text-sm text-gray-500">
-                    Similarity: {rec.similarity !== undefined ? rec.similarity.toFixed(2) : "N/A"}
-                  </p>
-                </div>
-              ))}
-            </div>
+          {recommendedAnime.length > 0 ? (
+            <RecommendationList
+              recommendedAnime={recommendedAnime}
+              showIcon={false}
+            />
           ) : (
             <p className="text-gray-500">No recommendations available.</p>
           )}
