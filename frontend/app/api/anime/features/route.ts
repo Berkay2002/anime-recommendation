@@ -29,6 +29,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const sortBy = url.searchParams.get('sortBy') || 'Popularity'; // Default sort
+    const limit = parseInt(url.searchParams.get('limit') || '30', 10); // Default limit to 30
 
     const sortOptions: Record<string, 1 | -1> = {
       Popularity: 1,
@@ -72,7 +73,7 @@ export async function GET(request: Request) {
         bert_themes: 1,
       })
       .sort({ [sortBy]: sortOrder })
-      .limit(30)
+      .limit(limit)
       .toArray();
 
     // Standardize fields for all anime

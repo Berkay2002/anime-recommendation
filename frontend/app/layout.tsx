@@ -10,7 +10,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-background text-white">
         <Navbar />
         {children}
+        
       </body>
     </html>
   );
+  
 }
