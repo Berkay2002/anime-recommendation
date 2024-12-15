@@ -33,7 +33,7 @@ export function useRecommendations({ selectedAnimeIds }: UseRecommendationsProps
     async function fetchAllAnime() {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/anime/features');
+        const response = await fetch('/api/anime/features?limit=657');
         if (!response.ok) {
           throw new Error(`Failed to fetch anime features: ${response.statusText}`);
         }

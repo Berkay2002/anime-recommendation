@@ -50,19 +50,22 @@ export default function AnimeDetailPage() {
     async function fetchGeneralFeatures() {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "";
       try {
+        console.log(`Fetching general features from ${apiBase}/api/anime/features`);
         // Fetch all general features
-        const response = await fetch(`${apiBase}/api/anime/features`);
+        const response = await fetch(`${apiBase}/api/anime/features?limit=657`);
         if (!response.ok) {
           throw new Error(`Failed to fetch general features: ${response.statusText}`);
         }
 
         const featuresData: Anime[] = await response.json();
+        console.log('Fetched general features:', featuresData);
         setGeneralFeatures(featuresData);
 
         // Find the specific anime by ID
         const selectedAnime = featuresData.find((anime) => anime.anime_id === numericId);
         if (selectedAnime) {
           setAnime(selectedAnime);
+          console.log('Selected anime:', selectedAnime);
         } else {
           console.error(`Anime with ID ${numericId} not found in general features`);
         }
@@ -78,6 +81,7 @@ export default function AnimeDetailPage() {
 
   useEffect(() => {
     if (anime && generalFeatures.length > 0) {
+      console.log('Calculating recommendations for anime:', anime);
       // Use a worker to calculate recommendations
       const worker = new Worker("/worker.js");
       worker.postMessage({
@@ -97,6 +101,7 @@ export default function AnimeDetailPage() {
         const recommendations = e.data;
         if (Array.isArray(recommendations) && recommendations.length > 0) {
           setRecommendations(recommendations);
+          console.log('Received recommendations:', recommendations);
         } else {
           console.warn("No valid recommendations received.");
         }
@@ -108,11 +113,13 @@ export default function AnimeDetailPage() {
   useEffect(() => {
     async function fetchReviews() {
       try {
+        console.log(`Fetching reviews for anime ID ${id}`);
         const response = await fetch(`/api/anime/reviews/${id}`);
         if (!response.ok) {
           throw new Error(`Failed to fetch reviews: ${response.statusText}`);
         }
         const data = await response.json();
+        console.log('Fetched reviews:', data.reviews);
         setReviews(data.reviews || []);
       } catch (error) {
         console.error("Error fetching reviews:", error);
@@ -128,6 +135,7 @@ export default function AnimeDetailPage() {
         .map((rec) => generalFeatures.find((anime) => anime.anime_id === rec.anime_id))
         .filter(Boolean) as Anime[];
       setRecommendedAnime(animeList);
+      console.log('Recommended anime list:', animeList);
     }
   }, [recommendations, generalFeatures]);
 
