@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from 'react';
 import AnimatedAnimeCard from './AnimeCard';
 import ScrollButton from './ScrollButton';
 import SectionHeader from './SectionHeader';

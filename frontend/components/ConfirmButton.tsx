@@ -1,5 +1,4 @@
 // frontend/components/ConfirmButton.tsx
-import { useEffect } from 'react';
 
 export default function ConfirmButton({ onConfirm }: { onConfirm: () => void }) {
   const handleClick = () => {

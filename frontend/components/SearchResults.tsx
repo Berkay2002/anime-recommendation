@@ -1,4 +1,6 @@
 // components/SearchResults.tsx
+import Image from 'next/image';
+
 
 interface Anime {
     anime_id: number;
@@ -16,14 +18,20 @@ interface Anime {
         {results.length > 0 ? (
           <ul className="space-y-4">
             {results.map((anime) => (
-              <li key={anime.anime_id}>
-                <a href={`/anime/${anime.anime_id}`} className="flex items-center">
-                  {anime.image_url && (
-                    <img src={anime.image_url} alt={anime.title} className="w-12 h-12 mr-4 rounded" />
-                  )}
-                  <span className="text-lg font-semibold">{anime.title}</span>
-                </a>
-              </li>
+            <li key={anime.anime_id}>
+              <a href={`/anime/${anime.anime_id}`} className="flex items-center">
+                {anime.image_url && (
+                  <Image
+                    src={anime.image_url}
+                    alt={anime.title}
+                    width={48} // Equivalent to w-12 (12 * 4 = 48px)
+                    height={48} // Equivalent to h-12
+                    className="mr-4 rounded"
+                  />
+                )}
+                <span className="text-lg font-semibold">{anime.title}</span>
+              </a>
+            </li>
             ))}
           </ul>
         ) : (

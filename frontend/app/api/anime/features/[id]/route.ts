@@ -1,5 +1,5 @@
 import clientPromise from '../../../../../lib/mongodb';
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 
 interface Anime {
   English?: string;
@@ -21,14 +21,13 @@ interface Anime {
 }
 
 export async function GET(
-    request: Request,
-    context: { params: { id: string } }
-  ): Promise<NextResponse> {
-    try {
-      // Access and validate params asynchronously
-      const params = await context.params;
-      const { id } = params; // Destructure after `await`
-      const numericId = Number(id);
+  request: NextRequest,
+  { params }: { params: { id: string } }
+): Promise<NextResponse> {
+  try {
+    // Access and validate params
+    const { id } = params; // No need to `await` params
+    const numericId = Number(id);
 
     if (isNaN(numericId)) {
       console.error('Invalid ID format:', id);
@@ -71,22 +70,22 @@ export async function GET(
 
     // Ensure fields are standardized and handle missing values
     const formattedAnime = {
-        ...anime,
-        title: anime.English || anime.Synonyms?.[0] || anime.Japanese || 'Unknown Title',
-        Genres:
-          typeof anime.Genres === 'string'
-            ? anime.Genres.split(',').map((g) => g.trim())
-            : Array.isArray(anime.Genres)
-            ? anime.Genres
-            : [],
-        Studios:
-          typeof anime.Studios === 'string'
-            ? anime.Studios.split(',').map((s) => s.trim())
-            : Array.isArray(anime.Studios)
-            ? anime.Studios
-            : [],
-        themes: Array.isArray(anime.themes) ? anime.themes : [],
-      };
+      ...anime,
+      title: anime.English || anime.Synonyms?.[0] || anime.Japanese || 'Unknown Title',
+      Genres:
+        typeof anime.Genres === 'string'
+          ? anime.Genres.split(',').map((g) => g.trim())
+          : Array.isArray(anime.Genres)
+          ? anime.Genres
+          : [],
+      Studios:
+        typeof anime.Studios === 'string'
+          ? anime.Studios.split(',').map((s) => s.trim())
+          : Array.isArray(anime.Studios)
+          ? anime.Studios
+          : [],
+      themes: Array.isArray(anime.themes) ? anime.themes : [],
+    };
 
     return NextResponse.json(formattedAnime);
   } catch (error) {
