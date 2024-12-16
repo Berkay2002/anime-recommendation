@@ -41,10 +41,6 @@ export default function AnimeDetailPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [recommendedAnime, setRecommendedAnime] = useState<Anime[]>([]);
 
-  if (isNaN(numericId) || numericId < 0) {
-    console.error("Invalid anime ID:", id);
-    return <p>Error: Invalid anime ID</p>;
-  }
 
   useEffect(() => {
     async function fetchGeneralFeatures() {

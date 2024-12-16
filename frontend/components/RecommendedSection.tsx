@@ -22,11 +22,6 @@ interface RecommendedSectionProps {
   selectedAnimeIds: number[];
 }
 
-interface RecommendedSectionProps {
-  onSelectAnime: (anime: Anime) => void;
-  selectedAnimeIds: number[];
-}
-
 export default function RecommendedSection({ onSelectAnime, selectedAnimeIds }: RecommendedSectionProps) {
   const { recommendedAnime, isLoading, error } = useRecommendations({ selectedAnimeIds });
 

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Anime {
   anime_id: number;
@@ -139,7 +140,13 @@ const AnimePage: React.FC = () => {
               </div>
               <div style={{ flex: 2, marginLeft: '20px', display: 'flex', alignItems: 'center' }}>
                 <Link href={`/anime/${anime.anime_id}`}>
-                  <img src={anime.image_url} alt={anime.title} style={{ width: '1000px', height: 'auto', marginRight: '20px' }} />
+                  <Image
+                    src={anime.image_url || "/placeholder.jpg"}
+                    alt={anime.title || "Anime Image"}
+                    width={200}
+                    height={300}
+                    className="object-cover w-full h-full rounded-lg"
+                  />                  
                 </Link>
                 <p style={{ color: 'white', marginLeft: '20px' }}>{anime.Description}</p>
               </div>
