@@ -1,5 +1,4 @@
 import clientPromise from '../../../../../lib/mongodb';
-import { NextResponse, NextRequest } from 'next/server';
 
 interface Anime {
   English?: string;
@@ -21,9 +20,9 @@ interface Anime {
 }
 
 export async function GET(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { id: string } }
-): Promise<NextResponse> {
+): Promise<Response> {
   try {
     // Access and validate params
     const { id } = params; // No need to `await` params
@@ -31,7 +30,7 @@ export async function GET(
 
     if (isNaN(numericId)) {
       console.error('Invalid ID format:', id);
-      return NextResponse.json({ message: 'Invalid ID format' }, { status: 400 });
+      return new Response(JSON.stringify({ message: 'Invalid ID format' }), { status: 400 });
     }
 
     const client = await clientPromise;
@@ -62,10 +61,7 @@ export async function GET(
     );
 
     if (!anime) {
-      return NextResponse.json(
-        { message: 'Anime not found' },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ message: 'Anime not found' }), { status: 404 });
     }
 
     // Ensure fields are standardized and handle missing values
@@ -87,12 +83,9 @@ export async function GET(
       themes: Array.isArray(anime.themes) ? anime.themes : [],
     };
 
-    return NextResponse.json(formattedAnime);
+    return new Response(JSON.stringify(formattedAnime), { status: 200 });
   } catch (error) {
     console.error('Failed to fetch anime features:', error);
-    return NextResponse.json(
-      { message: 'Failed to fetch anime features' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ message: 'Failed to fetch anime features' }), { status: 500 });
   }
 }

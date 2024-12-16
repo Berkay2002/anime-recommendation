@@ -1,4 +1,5 @@
 // components/SearchBar.tsx
+import Image from 'next/image';
 
 import { useState, useEffect } from 'react';
 
@@ -78,7 +79,13 @@ export default function SearchBar() {
                 onClick={handleSelect}
               >
                 {anime.image_url && (
-                  <img src={anime.image_url} alt={anime.title} className="w-8 h-8 mr-2 rounded" />
+                  <Image
+                    src={anime.image_url || "/placeholder.jpg"}
+                    alt={anime.title || "Anime Image"}
+                    width={50}  // Specify appropriate width
+                    height={75} // Specify appropriate height
+                    className="object-cover w-full h-full rounded-lg"
+                  />
                 )}
                 <span className="text-lg font-semibold text-black">{anime.title}</span>
               </a>
