@@ -1,7 +1,6 @@
 // /frontend/app/api/anime/recommendation/[id]/route.ts
 
 import clientPromise from '../../../../../lib/mongodb';
-import { NextResponse } from 'next/server';
 
 interface SimilarAnime {
   anime_id: number;
@@ -16,20 +15,14 @@ interface Recommendation {
   similar_anime: SimilarAnime[];
 }
 
-export async function GET(
-    request: Request,
-    { params }: { params: { id: string } }
-): Promise<NextResponse> {
-    console.log('Params received:', params); // Log params to verify
-    const { id } = params;
+export async function GET(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const id = url.pathname.split('/').pop();
     const numericId = Number(id);
 
     if (isNaN(numericId)) {
         console.error('Invalid anime ID format:', id);
-        return NextResponse.json(
-            { message: 'Invalid anime ID format' },
-            { status: 400 }
-        );
+        return new Response(JSON.stringify({ message: 'Invalid anime ID format' }), { status: 400 });
     }
 
     try {
@@ -54,18 +47,12 @@ export async function GET(
 
         if (!recommendation) {
             console.error('No recommendations found for anime_id:', numericId);
-            return NextResponse.json(
-                { message: 'Recommendations not found' },
-                { status: 404 }
-            );
+            return new Response(JSON.stringify({ message: 'Recommendations not found' }), { status: 404 });
         }
 
-        return NextResponse.json(recommendation);
+        return new Response(JSON.stringify(recommendation), { status: 200 });
     } catch (error) {
         console.error('Failed to fetch recommendations for anime_id:', numericId, error);
-        return NextResponse.json(
-            { message: 'Failed to fetch recommendations', error: error.message },
-            { status: 500 }
-        );
+        return new Response(JSON.stringify({ message: 'Failed to fetch recommendations', error: error.message }), { status: 500 });
     }
 }
