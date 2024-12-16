@@ -34,11 +34,6 @@ export default function AnimeDetailPage() {
   const { id } = useParams();
   const numericId = Number(id);
 
-  if (isNaN(numericId) || numericId < 0) {
-    console.error("Invalid anime ID:", id);
-    return <p>Error: Invalid anime ID</p>;
-  }
-
   const [anime, setAnime] = useState<Anime | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [reviews, setReviews] = useState<string[]>([]);
@@ -46,75 +41,61 @@ export default function AnimeDetailPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [recommendedAnime, setRecommendedAnime] = useState<Anime[]>([]);
 
+  if (isNaN(numericId) || numericId < 0) {
+    console.error("Invalid anime ID:", id);
+    return <p>Error: Invalid anime ID</p>;
+  }
+
   useEffect(() => {
     async function fetchGeneralFeatures() {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "";
       try {
-        console.log(`Fetching general features from ${apiBase}/api/anime/features`);
-        // Fetch all general features
         const response = await fetch(`${apiBase}/api/anime/features?limit=657`);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch general features: ${response.statusText}`);
-        }
-
         const featuresData: Anime[] = await response.json();
-        console.log('Fetched general features:', featuresData);
+  
         setGeneralFeatures(featuresData);
-
-        // Find the specific anime by ID
-        const selectedAnime = featuresData.find((anime) => anime.anime_id === numericId);
-        if (selectedAnime) {
-          setAnime(selectedAnime);
-          console.log('Selected anime:', selectedAnime);
-        } else {
-          console.error(`Anime with ID ${numericId} not found in general features`);
-        }
+  
+        const selectedAnime = featuresData.find((anime) => anime.anime_id === Number(id));
+        if (selectedAnime) setAnime(selectedAnime);
       } catch (error) {
         console.error("Error fetching general features:", error);
       } finally {
         setLoading(false);
       }
     }
-
+  
     fetchGeneralFeatures();
   }, [id]);
+  
 
   useEffect(() => {
     if (anime && generalFeatures.length > 0) {
-      console.log('Calculating recommendations for anime:', anime);
-      // Use a worker to calculate recommendations
       const worker = new Worker("/worker.js");
+  
       worker.postMessage({
         selectedEmbedding: anime,
         allEmbeddings: generalFeatures,
-        selectedTitle: anime.title,
-        selectedAnimeIds: [numericId],
-        weights: {
-          bert_description: 0.4,
-          bert_genres: 0.35,
-          bert_demographic: 0.15,
-          bert_themes: 0.1,
-        },
+        weights: { bert_description: 0.4, bert_genres: 0.35, bert_demographic: 0.15, bert_themes: 0.1 },
       });
-
+  
       worker.onmessage = (e) => {
-        const recommendations = e.data;
-        if (Array.isArray(recommendations) && recommendations.length > 0) {
-          setRecommendations(recommendations);
-          console.log('Received recommendations:', recommendations);
-        } else {
-          console.warn("No valid recommendations received.");
-        }
+        setRecommendations(e.data);
         worker.terminate();
       };
+  
+      return () => worker.terminate(); // Cleanup to avoid memory leaks
     }
   }, [anime, generalFeatures]);
+  
 
   useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+  
     async function fetchReviews() {
       try {
         console.log(`Fetching reviews for anime ID ${id}`);
-        const response = await fetch(`/api/anime/reviews/${id}`);
+        const response = await fetch(`/api/anime/reviews/${id}`, { signal });
         if (!response.ok) {
           throw new Error(`Failed to fetch reviews: ${response.statusText}`);
         }
@@ -122,22 +103,36 @@ export default function AnimeDetailPage() {
         console.log('Fetched reviews:', data.reviews);
         setReviews(data.reviews || []);
       } catch (error) {
-        console.error("Error fetching reviews:", error);
+        if (error.name === "AbortError") {
+          console.log("Fetch aborted");
+        } else {
+          console.error("Error fetching reviews:", error);
+        }
       }
     }
-
+  
     fetchReviews();
+  
+    // Cleanup: Abort the fetch if id changes or component unmounts
+    return () => {
+      controller.abort();
+    };
   }, [id]);
+  
 
   useEffect(() => {
     if (recommendations.length > 0 && generalFeatures.length > 0) {
+      const featureMap = new Map(generalFeatures.map((anime) => [anime.anime_id, anime]));
+  
       const animeList = recommendations
-        .map((rec) => generalFeatures.find((anime) => anime.anime_id === rec.anime_id))
+        .map((rec) => featureMap.get(rec.anime_id))
         .filter(Boolean) as Anime[];
+  
       setRecommendedAnime(animeList);
       console.log('Recommended anime list:', animeList);
     }
   }, [recommendations, generalFeatures]);
+  
 
   if (loading) {
     return <p className="container mx-auto p-4">Loading...</p>;
