@@ -3,7 +3,7 @@ from pymongo import MongoClient
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
-
+### THIS IS NOT USED IN THE FINAL IMPLEMENTATION ###
 # MongoDB Connection Details
 MONGODB_URI = "mongodb+srv://Admin:Admin@recommendation-cluster.mza82o4.mongodb.net/?retryWrites=true&w=majority&appName=recommendation-cluster"
 DATABASE_NAME = "animeDB"
