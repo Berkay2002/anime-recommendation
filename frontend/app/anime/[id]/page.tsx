@@ -41,17 +41,16 @@ export default function AnimeDetailPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [recommendedAnime, setRecommendedAnime] = useState<Anime[]>([]);
 
-
   useEffect(() => {
     async function fetchGeneralFeatures() {
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "";
       try {
-        const response = await fetch(`${apiBase}/api/anime/features?limit=657`);
+        // Använd en relativ sökväg som pekar mot dina API-routes
+        const response = await fetch(`/api/anime/features?limit=657`);
         const featuresData: Anime[] = await response.json();
-  
+
         setGeneralFeatures(featuresData);
-  
-        const selectedAnime = featuresData.find((anime) => anime.anime_id === Number(id));
+
+        const selectedAnime = featuresData.find((anime) => anime.anime_id === numericId);
         if (selectedAnime) setAnime(selectedAnime);
       } catch (error) {
         console.error("Error fetching general features:", error);
@@ -59,46 +58,42 @@ export default function AnimeDetailPage() {
         setLoading(false);
       }
     }
-  
+
     fetchGeneralFeatures();
-  }, [id]);
-  
+  }, [id, numericId]);
 
   useEffect(() => {
     if (anime && generalFeatures.length > 0) {
       const worker = new Worker("/worker.js");
-  
+
       worker.postMessage({
         selectedEmbedding: anime,
         allEmbeddings: generalFeatures,
         weights: { bert_description: 0.4, bert_genres: 0.35, bert_demographic: 0.15, bert_themes: 0.1 },
       });
-  
+
       worker.onmessage = (e) => {
         setRecommendations(e.data);
         worker.terminate();
       };
-  
-      return () => worker.terminate(); // Cleanup to avoid memory leaks
+
+      return () => worker.terminate(); // Cleanup för att undvika memory leaks
     }
   }, [anime, generalFeatures]);
-  
 
   useEffect(() => {
     const controller = new AbortController();
     const signal = controller.signal;
-  
+
     async function fetchReviews() {
       try {
-        console.log(`Fetching reviews for anime ID ${id}`);
         const response = await fetch(`/api/anime/reviews/${id}`, { signal });
         if (!response.ok) {
           throw new Error(`Failed to fetch reviews: ${response.statusText}`);
         }
         const data = await response.json();
-        console.log('Fetched reviews:', data.reviews);
         setReviews(data.reviews || []);
-      } catch (error) {
+      } catch (error: any) {
         if (error.name === "AbortError") {
           console.log("Fetch aborted");
         } else {
@@ -106,29 +101,26 @@ export default function AnimeDetailPage() {
         }
       }
     }
-  
+
     fetchReviews();
-  
-    // Cleanup: Abort the fetch if id changes or component unmounts
+
+    // Rensa upp om id ändras eller om komponenten avmonteras
     return () => {
       controller.abort();
     };
   }, [id]);
-  
 
   useEffect(() => {
     if (recommendations.length > 0 && generalFeatures.length > 0) {
       const featureMap = new Map(generalFeatures.map((anime) => [anime.anime_id, anime]));
-  
+
       const animeList = recommendations
         .map((rec) => featureMap.get(rec.anime_id))
         .filter(Boolean) as Anime[];
-  
+
       setRecommendedAnime(animeList);
-      console.log('Recommended anime list:', animeList);
     }
   }, [recommendations, generalFeatures]);
-  
 
   if (loading) {
     return <p className="container mx-auto p-4">Loading...</p>;
