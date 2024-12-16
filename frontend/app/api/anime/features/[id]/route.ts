@@ -19,13 +19,10 @@ interface Anime {
   anime_id: number;
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   try {
-    // Access and validate params
-    const { id } = params; // No need to `await` params
+    const url = new URL(request.url);
+    const id = url.pathname.split('/').pop();
     const numericId = Number(id);
 
     if (isNaN(numericId)) {
