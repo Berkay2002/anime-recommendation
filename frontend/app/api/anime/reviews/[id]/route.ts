@@ -1,20 +1,14 @@
 import clientPromise from '../../../../../lib/mongodb';
-import { NextResponse } from 'next/server';
 
-export async function GET(
-  request: Request,
-  context: { params: { id: string } }
-): Promise<NextResponse> {
+export async function GET(request: Request): Promise<Response> {
   try {
-    const { id } = context.params;
+    const url = new URL(request.url);
+    const id = url.pathname.split('/').pop();
     const numericId = Number(id);
 
     if (isNaN(numericId)) {
       console.error("Invalid anime ID format:", id);
-      return NextResponse.json(
-        { message: "Invalid anime ID format" },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ message: "Invalid anime ID format" }), { status: 400 });
     }
 
     console.log("Fetching reviews for anime_id:", numericId);
@@ -35,18 +29,12 @@ export async function GET(
 
     if (!review) {
       console.error("No reviews found for anime_id:", numericId);
-      return NextResponse.json(
-        { message: `Reviews not found for anime_id: ${numericId}` },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ message: `Reviews not found for anime_id: ${numericId}` }), { status: 404 });
     }
 
-    return NextResponse.json(review);
+    return new Response(JSON.stringify(review), { status: 200 });
   } catch (error) {
     console.error("Failed to fetch reviews for anime_id:", error);
-    return NextResponse.json(
-      { message: "Failed to fetch reviews", error: error.message },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ message: "Failed to fetch reviews", error: error.message }), { status: 500 });
   }
 }
