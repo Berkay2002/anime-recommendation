@@ -23,6 +23,15 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
@@ -49,6 +58,12 @@ interface Anime {
   Description?: string
 }
 
+interface ApiResponse {
+  anime: Anime[]
+  totalPages: number
+  currentPage: number
+}
+
 const skeletonPlaceholders = Array.from({ length: 6 })
 const badgeSkeletonPlaceholders = Array.from({ length: 3 })
 
@@ -63,9 +78,12 @@ const AnimePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [selectedGenres, setSelectedGenres] = useState<GenreOption[]>([])
   const [genrePopoverOpen, setGenrePopoverOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
 
-  useEffect(() => {
-    const apiUrl = "/api/anime/metadata?limit=500"
+  const fetchAnime = useCallback((page: number) => {
+    setLoading(true)
+    const apiUrl = `/api/anime/metadata?limit=50&page=${page}`
 
     fetch(apiUrl)
       .then((response) => {
@@ -74,8 +92,10 @@ const AnimePage: React.FC = () => {
         }
         return response.json()
       })
-      .then((data) => {
-        setAnimeList(data)
+      .then((data: ApiResponse) => {
+        setAnimeList(data.anime)
+        setTotalPages(data.totalPages)
+        setCurrentPage(data.currentPage)
         setLoading(false)
       })
       .catch((fetchError: Error) => {
@@ -86,6 +106,17 @@ const AnimePage: React.FC = () => {
         setLoading(false)
       })
   }, [])
+
+  useEffect(() => {
+    fetchAnime(currentPage)
+  }, [fetchAnime, currentPage])
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    }
+  }
 
   const toggleGenre = useCallback((genre: GenreOption) => {
     setSelectedGenres((prev) =>
@@ -363,6 +394,53 @@ const AnimePage: React.FC = () => {
       ) : null}
 
       {content}
+
+      {!loading && !error && totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  handlePageChange(currentPage - 1)
+                }}
+                className={
+                  currentPage === 1 ? "pointer-events-none opacity-50" : ""
+                }
+              />
+            </PaginationItem>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <PaginationItem key={page}>
+                <PaginationLink
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handlePageChange(page)
+                  }}
+                  isActive={currentPage === page}
+                >
+                  {page}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  handlePageChange(currentPage + 1)
+                }}
+                className={
+                  currentPage === totalPages
+                    ? "pointer-events-none opacity-50"
+                    : ""
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   )
 }

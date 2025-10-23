@@ -1,5 +1,4 @@
-
-// /frontend/app/api/anime/trending/route.ts
+// /frontend/app/api/anime/top-ranked/route.ts
 
 import clientPromise from '../../../../lib/mongodb';
 import { NextResponse } from 'next/server';
@@ -10,11 +9,7 @@ interface Anime {
   Synonyms?: string;
   Japanese?: string;
   image_url?: string;
-  Popularity?: number;
   Rank?: number;
-  Score?: number;
-  Description?: string;
-  // ...add other fields as necessary
 }
 
 export async function GET(): Promise<NextResponse> {
@@ -25,9 +20,7 @@ export async function GET(): Promise<NextResponse> {
     const features: Anime[] = await db
       .collection('anime_general')
       .find({
-        Popularity: { $exists: true },
         Rank: { $exists: true },
-        Score: { $exists: true },
         anime_id: { $exists: true },
       })
       .project({
@@ -35,30 +28,27 @@ export async function GET(): Promise<NextResponse> {
         Japanese: 1,
         Synonyms: 1,
         image_url: 1,
-        Popularity: 1,
+        Rank: 1,
         anime_id: 1,
       })
-      .sort({ Popularity: 1 })
+      .sort({ Rank: 1 })
       .limit(30)
       .toArray();
 
-    // Group titles
     const formattedAnime = features.map(anime => ({
       ...anime,
       title: anime.English || anime.Synonyms || anime.Japanese || "Unknown Title"
     }));
 
-    // Add cache headers for better performance
-    // Cache for 5 minutes, serve stale content while revalidating
     return NextResponse.json(formattedAnime, {
       headers: {
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
       },
     });
   } catch (error) {
-    console.error('Failed to fetch trending anime:', error);
+    console.error('Failed to fetch top ranked anime:', error);
     return NextResponse.json(
-      { message: 'Failed to fetch trending anime' },
+      { message: 'Failed to fetch top ranked anime' },
       { status: 500 }
     );
   }

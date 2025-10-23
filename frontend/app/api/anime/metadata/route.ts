@@ -23,9 +23,12 @@ interface AnimeMetadata {
 
 export async function GET(request: Request) {
   try {
-    const url = new URL(request.url);
-    const sortBy = url.searchParams.get('sortBy') || 'Popularity';
-    const limit = parseInt(url.searchParams.get('limit') || '30', 10);
+    const url = new URL(request.url)
+    const sortBy = url.searchParams.get("sortBy") || "Popularity"
+    const limit = parseInt(url.searchParams.get("limit") || "50", 10)
+    const page = parseInt(url.searchParams.get("page") || "1", 10)
+
+    const skip = (page - 1) * limit
 
     const sortOptions: Record<string, 1 | -1> = {
       Popularity: 1,
@@ -35,18 +38,22 @@ export async function GET(request: Request) {
 
     const sortOrder = sortOptions[sortBy] || -1;
 
-    const client = await clientPromise;
-    const db = client.db('animeDB');
+    const client = await clientPromise
+    const db = client.db("animeDB")
 
-    // Fetch only metadata, excluding heavy BERT embeddings
+    const query = {
+      Popularity: { $exists: true },
+      Rank: { $exists: true },
+      Score: { $exists: true },
+      anime_id: { $exists: true },
+    }
+
+    const totalAnime = await db.collection("anime_general").countDocuments(query)
+    const totalPages = Math.ceil(totalAnime / limit)
+
     const features = await db
-      .collection('anime_general')
-      .find({
-        Popularity: { $exists: true },
-        Rank: { $exists: true },
-        Score: { $exists: true },
-        anime_id: { $exists: true },
-      })
+      .collection("anime_general")
+      .find(query)
       .project({
         English: 1,
         Japanese: 1,
@@ -64,28 +71,40 @@ export async function GET(request: Request) {
         Genres: 1,
         Demographic: 1,
         anime_id: 1,
-        // BERT embeddings are automatically excluded since they're not in the inclusion list
       })
       .sort({ [sortBy]: sortOrder })
+      .skip(skip)
       .limit(limit)
       .allowDiskUse(true)
-      .toArray();
+      .toArray()
 
-    // Standardize fields for all anime
     const formattedFeatures = features.map((anime) => ({
       ...anime,
-      title: anime.English || anime.Synonyms || anime.Japanese || 'Unknown Title',
-      Genres: typeof anime.Genres === 'string' ? anime.Genres.split(',').map((g) => g.trim()) : anime.Genres,
-      Studios: typeof anime.Studios === 'string' ? anime.Studios.split(',').map((s) => s.trim()) : anime.Studios,
+      title:
+        anime.English || anime.Synonyms || anime.Japanese || "Unknown Title",
+      Genres:
+        typeof anime.Genres === "string"
+          ? anime.Genres.split(",").map((g) => g.trim())
+          : anime.Genres,
+      Studios:
+        typeof anime.Studios === "string"
+          ? anime.Studios.split(",").map((s) => s.trim())
+          : anime.Studios,
       themes: Array.isArray(anime.themes) ? anime.themes : [],
-    }));
+    }))
 
-    // Cache for 5 minutes
-    return NextResponse.json(formattedFeatures, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+    return NextResponse.json(
+      {
+        anime: formattedFeatures,
+        totalPages,
+        currentPage: page,
       },
-    });
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        },
+      }
+    )
   } catch (error) {
     console.error('Failed to fetch anime metadata:', error);
     return NextResponse.json(

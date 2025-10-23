@@ -5,6 +5,7 @@ import { memo, useMemo } from "react"
 import { useFetchData } from "@/hooks/useFetchData"
 import { useScroll } from "@/hooks/useScroll"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
+import { Empty, EmptyDescription, EmptyTitle } from "./ui/empty"
 import AnimatedAnimeCard from "./AnimatedAnimeCard"
 import AnimeCardSkeleton from "./AnimeCardSkeleton"
 import ScrollButton from "./ScrollButton"
@@ -30,7 +31,7 @@ function TrendingSection({
   selectedAnimeIdSet,
 }: TrendingSectionProps) {
   const [trendingAnime, loading, error] = useFetchData<Anime[]>(
-    "/api/anime/metadata?sortBy=Popularity"
+    "/api/anime/trending"
   )
   const {
     containerRef,
@@ -76,7 +77,17 @@ function TrendingSection({
     }
 
     if (!filteredAnime.length) {
-      return null
+      return (
+        <div className="px-6 pb-6">
+          <Empty>
+            <EmptyTitle>No new trending anime</EmptyTitle>
+            <EmptyDescription>
+              You have already added all the currently trending anime. Check
+              back later for more!
+            </EmptyDescription>
+          </Empty>
+        </div>
+      )
     }
 
     return (
