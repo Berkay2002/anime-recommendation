@@ -1,7 +1,7 @@
 import clientPromise from '../../../../lib/mongodb';
 import { NextResponse } from 'next/server';
 
-interface Anime {
+interface AnimeMetadata {
   English?: string;
   Japanese?: string;
   Synonyms?: string;
@@ -19,23 +19,18 @@ interface Anime {
   Demographic?: string;
   anime_id?: number;
   title?: string;
-  bert_description: number[];
-  bert_themes: number[];
-  bert_genres: number[];
-  bert_demographic: number[];
-  bert_rating: number[];
 }
 
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const sortBy = url.searchParams.get('sortBy') || 'Popularity'; // Default sort
-    const limit = parseInt(url.searchParams.get('limit') || '30', 10); // Default limit to 30
+    const sortBy = url.searchParams.get('sortBy') || 'Popularity';
+    const limit = parseInt(url.searchParams.get('limit') || '30', 10);
 
     const sortOptions: Record<string, 1 | -1> = {
       Popularity: 1,
       Score: -1,
-      Rank: 1, // Assuming lower rank is better
+      Rank: 1,
     };
 
     const sortOrder = sortOptions[sortBy] || -1;
@@ -43,6 +38,7 @@ export async function GET(request: Request) {
     const client = await clientPromise;
     const db = client.db('animeDB');
 
+    // Fetch only metadata, excluding heavy BERT embeddings
     const features = await db
       .collection('anime_general')
       .find({
@@ -68,11 +64,12 @@ export async function GET(request: Request) {
         Genres: 1,
         Demographic: 1,
         anime_id: 1,
-        bert_description: 1,
-        bert_genres: 1,
-        bert_demographic: 1,
-        bert_rating: 1,
-        bert_themes: 1,
+        // Explicitly exclude BERT embeddings
+        bert_description: 0,
+        bert_genres: 0,
+        bert_demographic: 0,
+        bert_themes: 0,
+        bert_rating: 0,
       })
       .sort({ [sortBy]: sortOrder })
       .limit(limit)
@@ -88,17 +85,16 @@ export async function GET(request: Request) {
       themes: Array.isArray(anime.themes) ? anime.themes : [],
     }));
 
-    // Add cache headers for better performance
-    // Cache for 5 minutes, serve stale content while revalidating
+    // Cache for 5 minutes
     return NextResponse.json(formattedFeatures, {
       headers: {
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
       },
     });
   } catch (error) {
-    console.error('Failed to fetch trending anime:', error);
+    console.error('Failed to fetch anime metadata:', error);
     return NextResponse.json(
-      { message: 'Failed to fetch trending anime' },
+      { message: 'Failed to fetch anime metadata' },
       { status: 500 }
     );
   }

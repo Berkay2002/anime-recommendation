@@ -22,7 +22,8 @@ const AnimePage: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const apiUrl = '/api/anime/features?limit=500';
+    // Use metadata endpoint for faster loading (no heavy embeddings needed for list view)
+    const apiUrl = '/api/anime/metadata?limit=500';
 
     fetch(apiUrl)
       .then(response => {
