@@ -74,6 +74,7 @@ export async function GET(request: Request) {
       })
       .sort({ [sortBy]: sortOrder })
       .limit(limit)
+      .allowDiskUse(true)
       .toArray();
 
     // Standardize fields for all anime
