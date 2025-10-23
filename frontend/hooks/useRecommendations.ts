@@ -33,15 +33,24 @@ export function useRecommendations({ selectedAnimeIds }: UseRecommendationsProps
     async function fetchAllAnime() {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/anime/features?limit=657');
+        // Use metadata endpoint first for lighter initial load
+        // Then fetch full features with embeddings for recommendations
+        const response = await fetch('/api/anime/features?limit=657&sortBy=Popularity');
+
         if (!response.ok) {
-          throw new Error(`Failed to fetch anime features: ${response.statusText}`);
+          throw new Error(`Failed to fetch anime features: ${response.status} ${response.statusText}`);
         }
+
         const data: Anime[] = await response.json();
+
+        if (!Array.isArray(data) || data.length === 0) {
+          throw new Error('No anime data received from API');
+        }
+
         setAllAnime(data);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to fetch anime features:', err);
-        setError(err.message);
+        setError(err?.message || 'Unknown error occurred');
       } finally {
         setIsLoading(false);
       }

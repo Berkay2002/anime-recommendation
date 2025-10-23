@@ -21,17 +21,18 @@ interface TopRankedSectionProps {
 }
 
 function TopRankedSection({ onSelectAnime, selectedAnimeIdSet }: TopRankedSectionProps) {
-  const [topRankedAnime, loading, error] = useFetchData<Anime[]>('/api/anime/features?sortBy=Rank');
+  const [topRankedAnime, loading, error] = useFetchData<Anime[]>('/api/anime/metadata?sortBy=Rank');
   const { containerRef, cardRef, showLeftArrow, showRightArrow, scrollLeft, scrollRight } = useScroll();
 
   // Use useMemo and Set for O(1) lookup instead of O(n) array.includes()
-  const filteredAnime = useMemo(() =>
-    topRankedAnime?.filter(anime => !selectedAnimeIdSet.has(anime.anime_id)),
-    [topRankedAnime, selectedAnimeIdSet]
-  );
+  const filteredAnime = useMemo(() => {
+    if (!topRankedAnime || !Array.isArray(topRankedAnime)) return [];
+    return topRankedAnime.filter(anime => !selectedAnimeIdSet.has(anime.anime_id));
+  }, [topRankedAnime, selectedAnimeIdSet]);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error loading data</div>;
+  if (loading) return <div className="text-center py-8">Loading top ranked anime...</div>;
+  if (error) return <div className="text-center py-8 text-red-500">Error loading top ranked anime. Please try refreshing the page.</div>;
+  if (!filteredAnime || filteredAnime.length === 0) return null;
 
   return (
     <section className="relative">

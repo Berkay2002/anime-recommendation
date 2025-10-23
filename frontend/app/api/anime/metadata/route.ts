@@ -64,12 +64,7 @@ export async function GET(request: Request) {
         Genres: 1,
         Demographic: 1,
         anime_id: 1,
-        // Explicitly exclude BERT embeddings
-        bert_description: 0,
-        bert_genres: 0,
-        bert_demographic: 0,
-        bert_themes: 0,
-        bert_rating: 0,
+        // BERT embeddings are automatically excluded since they're not in the inclusion list
       })
       .sort({ [sortBy]: sortOrder })
       .limit(limit)

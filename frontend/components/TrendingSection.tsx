@@ -21,17 +21,18 @@ interface TrendingSectionProps {
 }
 
 function TrendingSection({ onSelectAnime, selectedAnimeIdSet }: TrendingSectionProps) {
-  const [trendingAnime, loading, error] = useFetchData<Anime[]>('/api/anime/features?sortBy=Popularity');
+  const [trendingAnime, loading, error] = useFetchData<Anime[]>('/api/anime/metadata?sortBy=Popularity');
   const { containerRef, cardRef, showLeftArrow, showRightArrow, scrollLeft, scrollRight } = useScroll();
 
   // Use useMemo and Set for O(1) lookup instead of O(n) array.includes()
-  const filteredAnime = useMemo(() =>
-    trendingAnime?.filter(anime => !selectedAnimeIdSet.has(anime.anime_id)),
-    [trendingAnime, selectedAnimeIdSet]
-  );
+  const filteredAnime = useMemo(() => {
+    if (!trendingAnime || !Array.isArray(trendingAnime)) return [];
+    return trendingAnime.filter(anime => !selectedAnimeIdSet.has(anime.anime_id));
+  }, [trendingAnime, selectedAnimeIdSet]);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error loading data</div>;
+  if (loading) return <div className="text-center py-8">Loading trending anime...</div>;
+  if (error) return <div className="text-center py-8 text-red-500">Error loading trending anime. Please try refreshing the page.</div>;
+  if (!filteredAnime || filteredAnime.length === 0) return null;
 
   return (
     <section className="relative">
