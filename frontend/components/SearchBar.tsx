@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Loader2 } from "lucide-react"
+import { Command as CommandPrimitive } from "cmdk"
+import { Loader2, SearchIcon } from "lucide-react"
 
 import {
   Command,
   CommandEmpty,
-  CommandInput,
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import {
+  InputGroup,
+  InputGroupAddon,
+} from "@/components/ui/input-group"
 import { Kbd } from "@/components/ui/kbd"
 
 type Anime = {
@@ -31,9 +35,13 @@ export default function SearchBar() {
   const [isLoading, setIsLoading] = useState(false)
 
   const focusInput = useCallback(() => {
-    const input = containerRef.current?.querySelector<HTMLInputElement>(
-      'input[data-slot="command-input"]'
-    )
+    const input =
+      containerRef.current?.querySelector<HTMLInputElement>(
+        'input[data-slot="input-group-control"]'
+      ) ??
+      containerRef.current?.querySelector<HTMLInputElement>(
+        'input[data-slot="command-input"]'
+      )
     if (input) {
       input.focus()
       setIsOpen(true)
@@ -136,22 +144,31 @@ export default function SearchBar() {
     <div ref={containerRef} className="relative">
       <Command
         shouldFilter={false}
-        className="bg-background text-foreground relative mb-0.5 rounded-md border shadow-xs overflow-visible"
+        className="relative overflow-visible"
       >
-        <CommandInput
-          value={query}
-          onValueChange={(value) => {
-            setQuery(value)
-            setIsOpen(true)
-          }}
-          onFocus={() => setIsOpen(true)}
-          placeholder="Search anime..."
-        />
-        <div className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 transform items-center gap-1 sm:flex">
-          <Kbd>Ctrl</Kbd>
-          <span className="text-xs text-muted-foreground">+</span>
-          <Kbd>K</Kbd>
-        </div>
+        <InputGroup className="bg-background text-foreground shadow-xs transition-colors has-[[data-slot=input-group-control]:focus-visible]:border-primary has-[[data-slot=input-group-control]:focus-visible]:ring-0">
+          <InputGroupAddon className="pl-3 text-muted-foreground">
+            <SearchIcon className="size-4" />
+          </InputGroupAddon>
+          <CommandPrimitive.Input
+            data-slot="input-group-control"
+            value={query}
+            onValueChange={(value) => {
+              setQuery(value)
+              setIsOpen(true)
+            }}
+            onFocus={() => setIsOpen(true)}
+            placeholder="Search anime..."
+            className="placeholder:text-muted-foreground flex-1 rounded-none border-0 bg-transparent py-1.5 text-sm shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
+          />
+          <InputGroupAddon
+            align="inline-end"
+            className="hidden gap-1 text-muted-foreground sm:flex"
+          >
+            <Kbd>Ctrl</Kbd>
+            <Kbd>K</Kbd>
+          </InputGroupAddon>
+        </InputGroup>
 
         {shouldShowResults && (
           <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-md border bg-popover text-popover-foreground shadow-lg">

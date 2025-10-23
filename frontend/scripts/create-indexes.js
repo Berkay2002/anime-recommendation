@@ -11,20 +11,16 @@ async function createIndexes() {
   let uri = process.env.MONGODB_URI;
 
   if (!uri) {
-    // Try .env.local first, then .env
-    const envFiles = ['.env.local', '.env'];
-    for (const envFile of envFiles) {
-      try {
-        const envPath = path.join(__dirname, '..', envFile);
-        const envContent = fs.readFileSync(envPath, 'utf8');
-        const match = envContent.match(/MONGODB_URI=(.+)/);
-        if (match) {
-          uri = match[1].trim();
-          break;
-        }
-      } catch (error) {
-        // Try next file
+    // Try .env.local next
+    try {
+      const envPath = path.join(__dirname, '..', '.env.local');
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      const match = envContent.match(/MONGODB_URI=(.+)/);
+      if (match) {
+        uri = match[1].trim();
       }
+    } catch (error) {
+      // Ignore and fall through to failure message
     }
   }
 
