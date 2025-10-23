@@ -2,6 +2,9 @@
 
 import clientPromise from '../../../../../lib/mongodb';
 
+// Ensure route is dynamically rendered (no caching)
+export const dynamic = 'force-dynamic';
+
 interface SimilarAnime {
   anime_id: number;
   title: string;
@@ -15,9 +18,11 @@ interface Recommendation {
   similar_anime: SimilarAnime[];
 }
 
-export async function GET(request: Request): Promise<Response> {
-    const url = new URL(request.url);
-    const id = url.pathname.split('/').pop();
+export async function GET(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+): Promise<Response> {
+    const { id } = await params;
     const numericId = Number(id);
 
     if (isNaN(numericId)) {
