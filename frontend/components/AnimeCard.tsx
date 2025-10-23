@@ -31,7 +31,7 @@ const AnimeCard: React.FC<AnimeCardProps> = ({ anime, cardRef, iconType, onSelec
         onRemove(anime);
       }
     }, 300);
-  }, [iconType, onSelect, onRemove, anime]);
+  }, [iconType, onSelect, onRemove, anime.anime_id]);
 
   const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     e.currentTarget.style.transform = 'scale(1.05)';
