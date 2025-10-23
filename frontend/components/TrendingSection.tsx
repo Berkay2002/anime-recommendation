@@ -1,54 +1,92 @@
-"use client";
+"use client"
 
-import AnimatedAnimeCard from './AnimeCard';
-import ScrollButton from './ScrollButton';
-import SectionHeader from './SectionHeader';
-import { useFetchData } from '../hooks/useFetchData';
-import { useScroll } from '../hooks/useScroll';
-import { useMemo, memo } from 'react';
+import { memo, useMemo } from "react"
+
+import { useFetchData } from "@/hooks/useFetchData"
+import { useScroll } from "@/hooks/useScroll"
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
+import { Skeleton } from "./ui/skeleton"
+import AnimatedAnimeCard from "./AnimatedAnimeCard"
+import ScrollButton from "./ScrollButton"
+import SectionHeader from "./SectionHeader"
 
 interface Anime {
-  anime_id: number;
-  English?: string;
-  Japanese?: string;
-  image_url?: string;
-  Popularity?: number;
+  anime_id: number
+  English?: string
+  Japanese?: string
+  image_url?: string
+  Popularity?: number
 }
 
 interface TrendingSectionProps {
-  onSelectAnime: (anime: Anime) => void;
-  selectedAnimeIdSet: Set<number>;
+  onSelectAnime: (anime: Anime) => void
+  selectedAnimeIdSet: Set<number>
 }
 
-function TrendingSection({ onSelectAnime, selectedAnimeIdSet }: TrendingSectionProps) {
-  const [trendingAnime, loading, error] = useFetchData<Anime[]>('/api/anime/metadata?sortBy=Popularity');
-  const { containerRef, cardRef, showLeftArrow, showRightArrow, scrollLeft, scrollRight } = useScroll();
+function TrendingSection({
+  onSelectAnime,
+  selectedAnimeIdSet,
+}: TrendingSectionProps) {
+  const [trendingAnime, loading, error] = useFetchData<Anime[]>(
+    "/api/anime/metadata?sortBy=Popularity"
+  )
+  const {
+    containerRef,
+    cardRef,
+    showLeftArrow,
+    showRightArrow,
+    scrollLeft,
+    scrollRight,
+  } = useScroll()
 
-  // Use useMemo and Set for O(1) lookup instead of O(n) array.includes()
   const filteredAnime = useMemo(() => {
-    if (!trendingAnime || !Array.isArray(trendingAnime)) return [];
-    return trendingAnime.filter(anime => !selectedAnimeIdSet.has(anime.anime_id));
-  }, [trendingAnime, selectedAnimeIdSet]);
+    if (!Array.isArray(trendingAnime)) return []
+    return trendingAnime.filter(
+      (anime) => !selectedAnimeIdSet.has(anime.anime_id)
+    )
+  }, [selectedAnimeIdSet, trendingAnime])
 
-  if (loading) return <div className="text-center py-8">Loading trending anime...</div>;
-  if (error) return <div className="text-center py-8 text-red-500">Error loading trending anime. Please try refreshing the page.</div>;
-  if (!filteredAnime || filteredAnime.length === 0) return null;
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex gap-4 px-6 pb-6 pt-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton
+              key={`trending-skeleton-${index}`}
+              className="h-[19rem] w-[13rem] rounded-2xl border border-border/40 bg-card/60"
+            />
+          ))}
+        </div>
+      )
+    }
 
-  return (
-    <section className="relative">
-      <SectionHeader title="Trending" />
-      <div className="relative flex items-center overflow-visible">
+    if (error) {
+      const message =
+        typeof error === "string"
+          ? error
+          : error?.message ?? "Please try again in a moment."
+
+      return (
+        <div className="px-6 pb-6">
+          <Alert variant="destructive">
+            <AlertTitle>Could not load trending anime</AlertTitle>
+            <AlertDescription>{message}</AlertDescription>
+          </Alert>
+        </div>
+      )
+    }
+
+    if (!filteredAnime.length) {
+      return null
+    }
+
+    return (
+      <div className="relative">
         <div
-          className="flex space-x-4 overflow-hidden scrollbar-hide pl-6 h-350"
           ref={containerRef}
-          style={{
-            display: 'flex',
-            gap: '0.3rem',
-            overflowX: 'auto',
-            scrollBehavior: 'smooth',
-          }}
+          className="flex gap-4 overflow-x-auto px-6 pb-2 pt-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          {filteredAnime?.map((anime) => (
+          {filteredAnime.map((anime) => (
             <AnimatedAnimeCard
               key={anime.anime_id}
               anime={anime}
@@ -58,29 +96,35 @@ function TrendingSection({ onSelectAnime, selectedAnimeIdSet }: TrendingSectionP
             />
           ))}
         </div>
-
-        <ScrollButton direction="left" onClick={scrollLeft} show={showLeftArrow} />
-        <ScrollButton direction="right" onClick={scrollRight} show={showRightArrow} />
+        <ScrollButton
+          direction="left"
+          onClick={scrollLeft}
+          show={showLeftArrow}
+        />
+        <ScrollButton
+          direction="right"
+          onClick={scrollRight}
+          show={showRightArrow}
+        />
       </div>
+    )
+  }
 
-      <style jsx>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none; /* IE and Edge */
-          scrollbar-width: none; /* Firefox */
-        }
-        .fade-in {
-          animation: fadeIn 0.5s;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-      `}</style>
+  const content = renderContent()
+
+  if (!content) {
+    return null
+  }
+
+  return (
+    <section className="relative">
+      <SectionHeader
+        title="Trending"
+        description="See what other fans cannot stop watching right now."
+      />
+      {content}
     </section>
-  );
+  )
 }
 
-export default memo(TrendingSection);
+export default memo(TrendingSection)

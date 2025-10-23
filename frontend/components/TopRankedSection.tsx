@@ -1,86 +1,131 @@
-"use client";
+"use client"
 
-import AnimatedAnimeCard from './AnimeCard';
-import ScrollButton from './ScrollButton';
-import SectionHeader from './SectionHeader';
-import { useFetchData } from '../hooks/useFetchData';
-import { useScroll } from '../hooks/useScroll';
-import { useMemo, memo } from 'react';
+import { memo, useMemo } from "react"
+
+import { useFetchData } from "@/hooks/useFetchData"
+import { useScroll } from "@/hooks/useScroll"
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
+import { Skeleton } from "./ui/skeleton"
+import AnimatedAnimeCard from "./AnimatedAnimeCard"
+import ScrollButton from "./ScrollButton"
+import SectionHeader from "./SectionHeader"
 
 interface Anime {
-  anime_id: number;
-  English?: string;
-  Japanese?: string;
-  image_url?: string;
-  Rank?: number;
+  anime_id: number
+  English?: string
+  Japanese?: string
+  image_url?: string
+  Rank?: number
 }
 
 interface TopRankedSectionProps {
-  onSelectAnime: (anime: Anime) => void;
-  selectedAnimeIdSet: Set<number>;
+  onSelectAnime: (anime: Anime) => void
+  selectedAnimeIdSet: Set<number>
 }
 
-function TopRankedSection({ onSelectAnime, selectedAnimeIdSet }: TopRankedSectionProps) {
-  const [topRankedAnime, loading, error] = useFetchData<Anime[]>('/api/anime/metadata?sortBy=Rank');
-  const { containerRef, cardRef, showLeftArrow, showRightArrow, scrollLeft, scrollRight } = useScroll();
+function TopRankedSection({
+  onSelectAnime,
+  selectedAnimeIdSet,
+}: TopRankedSectionProps) {
+  const [topRankedAnime, loading, error] = useFetchData<Anime[]>(
+    "/api/anime/metadata?sortBy=Rank"
+  )
+  const {
+    containerRef,
+    cardRef,
+    showLeftArrow,
+    showRightArrow,
+    scrollLeft,
+    scrollRight,
+  } = useScroll()
 
-  // Use useMemo and Set for O(1) lookup instead of O(n) array.includes()
   const filteredAnime = useMemo(() => {
-    if (!topRankedAnime || !Array.isArray(topRankedAnime)) return [];
-    return topRankedAnime.filter(anime => !selectedAnimeIdSet.has(anime.anime_id));
-  }, [topRankedAnime, selectedAnimeIdSet]);
+    if (!Array.isArray(topRankedAnime)) return []
+    return topRankedAnime.filter(
+      (anime) => !selectedAnimeIdSet.has(anime.anime_id)
+    )
+  }, [selectedAnimeIdSet, topRankedAnime])
 
-  if (loading) return <div className="text-center py-8">Loading top ranked anime...</div>;
-  if (error) return <div className="text-center py-8 text-red-500">Error loading top ranked anime. Please try refreshing the page.</div>;
-  if (!filteredAnime || filteredAnime.length === 0) return null;
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex gap-4 px-6 pb-6 pt-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton
+              key={`top-ranked-skeleton-${index}`}
+              className="h-[19rem] w-[13rem] rounded-2xl border border-border/40 bg-card/60"
+            />
+          ))}
+        </div>
+      )
+    }
 
-  return (
-    <section className="relative">
-      <SectionHeader title="Top Ranked" />
-      <div className="relative flex items-center overflow-visible">
+    if (error) {
+      const message =
+        typeof error === "string"
+          ? error
+          : error?.message ?? "Please try again soon."
+
+      return (
+        <div className="px-6 pb-6">
+          <Alert variant="destructive">
+            <AlertTitle>Could not load top ranked anime</AlertTitle>
+            <AlertDescription>{message}</AlertDescription>
+          </Alert>
+        </div>
+      )
+    }
+
+    if (!filteredAnime.length) {
+      return null
+    }
+
+    return (
+      <div className="relative">
         <div
-          className="flex space-x-4 overflow-hidden scrollbar-hide pl-6 h-350"
           ref={containerRef}
-          style={{
-            display: 'flex',
-            gap: '0.3rem',
-            overflowX: 'auto',
-            scrollBehavior: 'smooth',
-          }}
+          className="flex gap-4 overflow-x-auto px-6 pb-2 pt-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          {filteredAnime?.map((anime) => (
+          {filteredAnime.map((anime) => (
             <AnimatedAnimeCard
-            key={anime.anime_id}
-            anime={anime}
-            cardRef={cardRef}
-            iconType="plus"
-            onSelect={onSelectAnime}
-          />
+              key={anime.anime_id}
+              anime={anime}
+              cardRef={cardRef}
+              iconType="plus"
+              onSelect={onSelectAnime}
+            />
           ))}
         </div>
 
-        <ScrollButton direction="left" onClick={scrollLeft} show={showLeftArrow} />
-        <ScrollButton direction="right" onClick={scrollRight} show={showRightArrow} />
+        <ScrollButton
+          direction="left"
+          onClick={scrollLeft}
+          show={showLeftArrow}
+        />
+        <ScrollButton
+          direction="right"
+          onClick={scrollRight}
+          show={showRightArrow}
+        />
       </div>
+    )
+  }
 
-      <style jsx>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none; /* IE and Edge */
-          scrollbar-width: none; /* Firefox */
-        }
-                  .fade-in {
-          animation: fadeIn 0.5s;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-      `}</style>
+  const content = renderContent()
+
+  if (!content) {
+    return null
+  }
+
+  return (
+    <section className="relative">
+      <SectionHeader
+        title="Top Ranked"
+        description="All-time greats according to the community."
+      />
+      {content}
     </section>
-  );
+  )
 }
 
-export default memo(TopRankedSection);
+export default memo(TopRankedSection)

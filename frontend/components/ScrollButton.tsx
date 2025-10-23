@@ -1,21 +1,41 @@
-// ScrollButton.tsx
+import { ChevronLeft, ChevronRight } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+import { Button } from "./ui/button"
+
 interface ScrollButtonProps {
-  direction: 'left' | 'right';
-  onClick: () => void;
-  show: boolean;
+  direction: "left" | "right"
+  onClick: () => void
+  show: boolean
 }
 
-const ScrollButton: React.FC<ScrollButtonProps> = ({ direction, onClick, show }) => {
-  if (!show) return null;
+const iconByDirection = {
+  left: <ChevronLeft className="size-4" aria-hidden="true" />,
+  right: <ChevronRight className="size-4" aria-hidden="true" />,
+}
+
+const ScrollButton: React.FC<ScrollButtonProps> = ({
+  direction,
+  onClick,
+  show,
+}) => {
+  if (!show) return null
 
   return (
-    <button
-      className={`absolute ${direction === 'left' ? 'left-2' : 'right-2'} top-1/2 transform -translate-y-1/2 bg-gray-800 text-white rounded-full p-3 z-10 hover:bg-gray-700 transition-shadow duration-200 shadow-md`}
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
       onClick={onClick}
+      aria-label={direction === "left" ? "Scroll left" : "Scroll right"}
+      className={cn(
+        "absolute top-1/2 -translate-y-1/2 rounded-full border border-border/60 bg-background/80 shadow-md backdrop-blur transition-all hover:bg-accent hover:text-accent-foreground",
+        direction === "left" ? "-left-2 md:-left-3" : "-right-2 md:-right-3"
+      )}
     >
-      {direction === 'left' ? '←' : '→'}
-    </button>
-  );
+      {iconByDirection[direction]}
+    </Button>
+  )
 }
 
-export default ScrollButton;
+export default ScrollButton

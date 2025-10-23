@@ -1,219 +1,330 @@
-"use client";
+"use client"
 
-import { useEffect, useState, useMemo } from "react";
-import { useParams } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
-import RecommendationList from '../../../components/RecommendationList';
-import { fetchAnimeWithCache, DEFAULT_ANIME_LIMIT } from '../../../lib/animeCache';
+import { useEffect, useMemo, useState } from "react"
+import Image from "next/image"
+import Link from "next/link"
+import { useParams } from "next/navigation"
+
+import RecommendationList from "@/components/RecommendationList"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { fetchAnimeWithCache, DEFAULT_ANIME_LIMIT } from "@/lib/animeCache"
 
 interface Anime {
-  anime_id: number;
-  title: string;
-  image_url?: string;
-  Description?: string;
-  Score?: number;
-  Rank?: number;
-  Popularity?: number;
-  Genres?: string[];
-  Demographic?: string;
-  Rating?: string;
-  bert_description: number[];
-  bert_genres: number[];
-  bert_demographic: number[];
-  bert_rating: number[];
-  bert_themes: number[];
+  anime_id: number
+  title: string
+  image_url?: string
+  Description?: string
+  Score?: number
+  Rank?: number
+  Popularity?: number
+  Genres?: string[]
+  Demographic?: string
+  Rating?: string
+  bert_description: number[]
+  bert_genres: number[]
+  bert_demographic: number[]
+  bert_rating: number[]
+  bert_themes: number[]
 }
 
 interface Recommendation {
-  anime_id: number;
-  title: string;
-  similarity: number;
+  anime_id: number
+  title: string
+  similarity: number
 }
 
+const skeletonPlaceholders = Array.from({ length: 3 })
+
 export default function AnimeDetailPage() {
-  const { id } = useParams();
-  const numericId = Number(id);
+  const { id } = useParams()
+  const numericId = Number(id)
 
-  const [anime, setAnime] = useState<Anime | null>(null);
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [reviews, setReviews] = useState<string[]>([]);
-  const [generalFeatures, setGeneralFeatures] = useState<Anime[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [anime, setAnime] = useState<Anime | null>(null)
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([])
+  const [reviews, setReviews] = useState<string[]>([])
+  const [generalFeatures, setGeneralFeatures] = useState<Anime[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
 
-  // Memoize the recommended anime mapping to avoid recalculation on every render
   const recommendedAnime = useMemo(() => {
-    if (recommendations.length === 0 || generalFeatures.length === 0) {
-      return [];
+    if (!recommendations.length || !generalFeatures.length) {
+      return []
     }
-    const featureMap = new Map(generalFeatures.map((anime) => [anime.anime_id, anime]));
+    const featureMap = new Map(
+      generalFeatures.map((item) => [item.anime_id, item])
+    )
     return recommendations
       .map((rec) => featureMap.get(rec.anime_id))
-      .filter(Boolean) as Anime[];
-  }, [recommendations, generalFeatures]);
+      .filter(Boolean) as Anime[]
+  }, [generalFeatures, recommendations])
 
   useEffect(() => {
     async function fetchGeneralFeatures() {
-      let metadataLoaded = false;
+      let metadataLoaded = false
 
       try {
-        // First, quickly load metadata for immediate UI display
-        const metadataResponse = await fetch(`/api/anime/metadata?limit=${DEFAULT_ANIME_LIMIT}`);
+        const metadataResponse = await fetch(
+          `/api/anime/metadata?limit=${DEFAULT_ANIME_LIMIT}`
+        )
 
         if (!metadataResponse.ok) {
-          throw new Error(`Failed to fetch metadata: ${metadataResponse.status}`);
+          throw new Error(`Failed to fetch metadata: ${metadataResponse.status}`)
         }
 
-        const metadataList: Anime[] = await metadataResponse.json();
+        const metadataList: Anime[] = await metadataResponse.json()
 
-        // Find and display the selected anime immediately
-        const selectedAnime = metadataList.find((anime) => anime.anime_id === numericId);
+        const selectedAnime = metadataList.find(
+          (item) => item.anime_id === numericId
+        )
         if (selectedAnime) {
-          setAnime(selectedAnime);
-          metadataLoaded = true;
+          setAnime(selectedAnime)
+          metadataLoaded = true
         }
 
-        // Always set loading to false once metadata is loaded
-        setLoading(false);
+        setLoading(false)
 
-        // Then load full data with embeddings from cache (or API)
-        // This happens in the background for recommendations
-        // Errors here won't affect the UI since metadata is already displayed
         try {
-          const featuresData = await fetchAnimeWithCache();
-          setGeneralFeatures(featuresData);
+          const featuresData = await fetchAnimeWithCache()
+          setGeneralFeatures(featuresData)
 
-          // Update selected anime with full data if needed
-          const selectedWithEmbeddings = featuresData.find((anime) => anime.anime_id === numericId);
-          if (selectedWithEmbeddings) setAnime(selectedWithEmbeddings);
+          const selectedWithEmbeddings = featuresData.find(
+            (item) => item.anime_id === numericId
+          )
+          if (selectedWithEmbeddings) {
+            setAnime(selectedWithEmbeddings)
+          }
         } catch (embeddingError) {
-          console.error("Error fetching embeddings (recommendations will be unavailable):", embeddingError);
-          // Don't throw - we already have metadata for display
+          console.error(
+            "Error fetching embeddings (recommendations will be unavailable):",
+            embeddingError
+          )
         }
-      } catch (error) {
-        console.error("Error fetching anime metadata:", error);
-        // Only set loading to false if metadata hasn't been loaded yet
+      } catch (metadataError) {
+        console.error("Error fetching anime metadata:", metadataError)
         if (!metadataLoaded) {
-          setLoading(false);
+          setLoading(false)
         }
       }
     }
 
-    fetchGeneralFeatures();
-  }, [id, numericId]);
+    fetchGeneralFeatures()
+  }, [numericId])
 
   useEffect(() => {
     if (anime && generalFeatures.length > 0) {
-      const worker = new Worker("/worker.js");
+      const worker = new Worker("/worker.js")
 
       worker.postMessage({
         selectedEmbedding: anime,
         allEmbeddings: generalFeatures,
-        weights: { bert_description: 0.4, bert_genres: 0.35, bert_demographic: 0.15, bert_themes: 0.1 },
-      });
+        weights: {
+          bert_description: 0.4,
+          bert_genres: 0.35,
+          bert_demographic: 0.15,
+          bert_themes: 0.1,
+        },
+      })
 
-      worker.onmessage = (e) => {
-        setRecommendations(e.data);
-        worker.terminate();
-      };
+      worker.onmessage = (event) => {
+        setRecommendations(event.data)
+        worker.terminate()
+      }
 
-      worker.onerror = (error) => {
-        console.error('Worker error:', error);
-        worker.terminate();
-      };
+      worker.onerror = (workerError) => {
+        console.error("Worker error:", workerError)
+        worker.terminate()
+      }
 
-      return () => worker.terminate(); // Cleanup to avoid memory leaks
+      return () => worker.terminate()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [anime?.anime_id, generalFeatures]); // Only trigger when anime ID or features change
+  }, [anime, generalFeatures])
 
   useEffect(() => {
-    const controller = new AbortController();
-    const signal = controller.signal;
+    const controller = new AbortController()
+    const { signal } = controller
 
     async function fetchReviews() {
       try {
-        const response = await fetch(`/api/anime/reviews/${id}`, { signal });
+        const response = await fetch(`/api/anime/reviews/${id}`, { signal })
         if (!response.ok) {
-          throw new Error(`Failed to fetch reviews: ${response.statusText}`);
+          throw new Error(`Failed to fetch reviews: ${response.statusText}`)
         }
-        const data = await response.json();
-        setReviews(data.reviews || []);
-      } catch (error: any) {
-        if (error.name === "AbortError") {
-          console.log("Fetch aborted");
+        const data = await response.json()
+        setReviews(data.reviews || [])
+      } catch (reviewsError: any) {
+        if (reviewsError.name === "AbortError") {
+          console.debug("Reviews fetch aborted")
         } else {
-          console.error("Error fetching reviews:", error);
+          console.error("Error fetching reviews:", reviewsError)
         }
       }
     }
 
-    fetchReviews();
+    fetchReviews()
 
-    // Rensa upp om id ändras eller om komponenten avmonteras
     return () => {
-      controller.abort();
-    };
-  }, [id]);
+      controller.abort()
+    }
+  }, [id])
 
   if (loading) {
-    return <p className="container mx-auto p-4">Loading...</p>;
+    return (
+      <div className="container mx-auto flex flex-col gap-6 px-6 py-8">
+        <Skeleton className="h-[28rem] w-full rounded-3xl border border-border/40 bg-card/60" />
+        <Skeleton className="h-48 w-full rounded-3xl border border-border/40 bg-card/40" />
+      </div>
+    )
   }
 
+  if (!anime) {
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <Alert variant="destructive">
+          <AlertTitle>Anime not found</AlertTitle>
+          <AlertDescription>
+            We could not locate the title you were looking for.
+          </AlertDescription>
+        </Alert>
+      </div>
+    )
+  }
+
+  const stats = [
+    { label: "Score", value: anime.Score ?? "N/A" },
+    { label: "Rank", value: anime.Rank ?? "N/A" },
+    { label: "Popularity", value: anime.Popularity ?? "N/A" },
+    { label: "Demographic", value: anime.Demographic ?? "N/A" },
+    { label: "Rating", value: anime.Rating ?? "N/A" },
+  ]
+
   return (
-    <div className="container mx-auto p-4">
-      {anime ? (
-        <>
-          <div className="flex flex-col md:flex-row">
-            <div className="md:w-1/3">
-              <Image
-                src={anime.image_url || "/placeholder.jpg"}
-                alt={anime.title || "Anime Image"}
-                width={200}
-                height={300}
-                className="object-cover w-full h-full rounded-lg"
-              />
-            </div>
-            <div className="md:w-2/3 md:pl-6">
-              <h1 className="text-2xl font-bold text-blue-600">{anime.title || "Unknown Title"}</h1>
-              <p className="text-gray-700 mt-2">
-                {anime.Description || "No description available."}
-              </p>
-              <div className="mt-4 space-y-2">
-                <p><strong>Score:</strong> {anime.Score ?? "N/A"}</p>
-                <p><strong>Rank:</strong> {anime.Rank ?? "N/A"}</p>
-                <p><strong>Popularity:</strong> {anime.Popularity ?? "N/A"}</p>
-                <p><strong>Genres:</strong> {anime.Genres?.join(", ") || "N/A"}</p>
-                <p><strong>Demographic:</strong> {anime.Demographic || "N/A"}</p>
-                <p><strong>Rating:</strong> {anime.Rating || "N/A"}</p>
-              </div>
-            </div>
-          </div>
-          <h2 className="mt-8 text-xl font-semibold">Recommendations:</h2>
-          {recommendedAnime.length > 0 ? (
-            <RecommendationList
-              recommendedAnime={recommendedAnime}
-              showIcon={false}
+    <div className="container mx-auto flex flex-col gap-10 px-6 py-8">
+      <Card className="overflow-hidden border border-border/60 bg-card/80 shadow-sm">
+        <CardContent className="flex flex-col gap-6 px-4 py-6 md:flex-row md:items-start md:gap-8">
+          <div className="relative aspect-[2/3] w-full max-w-[220px] shrink-0 overflow-hidden rounded-3xl border border-border/40 bg-muted">
+            <Image
+              src={anime.image_url || "/placeholder.jpg"}
+              alt={anime.title || "Anime artwork"}
+              fill
+              sizes="220px"
+              className="object-cover"
             />
-          ) : (
-            <p className="text-gray-500">No recommendations available.</p>
-          )}
-          <h2 className="mt-8 text-xl font-semibold">Reviews:</h2>
-          <div className="mt-4 space-y-4">
-            {reviews && reviews.length > 0 ? (
-              reviews.map((review, index) => (
-                <div key={index} className="bg-gray-100 p-4 rounded-sm shadow-sm">
-                  <p className="text-gray-800">{review}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500">No reviews available.</p>
-            )}
           </div>
-        </>
-      ) : (
-        <p className="text-gray-500">Anime not found.</p>
-      )}
+
+          <div className="flex flex-1 flex-col gap-6">
+            <div className="space-y-3">
+              <h1 className="text-3xl font-semibold leading-tight tracking-tight text-foreground">
+                {anime.title || "Unknown Title"}
+              </h1>
+              {anime.Genres?.length ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  {anime.Genres.map((genre) => (
+                    <Badge
+                      key={`${anime.anime_id}-${genre}`}
+                      variant="outline"
+                      className="rounded-full"
+                    >
+                      {genre}
+                    </Badge>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <p className="text-base leading-relaxed text-muted-foreground">
+              {anime.Description || "No description available for this title."}
+            </p>
+
+            <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {stats.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-2xl border border-border/50 bg-background/60 p-4"
+                >
+                  <dt className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                    {stat.label}
+                  </dt>
+                  <dd className="text-lg font-semibold text-foreground">
+                    {stat.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+
+            <ButtonRow animeId={anime.anime_id} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <section className="space-y-4" id="recommendations">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+            Recommendations
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Similar shows based on description, genres, demographics, and
+            themes.
+          </p>
+        </div>
+        {recommendedAnime.length ? (
+          <RecommendationList recommendedAnime={recommendedAnime} showIcon={false} />
+        ) : (
+          <Alert>
+            <AlertTitle>No recommendations yet</AlertTitle>
+            <AlertDescription>
+              We could not generate any similar titles for this show.
+            </AlertDescription>
+          </Alert>
+        )}
+      </section>
+
+      <section className="space-y-4" id="reviews">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+            Reviews
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            What fans are saying about this anime.
+          </p>
+        </div>
+        {reviews.length ? (
+          <div className="grid gap-4">
+            {reviews.map((review, index) => (
+              <Card
+                key={`review-${index}`}
+                className="border border-border/60 bg-card/80 shadow-sm"
+              >
+                <CardContent className="px-4 py-4 text-sm leading-relaxed text-muted-foreground">
+                  {review}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Alert>
+            <AlertTitle>No reviews available</AlertTitle>
+            <AlertDescription>
+              Be the first to share your thoughts on this title.
+            </AlertDescription>
+          </Alert>
+        )}
+      </section>
     </div>
-  );
+  )
+}
+
+function ButtonRow({ animeId }: { animeId: number }) {
+  return (
+    <div className="flex flex-wrap gap-3">
+      <Button asChild>
+        <Link href={`/anime/${animeId}`}>View full details</Link>
+      </Button>
+      <Button asChild variant="outline">
+        <Link href="#reviews">Jump to reviews</Link>
+      </Button>
+    </div>
+  )
 }

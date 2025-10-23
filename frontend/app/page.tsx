@@ -1,82 +1,94 @@
-// frontend/app/page.tsx
-"use client";
+"use client"
 
-import YourChoiceSection from '../components/YourChoiceSection';
-import RecommendedSection from '../components/RecommendedSection';
-import TrendingSection from '../components/TrendingSection';
-import TopRankedSection from '../components/TopRankedSection';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from "react"
+
+import RecommendedSection from "@/components/RecommendedSection"
+import TopRankedSection from "@/components/TopRankedSection"
+import TrendingSection from "@/components/TrendingSection"
+import YourChoiceSection from "@/components/YourChoiceSection"
 
 interface Anime {
-  anime_id: number;
-  English?: string;
-  Japanese?: string;
-  image_url?: string;
-  // Add other necessary fields
+  anime_id: number
+  English?: string
+  Japanese?: string
+  image_url?: string
 }
 
-const HomePage: React.FC = () => {
-  const [selectedAnime, setSelectedAnime] = useState<Anime[]>([]);
-  const [selectedAnimeIds, setSelectedAnimeIds] = useState<number[]>([]);
+const HomePage = () => {
+  const [selectedAnime, setSelectedAnime] = useState<Anime[]>([])
+  const [selectedAnimeIds, setSelectedAnimeIds] = useState<number[]>([])
 
-  // Create a Set for O(1) lookup performance
-  const selectedAnimeIdSet = useMemo(() => new Set(selectedAnimeIds), [selectedAnimeIds]);
+  const selectedAnimeIdSet = useMemo(
+    () => new Set(selectedAnimeIds),
+    [selectedAnimeIds]
+  )
 
-  // Load saved choices from localStorage on mount
+  const syncSelections = useCallback((nextSelections: Anime[]) => {
+    setSelectedAnimeIds(nextSelections.map((item) => item.anime_id))
+    localStorage.setItem("userChoices", JSON.stringify(nextSelections))
+  }, [])
+
   useEffect(() => {
-    const savedChoices = localStorage.getItem('userChoices');
+    const savedChoices = localStorage.getItem("userChoices")
     if (savedChoices) {
       try {
-        const parsedChoices: Anime[] = JSON.parse(savedChoices);
-        setSelectedAnime(parsedChoices);
-        setSelectedAnimeIds(parsedChoices.map((anime) => anime.anime_id));
-      } catch (error) {
-        console.error('Failed to parse saved choices from localStorage:', error);
-        localStorage.removeItem('userChoices'); // Clear invalid data
+        const parsedChoices: Anime[] = JSON.parse(savedChoices)
+        setSelectedAnime(parsedChoices)
+        setSelectedAnimeIds(parsedChoices.map((anime) => anime.anime_id))
+      } catch (parseError) {
+        console.error("Failed to parse saved choices from localStorage:", parseError)
+        localStorage.removeItem("userChoices")
       }
     }
-  }, []);
+  }, [])
 
-  const handleSelectAnime = useCallback((anime: Anime) => {
-    if (!selectedAnimeIdSet.has(anime.anime_id)) {
-      const updatedSelectedAnime = [...selectedAnime, anime];
-      setSelectedAnime(updatedSelectedAnime);
-      setSelectedAnimeIds([...selectedAnimeIds, anime.anime_id]);
-      // Save to localStorage
-      localStorage.setItem('userChoices', JSON.stringify(updatedSelectedAnime));
-    }
-  }, [selectedAnime, selectedAnimeIds, selectedAnimeIdSet]);
+  const handleSelectAnime = useCallback(
+    (anime: Anime) => {
+      setSelectedAnime((prev) => {
+        if (prev.some((item) => item.anime_id === anime.anime_id)) {
+          return prev
+        }
+        const nextSelections = [...prev, anime]
+        syncSelections(nextSelections)
+        return nextSelections
+      })
+    },
+    [syncSelections]
+  )
 
-  const handleRemoveAnime = useCallback((anime: Anime) => {
-    const updatedSelectedAnime = selectedAnime.filter((a) => a.anime_id !== anime.anime_id);
-    setSelectedAnime(updatedSelectedAnime);
-    setSelectedAnimeIds(updatedSelectedAnime.map((a) => a.anime_id));
-    // Save to localStorage
-    localStorage.setItem('userChoices', JSON.stringify(updatedSelectedAnime));
-  }, [selectedAnime]);
+  const handleRemoveAnime = useCallback(
+    (anime: Anime) => {
+      setSelectedAnime((prev) => {
+        const nextSelections = prev.filter(
+          (item) => item.anime_id !== anime.anime_id
+        )
+        syncSelections(nextSelections)
+        return nextSelections
+      })
+    },
+    [syncSelections]
+  )
 
   return (
-    <div>
-      <div className="space-y-8">
-        <YourChoiceSection
-          selectedAnime={selectedAnime}
-          onRemoveAnime={handleRemoveAnime}
-        />
-        <RecommendedSection
-          selectedAnimeIds={selectedAnimeIds}
-          onSelectAnime={handleSelectAnime}
-        />
-        <TrendingSection
-          onSelectAnime={handleSelectAnime}
-          selectedAnimeIdSet={selectedAnimeIdSet}
-        />
-        <TopRankedSection
-          onSelectAnime={handleSelectAnime}
-          selectedAnimeIdSet={selectedAnimeIdSet}
-        />
-      </div>
+    <div className="container mx-auto flex flex-col gap-10 px-6 py-8">
+      <YourChoiceSection
+        selectedAnime={selectedAnime}
+        onRemoveAnime={handleRemoveAnime}
+      />
+      <RecommendedSection
+        selectedAnimeIds={selectedAnimeIds}
+        onSelectAnime={handleSelectAnime}
+      />
+      <TrendingSection
+        onSelectAnime={handleSelectAnime}
+        selectedAnimeIdSet={selectedAnimeIdSet}
+      />
+      <TopRankedSection
+        onSelectAnime={handleSelectAnime}
+        selectedAnimeIdSet={selectedAnimeIdSet}
+      />
     </div>
-  );
-};
+  )
+}
 
-export default HomePage;
+export default HomePage

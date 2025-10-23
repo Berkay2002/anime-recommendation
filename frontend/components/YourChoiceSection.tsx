@@ -1,38 +1,43 @@
 // YourChoiceSection.tsx
 "use client";
 
-import SectionHeader from './SectionHeader';
-import AnimatedAnimeCard from './AnimatedAnimeCard';
+import AnimatedAnimeCard from "./AnimatedAnimeCard"
+import SectionHeader from "./SectionHeader"
 
 interface Anime {
-  anime_id: number;
-  English?: string;
-  Japanese?: string;
-  image_url?: string;
+  anime_id: number
+  English?: string
+  Japanese?: string
+  image_url?: string
 }
 
 interface YourChoiceSectionProps {
-  selectedAnime: Anime[];
-  onRemoveAnime: (anime: Anime) => void;
+  selectedAnime: Anime[]
+  onRemoveAnime: (anime: Anime) => void
 }
 
-export default function YourChoiceSection({ selectedAnime, onRemoveAnime }: YourChoiceSectionProps) {
-  if (selectedAnime.length === 0) return null;
+export default function YourChoiceSection({
+  selectedAnime,
+  onRemoveAnime,
+}: YourChoiceSectionProps) {
+  if (selectedAnime.length === 0) return null
 
   return (
     <section className="relative">
-      <SectionHeader title="Your Choice" />
-      <div className="flex space-x-4 overflow-hidden pl-6 h-350">
+      <SectionHeader
+        title="Your Selection"
+        description="Fine-tune your picks anytime — remove a show to explore new matches."
+      />
+      <div className="flex gap-4 overflow-x-auto px-6 pb-2 pt-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {selectedAnime.map((anime) => (
           <AnimatedAnimeCard
             key={anime.anime_id}
             anime={anime}
-            cardRef={{ current: null }}
             iconType="minus"
             onRemove={onRemoveAnime}
           />
         ))}
       </div>
     </section>
-  );
+  )
 }

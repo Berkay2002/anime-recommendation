@@ -1,41 +1,51 @@
-import AnimatedAnimeCard from './AnimatedAnimeCard';
-import { useScroll } from '../hooks/useScroll';
-import ScrollButton from './ScrollButton';
-import { memo } from 'react';
+import { memo } from "react"
+
+import { useScroll } from "@/hooks/useScroll"
+import AnimatedAnimeCard from "./AnimatedAnimeCard"
+import ScrollButton from "./ScrollButton"
 
 interface Anime {
-    anime_id: number;
-    English?: string;
-    Japanese?: string;
-    image_url?: string;
-    bert_description: number[];
-    bert_genres: number[];
-    bert_demographic: number[];
-    bert_rating: number[];
-    bert_themes: number[];
-    title: string;
-  }
-
-interface RecommendationListProps {
-  recommendedAnime: Anime[];
-  onSelectAnime?: (anime: Anime) => void;
-  showIcon?: boolean;
+  anime_id: number
+  English?: string
+  Japanese?: string
+  image_url?: string
+  bert_description: number[]
+  bert_genres: number[]
+  bert_demographic: number[]
+  bert_rating: number[]
+  bert_themes: number[]
+  title: string
 }
 
-function RecommendationList({ recommendedAnime, onSelectAnime, showIcon = true }: RecommendationListProps) {
-  const { containerRef, cardRef, showLeftArrow, showRightArrow, scrollLeft, scrollRight } = useScroll();
+interface RecommendationListProps {
+  recommendedAnime: Anime[]
+  onSelectAnime?: (anime: Anime) => void
+  showIcon?: boolean
+}
+
+function RecommendationList({
+  recommendedAnime,
+  onSelectAnime,
+  showIcon = true,
+}: RecommendationListProps) {
+  const {
+    containerRef,
+    cardRef,
+    showLeftArrow,
+    showRightArrow,
+    scrollLeft,
+    scrollRight,
+  } = useScroll()
+
+  if (!recommendedAnime.length) {
+    return null
+  }
 
   return (
-    <div className="relative flex items-center">
+    <div className="relative">
       <div
-        className="flex space-x-4 overflow-hidden scrollbar-hide pl-6 h-350"
         ref={containerRef}
-        style={{
-          display: 'flex',
-          gap: '0.3rem',
-          overflowX: 'auto',
-          scrollBehavior: 'smooth',
-        }}
+        className="flex gap-4 overflow-x-auto px-6 pb-2 pt-4 transition-[scroll-snap-type] scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {recommendedAnime.map((anime) => (
           <AnimatedAnimeCard
@@ -49,28 +59,18 @@ function RecommendationList({ recommendedAnime, onSelectAnime, showIcon = true }
         ))}
       </div>
 
-      <ScrollButton direction="left" onClick={scrollLeft} show={showLeftArrow} />
-      <ScrollButton direction="right" onClick={scrollRight} show={showRightArrow} />
-
-      {/* Styles can be moved to a separate CSS file if preferred */}
-      <style jsx>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .fade-in {
-          animation: fadeIn 0.5s;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-      `}</style>
+      <ScrollButton
+        direction="left"
+        onClick={scrollLeft}
+        show={showLeftArrow}
+      />
+      <ScrollButton
+        direction="right"
+        onClick={scrollRight}
+        show={showRightArrow}
+      />
     </div>
-  );
+  )
 }
 
-export default memo(RecommendationList);
+export default memo(RecommendationList)

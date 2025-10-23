@@ -1,16 +1,24 @@
+import { Separator } from "./ui/separator"
+
 interface SectionHeaderProps {
-    title: string;
-  }
-  
-  const SectionHeader: React.FC<SectionHeaderProps> = ({ title }) => {
-    return (
-      <div className="ml-9 mt-4">
-        <h3 className="text-xl font-bold text-white pb-1 inline-block relative">
+  title: string
+  description?: string
+}
+
+const SectionHeader: React.FC<SectionHeaderProps> = ({ title, description }) => {
+  return (
+    <div className="space-y-2 px-6 pt-6">
+      <div>
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">
           {title}
-          <span className="absolute bottom-0 left-0 w-[550%] h-[2.5px] bg-teal-500 mt-1 rounded-full"></span>
-        </h3>
+        </h2>
+        {description ? (
+          <p className="text-sm text-muted-foreground">{description}</p>
+        ) : null}
       </div>
-    );
-  };
-  
-  export default SectionHeader;
+      <Separator className="bg-primary/60" />
+    </div>
+  )
+}
+
+export default SectionHeader

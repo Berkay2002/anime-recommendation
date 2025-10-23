@@ -1,153 +1,323 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react"
+import Image from "next/image"
+import Link from "next/link"
+import { Check, ChevronsUpDown, X } from "lucide-react"
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
+
+const genreOptions = [
+  "Action",
+  "Adventure",
+  "Comedy",
+  "Drama",
+  "Fantasy",
+  "Horror",
+  "Romance",
+  "Sci-Fi",
+] as const
+
+type GenreOption = (typeof genreOptions)[number]
 
 interface Anime {
-  anime_id: number;
-  title: string;
-  image_url?: string;
-  Genres: string[];
-  rating: number;
-  Description: string; // Assuming Description is part of the anime data
+  anime_id: number
+  title: string
+  image_url?: string
+  Genres?: string[]
+  rating?: number
+  Description?: string
+}
+
+const skeletonPlaceholders = Array.from({ length: 6 })
+
+const formatRating = (rating?: number) => {
+  if (typeof rating !== "number" || !Number.isFinite(rating)) return "N/A"
+  return rating.toFixed(1)
 }
 
 const AnimePage: React.FC = () => {
-  const [animeList, setAnimeList] = useState<Anime[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [animeList, setAnimeList] = useState<Anime[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedGenres, setSelectedGenres] = useState<GenreOption[]>([])
+  const [genrePopoverOpen, setGenrePopoverOpen] = useState(false)
 
   useEffect(() => {
-    // Use metadata endpoint for faster loading (no heavy embeddings needed for list view)
-    const apiUrl = '/api/anime/metadata?limit=500';
+    const apiUrl = "/api/anime/metadata?limit=500"
 
     fetch(apiUrl)
-      .then(response => {
+      .then((response) => {
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error(`HTTP error! status: ${response.status}`)
         }
-        return response.json();
+        return response.json()
       })
-      .then(data => {
-        setAnimeList(data);
-        setLoading(false);
+      .then((data) => {
+        setAnimeList(data)
+        setLoading(false)
       })
-      .catch(error => {
-        console.error('Error fetching anime list:', error);
-        setError(`Failed to load anime list. Please try again later. Error: ${error.message}`);
-        setLoading(false);
-      });
-  }, []);
+      .catch((fetchError: Error) => {
+        console.error("Error fetching anime list:", fetchError)
+        setError(
+          `Failed to load anime list. Please try again later. (${fetchError.message})`
+        )
+        setLoading(false)
+      })
+  }, [])
 
-  // Memoize the filtered and sorted list to avoid recalculating on every render
+  const toggleGenre = useCallback((genre: GenreOption) => {
+    setSelectedGenres((prev) =>
+      prev.includes(genre)
+        ? prev.filter((g) => g !== genre)
+        : [...prev, genre]
+    )
+  }, [])
+
+  const removeGenre = useCallback((genre: GenreOption) => {
+    setSelectedGenres((prev) => prev.filter((g) => g !== genre))
+  }, [])
+
   const filteredAnimeList = useMemo(() => {
-    if (selectedGenres.length === 0) {
-      return animeList;
+    if (!selectedGenres.length) {
+      return animeList
     }
 
-    // Pre-convert selected genres to lowercase for efficient comparison
-    const lowerSelectedGenres = selectedGenres.map(g => g.toLowerCase());
+    const lowerSelectedGenres = selectedGenres.map((genre) =>
+      genre.toLowerCase()
+    )
 
-    const filtered = animeList.filter(anime => {
-      if (!anime.Genres) return false;
-      const lowerAnimeGenres = anime.Genres.map(g => g.toLowerCase());
-      return lowerSelectedGenres.every(selectedGenre =>
-        lowerAnimeGenres.includes(selectedGenre)
-      );
-    });
+    return [...animeList]
+      .filter((anime) => {
+        if (!anime?.Genres?.length) return false
+        const lowerAnimeGenres = anime.Genres.map((genre) =>
+          genre.toLowerCase()
+        )
+        return lowerSelectedGenres.every((genre) =>
+          lowerAnimeGenres.includes(genre)
+        )
+      })
+      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+  }, [animeList, selectedGenres])
 
-    // Sort by rating (descending)
-    return filtered.sort((a, b) => b.rating - a.rating);
-  }, [selectedGenres, animeList]);
+  const hasSelection = selectedGenres.length > 0
 
-  const handleGenreChange = useCallback((genre: string) => {
-    setSelectedGenres(prevSelectedGenres =>
-      prevSelectedGenres.includes(genre)
-        ? prevSelectedGenres.filter(g => g !== genre)
-        : [...prevSelectedGenres, genre]
-    );
-  }, []);
-
-  const handleDropdownToggle = useCallback(() => {
-    setDropdownOpen(prev => !prev);
-  }, []);
-
-  const handleClickOutside = useCallback((event: MouseEvent) => {
-    if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-      setDropdownOpen(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [handleClickOutside]);
+  let content: ReactNode = null
 
   if (loading) {
-    return <p>Loading...</p>;
-  }
+    content = (
+      <div className="grid gap-4">
+        {skeletonPlaceholders.map((_, index) => (
+          <Skeleton
+            key={`anime-skeleton-${index}`}
+            className="h-56 w-full rounded-2xl border border-border/40 bg-card/60"
+          />
+        ))}
+      </div>
+    )
+  } else if (error) {
+    content = (
+      <Alert variant="destructive">
+        <AlertTitle>Something went wrong</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    )
+  } else if (!filteredAnimeList.length) {
+    content = (
+      <Alert>
+        <AlertTitle>No matches found</AlertTitle>
+        <AlertDescription>
+          Try selecting different genres to discover more series.
+        </AlertDescription>
+      </Alert>
+    )
+  } else {
+    content = (
+      <div className="grid gap-6">
+        {filteredAnimeList.map((anime) => (
+          <Card
+            key={anime.anime_id}
+            className="overflow-hidden border border-border/60 bg-card/80 shadow-sm"
+          >
+            <CardContent className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-start sm:gap-6">
+              <Link
+                href={`/anime/${anime.anime_id}`}
+                className="relative aspect-[2/3] w-full max-w-[180px] shrink-0 overflow-hidden rounded-2xl border border-border/50 bg-muted sm:w-40"
+              >
+                <Image
+                  src={anime.image_url || "/placeholder.jpg"}
+                  alt={anime.title || "Anime poster"}
+                  fill
+                  sizes="160px"
+                  className="object-cover transition duration-500 hover:scale-105"
+                />
+              </Link>
 
-  if (error) {
-    return <p>{error}</p>;
+              <div className="flex flex-1 flex-col gap-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-1">
+                    <Link
+                      href={`/anime/${anime.anime_id}`}
+                      className="text-xl font-semibold tracking-tight text-foreground transition hover:text-primary"
+                    >
+                      {anime.title}
+                    </Link>
+                    <p className="text-sm text-muted-foreground">
+                      Rating:{" "}
+                      <span className="font-medium text-foreground">
+                        {formatRating(anime.rating)}
+                      </span>
+                    </p>
+                  </div>
+
+                  <Button asChild variant="secondary" size="sm">
+                    <Link href={`/anime/${anime.anime_id}`}>
+                      View details
+                    </Link>
+                  </Button>
+                </div>
+
+                {anime.Description ? (
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {anime.Description}
+                  </p>
+                ) : null}
+
+                {anime.Genres?.length ? (
+                  <div className="flex flex-wrap gap-2">
+                    {anime.Genres.map((genre) => (
+                      <Badge key={`${anime.anime_id}-${genre}`} variant="outline">
+                        {genre}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
   }
 
   return (
-    <div style={{ display: 'flex' }}>
-      <div style={{ flex: 1 }}>
-        <h1>Anime List</h1>
-        <div>
-          <label htmlFor="genres">Select Genres:</label>
-          <div ref={dropdownRef} style={{ position: 'relative', display: 'inline-block' }}>
-            <button onClick={handleDropdownToggle} style={{ width: '200px', color: 'lightblue' }}>
-              {selectedGenres.length > 0 ? selectedGenres.join(', ') : 'Select Genres'}
-            </button>
-            {dropdownOpen && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, width: '200px', border: '1px solid #ccc', backgroundColor: 'white', zIndex: 1, color: 'black' }}>
-                {['Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Romance', 'Sci-Fi'].map(genre => (
-                  <div key={genre} style={{ padding: '5px' }}>
-                    <input
-                      type="checkbox"
-                      value={genre}
-                      checked={selectedGenres.includes(genre)}
-                      onChange={() => handleGenreChange(genre)}
-                    />
-                    <label style={{ marginLeft: '5px' }}>{genre}</label>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+    <div className="container mx-auto flex flex-col gap-6 px-6 py-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+            Explore Anime
+          </h1>
+          <p className="text-muted-foreground">
+            Browse the catalog and filter by genres you love.
+          </p>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {filteredAnimeList.map(anime => (
-            <div key={anime.anime_id} style={{ display: 'flex', marginBottom: '10px' }}>
-              <div style={{ flex: 1, cursor: 'pointer' }}>
-                {anime.title}
-              </div>
-              <div style={{ flex: 2, marginLeft: '20px', display: 'flex', alignItems: 'center' }}>
-                <Link href={`/anime/${anime.anime_id}`}>
-                  <Image
-                    src={anime.image_url || "/placeholder.jpg"}
-                    alt={anime.title || "Anime Image"}
-                    width={200}
-                    height={300}
-                    className="object-cover w-full h-full rounded-lg"
-                  />                  
-                </Link>
-                <p style={{ color: 'white', marginLeft: '20px' }}>{anime.Description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
 
-export default AnimePage;
+        <Popover open={genrePopoverOpen} onOpenChange={setGenrePopoverOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={genrePopoverOpen}
+              className="w-full justify-between border-border/60 bg-background/80 backdrop-blur sm:w-72"
+            >
+              <span className="text-sm font-medium">
+                {hasSelection
+                  ? `${selectedGenres.length} genre${
+                      selectedGenres.length > 1 ? "s" : ""
+                    } selected`
+                  : "Select genres"}
+              </span>
+              <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-60" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="p-0" align="end">
+            <Command>
+              <CommandInput placeholder="Search genres..." />
+              <CommandList>
+                <CommandEmpty>No genres found.</CommandEmpty>
+                <CommandGroup>
+                  {genreOptions.map((genre) => {
+                    const isSelected = selectedGenres.includes(genre)
+                    return (
+                      <CommandItem
+                        key={genre}
+                        value={genre}
+                        onSelect={() => toggleGenre(genre)}
+                        className="gap-2"
+                      >
+                        <Check
+                          className={cn(
+                            "size-4",
+                            isSelected ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {genre}
+                      </CommandItem>
+                    )
+                  })}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {hasSelection ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {selectedGenres.map((genre) => (
+            <Badge
+              key={`selected-${genre}`}
+              variant="secondary"
+              className="flex items-center gap-1.5 pr-0"
+            >
+              {genre}
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                className="h-6 w-6 rounded-full text-muted-foreground hover:text-destructive"
+                onClick={() => removeGenre(genre)}
+              >
+                <X className="size-3" aria-hidden="true" />
+                <span className="sr-only">Remove {genre}</span>
+              </Button>
+            </Badge>
+          ))}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => setSelectedGenres([])}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            Clear all
+          </Button>
+        </div>
+      ) : null}
+
+      {content}
+    </div>
+  )
+}
+
+export default AnimePage

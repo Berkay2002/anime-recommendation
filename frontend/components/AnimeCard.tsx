@@ -1,88 +1,116 @@
-// AnimeCard.tsx
-import Link from 'next/link';
-import Image from 'next/image';
-import { MutableRefObject, useState, useCallback, memo } from 'react';
-import { FaPlus, FaMinus } from 'react-icons/fa';
+import Image from "next/image"
+import Link from "next/link"
+import {
+  memo,
+  MutableRefObject,
+  useCallback,
+  useRef,
+  useState,
+} from "react"
+import { Minus, Plus } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+import { Button } from "./ui/button"
+import { Card } from "./ui/card"
 
 interface Anime {
-  anime_id: number;
-  English?: string;
-  Japanese?: string;
-  image_url?: string;
+  anime_id: number
+  English?: string
+  Japanese?: string
+  image_url?: string
 }
 
 interface AnimeCardProps {
-  anime: Anime;
-  cardRef: MutableRefObject<HTMLDivElement | null>;
-  iconType: 'plus' | 'minus';
-  onSelect?: (anime: Anime) => void;
-  onRemove?: (anime: Anime) => void;
+  anime: Anime
+  cardRef?: MutableRefObject<HTMLDivElement | null>
+  iconType: "plus" | "minus"
+  onSelect?: (anime: Anime) => void
+  onRemove?: (anime: Anime) => void
+  showIcon?: boolean
 }
 
-const AnimeCard: React.FC<AnimeCardProps> = ({ anime, cardRef, iconType, onSelect, onRemove }) => {
-  const [visible, setVisible] = useState(true);
+const actionCopy: Record<"plus" | "minus", string> = {
+  plus: "Add anime to your selection",
+  minus: "Remove anime from your selection",
+}
 
-  const handleClick = useCallback(() => {
-    setVisible(false);
+const AnimeCard: React.FC<AnimeCardProps> = ({
+  anime,
+  cardRef,
+  iconType,
+  onSelect,
+  onRemove,
+  showIcon = true,
+}) => {
+  const [isFading, setIsFading] = useState(false)
+  const fallbackRef = useRef<HTMLDivElement>(null)
+  const resolvedRef = cardRef ?? fallbackRef
+
+  const handleAction = useCallback(() => {
+    if (!iconType) return
+
+    setIsFading(true)
+
     setTimeout(() => {
-      if (iconType === 'plus' && onSelect) {
-        onSelect(anime);
-      } else if (iconType === 'minus' && onRemove) {
-        onRemove(anime);
+      if (iconType === "plus" && onSelect) {
+        onSelect(anime)
+      } else if (iconType === "minus" && onRemove) {
+        onRemove(anime)
       }
-    }, 300);
-  }, [iconType, onSelect, onRemove, anime.anime_id]);
+    }, 220)
+  }, [anime, iconType, onRemove, onSelect])
 
-  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    e.currentTarget.style.transform = 'scale(1.05)';
-  }, []);
-
-  const handleMouseLeave = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    e.currentTarget.style.transform = 'scale(1)';
-  }, []);
+  const title = anime.English || anime.Japanese || "Untitled"
+  const ActionIcon = iconType === "plus" ? Plus : Minus
 
   return (
-    <div key={anime.anime_id} className={`ml-4 anime-card ${visible ? 'fade-in' : 'fade-out'}`} ref={cardRef}>
-      <div
-        className="min-w-[200px] h-[300px] relative rounded-lg overflow-hidden hover:shadow-lg transition-transform duration-300 ease-in-out group mt-4 mb-4 mr-6"
-        style={{
-          transform: 'scale(1)',
-          transition: 'transform 0.3s ease',
-          color: 'black',
-        }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <Link href={`/anime/${anime.anime_id}`} style={{ textDecoration: 'none' }}>
-          <div className="cursor-pointer">
-            <Image
-              src={anime.image_url || '/placeholder.png'}
-              alt={anime.English || anime.Japanese || 'No title'}
-              width={200}
-              height={300}
-              className="object-cover w-full h-full rounded-lg"
-            />
-            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2">
-              <div className="text-lg font-bold">{anime.English || anime.Japanese || 'No title'}</div>
+    <div
+      ref={resolvedRef}
+      className={cn(
+        "min-w-[13rem] max-w-[13rem] shrink-0 transition duration-300 ease-out",
+        isFading ? "opacity-0" : "opacity-100"
+      )}
+    >
+      <Card className="group relative h-full overflow-hidden rounded-2xl border border-border/60 bg-card/90 p-0 text-card-foreground shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+        {showIcon && iconType ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            aria-label={actionCopy[iconType]}
+            className="absolute right-3 top-3 z-20 rounded-full border border-border/80 bg-background/80 text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/15 hover:text-primary"
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              handleAction()
+            }}
+          >
+            <ActionIcon className="size-4" aria-hidden="true" />
+          </Button>
+        ) : null}
+
+        <Link href={`/anime/${anime.anime_id}`} className="block h-full">
+          <div className="relative h-full">
+            <div className="aspect-[2/3] overflow-hidden">
+              <Image
+                src={anime.image_url || "/placeholder.jpg"}
+                alt={title}
+                width={320}
+                height={480}
+                className="size-full object-cover transition duration-500 group-hover:scale-105"
+              />
+            </div>
+
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/90 via-background/60 to-transparent px-4 pb-4 pt-8">
+              <p className="text-sm font-semibold leading-tight tracking-tight text-card-foreground">
+                {title}
+              </p>
             </div>
           </div>
         </Link>
-        <div
-          className="absolute top-2 right-2 bg-white p-1 rounded-full cursor-pointer z-10"
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent the link from being triggered
-            handleClick();
-          }}
-        >
-          {iconType === 'plus' ? (
-            <FaPlus color="black" />
-          ) : (
-            <FaMinus color="black" />
-          )}
-        </div>
-      </div>
+      </Card>
     </div>
-  );
-};
+  )
+}
 
-export default memo(AnimeCard);
+export default memo(AnimeCard)

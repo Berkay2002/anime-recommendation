@@ -1,3 +1,4 @@
+import { ThemeProvider } from '@/components/theme-provider';
 import Navbar from '../components/Navbar';
 import '../styles/globals.css';
 
@@ -8,9 +9,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Meta tags and favicons can go here */}
       </head>
       <body className="bg-background text-white">
-        <Navbar />
-        {children}
-        
+        <ThemeProvider>
+          <Navbar />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
