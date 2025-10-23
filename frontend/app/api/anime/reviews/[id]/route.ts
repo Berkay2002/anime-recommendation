@@ -1,9 +1,14 @@
 import clientPromise from '../../../../../lib/mongodb';
 
-export async function GET(request: Request): Promise<Response> {
+// Ensure route is dynamically rendered (no caching)
+export const dynamic = 'force-dynamic';
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<Response> {
   try {
-    const url = new URL(request.url);
-    const id = url.pathname.split('/').pop();
+    const { id } = await params;
     const numericId = Number(id);
 
     if (isNaN(numericId)) {
