@@ -1,7 +1,7 @@
 // AnimeCard.tsx
 import Link from 'next/link';
 import Image from 'next/image';
-import { MutableRefObject, useState } from 'react';
+import { MutableRefObject, useState, useCallback, memo } from 'react';
 import { FaPlus, FaMinus } from 'react-icons/fa';
 
 interface Anime {
@@ -22,7 +22,7 @@ interface AnimeCardProps {
 const AnimeCard: React.FC<AnimeCardProps> = ({ anime, cardRef, iconType, onSelect, onRemove }) => {
   const [visible, setVisible] = useState(true);
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     setVisible(false);
     setTimeout(() => {
       if (iconType === 'plus' && onSelect) {
@@ -31,7 +31,15 @@ const AnimeCard: React.FC<AnimeCardProps> = ({ anime, cardRef, iconType, onSelec
         onRemove(anime);
       }
     }, 300);
-  };
+  }, [iconType, onSelect, onRemove, anime.anime_id]);
+
+  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.currentTarget.style.transform = 'scale(1.05)';
+  }, []);
+
+  const handleMouseLeave = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.currentTarget.style.transform = 'scale(1)';
+  }, []);
 
   return (
     <div key={anime.anime_id} className={`ml-4 anime-card ${visible ? 'fade-in' : 'fade-out'}`} ref={cardRef}>
@@ -42,12 +50,8 @@ const AnimeCard: React.FC<AnimeCardProps> = ({ anime, cardRef, iconType, onSelec
           transition: 'transform 0.3s ease',
           color: 'black',
         }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'scale(1.05)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-        }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <Link href={`/anime/${anime.anime_id}`} style={{ textDecoration: 'none' }}>
           <div className="cursor-pointer">
@@ -81,4 +85,4 @@ const AnimeCard: React.FC<AnimeCardProps> = ({ anime, cardRef, iconType, onSelec
   );
 };
 
-export default AnimeCard;
+export default memo(AnimeCard);

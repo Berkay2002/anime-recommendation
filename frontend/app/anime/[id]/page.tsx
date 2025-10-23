@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -39,7 +39,17 @@ export default function AnimeDetailPage() {
   const [reviews, setReviews] = useState<string[]>([]);
   const [generalFeatures, setGeneralFeatures] = useState<Anime[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [recommendedAnime, setRecommendedAnime] = useState<Anime[]>([]);
+
+  // Memoize the recommended anime mapping to avoid recalculation on every render
+  const recommendedAnime = useMemo(() => {
+    if (recommendations.length === 0 || generalFeatures.length === 0) {
+      return [];
+    }
+    const featureMap = new Map(generalFeatures.map((anime) => [anime.anime_id, anime]));
+    return recommendations
+      .map((rec) => featureMap.get(rec.anime_id))
+      .filter(Boolean) as Anime[];
+  }, [recommendations, generalFeatures]);
 
   useEffect(() => {
     async function fetchGeneralFeatures() {
@@ -77,9 +87,15 @@ export default function AnimeDetailPage() {
         worker.terminate();
       };
 
-      return () => worker.terminate(); // Cleanup för att undvika memory leaks
+      worker.onerror = (error) => {
+        console.error('Worker error:', error);
+        worker.terminate();
+      };
+
+      return () => worker.terminate(); // Cleanup to avoid memory leaks
     }
-  }, [anime, generalFeatures]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anime?.anime_id, generalFeatures]); // Only trigger when anime ID or features change
 
   useEffect(() => {
     const controller = new AbortController();
@@ -109,18 +125,6 @@ export default function AnimeDetailPage() {
       controller.abort();
     };
   }, [id]);
-
-  useEffect(() => {
-    if (recommendations.length > 0 && generalFeatures.length > 0) {
-      const featureMap = new Map(generalFeatures.map((anime) => [anime.anime_id, anime]));
-
-      const animeList = recommendations
-        .map((rec) => featureMap.get(rec.anime_id))
-        .filter(Boolean) as Anime[];
-
-      setRecommendedAnime(animeList);
-    }
-  }, [recommendations, generalFeatures]);
 
   if (loading) {
     return <p className="container mx-auto p-4">Loading...</p>;

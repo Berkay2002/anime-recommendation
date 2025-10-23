@@ -5,7 +5,7 @@ import YourChoiceSection from '../components/YourChoiceSection';
 import RecommendedSection from '../components/RecommendedSection';
 import TrendingSection from '../components/TrendingSection';
 import TopRankedSection from '../components/TopRankedSection';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Cookies from 'js-cookie';
 
 interface Anime {
@@ -20,6 +20,9 @@ const HomePage: React.FC = () => {
   const [selectedAnime, setSelectedAnime] = useState<Anime[]>([]);
   const [selectedAnimeIds, setSelectedAnimeIds] = useState<number[]>([]);
 
+  // Create a Set for O(1) lookup performance
+  const selectedAnimeIdSet = useMemo(() => new Set(selectedAnimeIds), [selectedAnimeIds]);
+
   useEffect(() => {
     const savedChoices = Cookies.get('userChoices');
     if (savedChoices) {
@@ -29,40 +32,40 @@ const HomePage: React.FC = () => {
     }
   }, []);
 
-  const handleSelectAnime = (anime: Anime) => {
-    if (!selectedAnimeIds.includes(anime.anime_id)) {
+  const handleSelectAnime = useCallback((anime: Anime) => {
+    if (!selectedAnimeIdSet.has(anime.anime_id)) {
       const updatedSelectedAnime = [...selectedAnime, anime];
       setSelectedAnime(updatedSelectedAnime);
       setSelectedAnimeIds([...selectedAnimeIds, anime.anime_id]);
       Cookies.set('userChoices', JSON.stringify(updatedSelectedAnime), { expires: 7 });
     }
-  };
+  }, [selectedAnime, selectedAnimeIds, selectedAnimeIdSet]);
 
-  const handleRemoveAnime = (anime: Anime) => {
+  const handleRemoveAnime = useCallback((anime: Anime) => {
     const updatedSelectedAnime = selectedAnime.filter((a) => a.anime_id !== anime.anime_id);
     setSelectedAnime(updatedSelectedAnime);
     setSelectedAnimeIds(updatedSelectedAnime.map((a) => a.anime_id));
     Cookies.set('userChoices', JSON.stringify(updatedSelectedAnime), { expires: 7 });
-  };
+  }, [selectedAnime]);
 
   return (
     <div>
       <div className="space-y-8">
-        <YourChoiceSection 
-          selectedAnime={selectedAnime} 
-          onRemoveAnime={handleRemoveAnime} 
+        <YourChoiceSection
+          selectedAnime={selectedAnime}
+          onRemoveAnime={handleRemoveAnime}
         />
         <RecommendedSection
           selectedAnimeIds={selectedAnimeIds}
           onSelectAnime={handleSelectAnime}
         />
-        <TrendingSection 
-          onSelectAnime={handleSelectAnime} 
-          selectedAnimeIds={selectedAnimeIds} 
+        <TrendingSection
+          onSelectAnime={handleSelectAnime}
+          selectedAnimeIdSet={selectedAnimeIdSet}
         />
-        <TopRankedSection 
-          onSelectAnime={handleSelectAnime} 
-          selectedAnimeIds={selectedAnimeIds} 
+        <TopRankedSection
+          onSelectAnime={handleSelectAnime}
+          selectedAnimeIdSet={selectedAnimeIdSet}
         />
       </div>
     </div>

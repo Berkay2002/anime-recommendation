@@ -5,6 +5,7 @@ import ScrollButton from './ScrollButton';
 import SectionHeader from './SectionHeader';
 import { useFetchData } from '../hooks/useFetchData';
 import { useScroll } from '../hooks/useScroll';
+import { useMemo, memo } from 'react';
 
 interface Anime {
   anime_id: number;
@@ -16,14 +17,18 @@ interface Anime {
 
 interface TrendingSectionProps {
   onSelectAnime: (anime: Anime) => void;
-  selectedAnimeIds: number[];
+  selectedAnimeIdSet: Set<number>;
 }
 
-export default function TrendingSection({ onSelectAnime, selectedAnimeIds }: TrendingSectionProps) {
+function TrendingSection({ onSelectAnime, selectedAnimeIdSet }: TrendingSectionProps) {
   const [trendingAnime, loading, error] = useFetchData<Anime[]>('/api/anime/features?sortBy=Popularity');
   const { containerRef, cardRef, showLeftArrow, showRightArrow, scrollLeft, scrollRight } = useScroll();
 
-  const filteredAnime = trendingAnime?.filter(anime => !selectedAnimeIds.includes(anime.anime_id));
+  // Use useMemo and Set for O(1) lookup instead of O(n) array.includes()
+  const filteredAnime = useMemo(() =>
+    trendingAnime?.filter(anime => !selectedAnimeIdSet.has(anime.anime_id)),
+    [trendingAnime, selectedAnimeIdSet]
+  );
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error loading data</div>;
@@ -76,3 +81,5 @@ export default function TrendingSection({ onSelectAnime, selectedAnimeIds }: Tre
     </section>
   );
 }
+
+export default memo(TrendingSection);
