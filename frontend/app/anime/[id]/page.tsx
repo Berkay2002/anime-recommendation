@@ -68,7 +68,7 @@ export default function AnimeDetailPage() {
 
       try {
         const metadataResponse = await fetch(
-          `/api/anime/metadata?limit=${DEFAULT_ANIME_LIMIT}`
+          `/api/anime?limit=${DEFAULT_ANIME_LIMIT}`
         )
 
         if (!metadataResponse.ok) {
@@ -119,8 +119,10 @@ export default function AnimeDetailPage() {
       const worker = new Worker("/worker.js")
 
       worker.postMessage({
-        selectedEmbedding: anime,
+        selectedEmbeddings: [anime],
         allEmbeddings: generalFeatures,
+        selectedTitles: [anime.title],
+        selectedAnimeIds: [anime.anime_id],
         weights: {
           bert_description: 0.4,
           bert_genres: 0.35,

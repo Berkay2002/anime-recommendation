@@ -83,7 +83,7 @@ const AnimePage: React.FC = () => {
 
   const fetchAnime = useCallback((page: number) => {
     setLoading(true)
-    const apiUrl = `/api/anime/metadata?limit=50&page=${page}`
+    const apiUrl = `/api/anime?limit=50&page=${page}`
 
     fetch(apiUrl)
       .then((response) => {
