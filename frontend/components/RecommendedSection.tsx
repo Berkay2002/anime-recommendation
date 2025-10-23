@@ -4,7 +4,7 @@ import { memo } from "react"
 
 import { useRecommendations } from "@/hooks/useRecommendations"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
-import { Skeleton } from "./ui/skeleton"
+import AnimeCardSkeleton from "./AnimeCardSkeleton"
 import RecommendationList from "./RecommendationList"
 import SectionHeader from "./SectionHeader"
 
@@ -26,6 +26,8 @@ interface RecommendedSectionProps {
   selectedAnimeIds: number[]
 }
 
+const skeletonItems = Array.from({ length: 10 })
+
 function RecommendedSection({
   onSelectAnime,
   selectedAnimeIds,
@@ -42,12 +44,9 @@ function RecommendedSection({
       />
 
       {isLoading ? (
-        <div className="flex gap-4 px-6 pb-6 pt-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton
-              key={`recommended-skeleton-${index}`}
-              className="h-[19rem] w-[13rem] rounded-2xl border border-border/40 bg-card/60"
-            />
+        <div className="flex gap-4 overflow-x-auto px-6 pb-2 pt-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {skeletonItems.map((_, index) => (
+            <AnimeCardSkeleton key={`recommended-skeleton-${index}`} />
           ))}
         </div>
       ) : error ? (

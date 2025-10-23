@@ -5,8 +5,8 @@ import { memo, useMemo } from "react"
 import { useFetchData } from "@/hooks/useFetchData"
 import { useScroll } from "@/hooks/useScroll"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
-import { Skeleton } from "./ui/skeleton"
 import AnimatedAnimeCard from "./AnimatedAnimeCard"
+import AnimeCardSkeleton from "./AnimeCardSkeleton"
 import ScrollButton from "./ScrollButton"
 import SectionHeader from "./SectionHeader"
 
@@ -22,6 +22,8 @@ interface TopRankedSectionProps {
   onSelectAnime: (anime: Anime) => void
   selectedAnimeIdSet: Set<number>
 }
+
+const skeletonItems = Array.from({ length: 10 })
 
 function TopRankedSection({
   onSelectAnime,
@@ -49,12 +51,9 @@ function TopRankedSection({
   const renderContent = () => {
     if (loading) {
       return (
-        <div className="flex gap-4 px-6 pb-6 pt-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton
-              key={`top-ranked-skeleton-${index}`}
-              className="h-[19rem] w-[13rem] rounded-2xl border border-border/40 bg-card/60"
-            />
+        <div className="flex gap-4 overflow-x-auto px-6 pb-2 pt-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {skeletonItems.map((_, index) => (
+            <AnimeCardSkeleton key={`top-ranked-skeleton-${index}`} />
           ))}
         </div>
       )

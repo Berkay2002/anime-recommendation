@@ -50,6 +50,7 @@ interface Anime {
 }
 
 const skeletonPlaceholders = Array.from({ length: 6 })
+const badgeSkeletonPlaceholders = Array.from({ length: 3 })
 
 const formatRating = (rating?: number) => {
   if (typeof rating !== "number" || !Number.isFinite(rating)) return "N/A"
@@ -126,12 +127,39 @@ const AnimePage: React.FC = () => {
 
   if (loading) {
     content = (
-      <div className="grid gap-4">
+      <div className="grid gap-6">
         {skeletonPlaceholders.map((_, index) => (
-          <Skeleton
+          <Card
             key={`anime-skeleton-${index}`}
-            className="h-56 w-full rounded-2xl border border-border/40 bg-card/60"
-          />
+            className="overflow-hidden border border-border/60 bg-card/80 shadow-sm"
+          >
+            <CardContent className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-start sm:gap-6">
+              <div className="relative aspect-[2/3] w-full max-w-[180px] shrink-0 overflow-hidden rounded-2xl border border-border/50 bg-muted sm:w-40">
+                <Skeleton className="h-full w-full" />
+              </div>
+
+              <div className="flex flex-1 flex-col gap-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <Skeleton className="h-9 w-28" />
+                </div>
+
+                <Skeleton className="h-20 w-full" />
+
+                <div className="flex flex-wrap gap-2">
+                  {badgeSkeletonPlaceholders.map((_, badgeIndex) => (
+                    <Skeleton
+                      key={`badge-skeleton-${badgeIndex}`}
+                      className="h-6 w-20 rounded-full"
+                    />
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     )
@@ -222,67 +250,86 @@ const AnimePage: React.FC = () => {
 
   return (
     <div className="container mx-auto flex flex-col gap-6 px-6 py-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-            Explore Anime
-          </h1>
-          <p className="text-muted-foreground">
-            Browse the catalog and filter by genres you love.
-          </p>
+      {loading ? (
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-9 w-48" />
+            <Skeleton className="h-5 w-64" />
+          </div>
+          <Skeleton className="h-11 w-full rounded-xl border border-border/60 bg-background/60 sm:w-72" />
         </div>
+      ) : (
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+              Explore Anime
+            </h1>
+            <p className="text-muted-foreground">
+              Browse the catalog and filter by genres you love.
+            </p>
+          </div>
 
-        <Popover open={genrePopoverOpen} onOpenChange={setGenrePopoverOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={genrePopoverOpen}
-              className="w-full justify-between border-border/60 bg-background/80 backdrop-blur sm:w-72"
-            >
-              <span className="text-sm font-medium">
-                {hasSelection
-                  ? `${selectedGenres.length} genre${
-                      selectedGenres.length > 1 ? "s" : ""
-                    } selected`
-                  : "Select genres"}
-              </span>
-              <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-60" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="p-0" align="end">
-            <Command>
-              <CommandInput placeholder="Search genres..." />
-              <CommandList>
-                <CommandEmpty>No genres found.</CommandEmpty>
-                <CommandGroup>
-                  {genreOptions.map((genre) => {
-                    const isSelected = selectedGenres.includes(genre)
-                    return (
-                      <CommandItem
-                        key={genre}
-                        value={genre}
-                        onSelect={() => toggleGenre(genre)}
-                        className="gap-2"
-                      >
-                        <Check
-                          className={cn(
-                            "size-4",
-                            isSelected ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        {genre}
-                      </CommandItem>
-                    )
-                  })}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-      </div>
+          <Popover open={genrePopoverOpen} onOpenChange={setGenrePopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={genrePopoverOpen}
+                className="w-full justify-between border-border/60 bg-background/80 backdrop-blur sm:w-72"
+              >
+                <span className="text-sm font-medium">
+                  {hasSelection
+                    ? `${selectedGenres.length} genre${
+                        selectedGenres.length > 1 ? "s" : ""
+                      } selected`
+                    : "Select genres"}
+                </span>
+                <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-60" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0" align="end">
+              <Command>
+                <CommandInput placeholder="Search genres..." />
+                <CommandList>
+                  <CommandEmpty>No genres found.</CommandEmpty>
+                  <CommandGroup>
+                    {genreOptions.map((genre) => {
+                      const isSelected = selectedGenres.includes(genre)
+                      return (
+                        <CommandItem
+                          key={genre}
+                          value={genre}
+                          onSelect={() => toggleGenre(genre)}
+                          className="gap-2"
+                        >
+                          <Check
+                            className={cn(
+                              "size-4",
+                              isSelected ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {genre}
+                        </CommandItem>
+                      )
+                    })}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+      )}
 
-      {hasSelection ? (
+      {loading ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {badgeSkeletonPlaceholders.map((_, index) => (
+            <Skeleton
+              key={`selected-skeleton-${index}`}
+              className="h-8 w-24 rounded-full border border-border/40 bg-background/60"
+            />
+          ))}
+        </div>
+      ) : hasSelection ? (
         <div className="flex flex-wrap items-center gap-2">
           {selectedGenres.map((genre) => (
             <Badge

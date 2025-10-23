@@ -90,10 +90,12 @@ export function useRecommendations({
     if (!selectedAnimeIds.length) {
       setRecommendedAnime([])
       setError(null)
+      setIsLoading(false)
       return
     }
 
     if (!allAnime.length) {
+      setIsLoading(true)
       return
     }
 
@@ -103,11 +105,13 @@ export function useRecommendations({
 
     if (!selectedAnimeList.length) {
       setRecommendedAnime([])
+      setIsLoading(false)
       return
     }
 
     const worker = new Worker("/worker.js")
     setError(null)
+    setIsLoading(true)
 
     worker.postMessage({
       selectedEmbeddings: selectedAnimeList.map((anime) => ({
@@ -133,6 +137,7 @@ export function useRecommendations({
 
       setRecommendedAnime(recommendations)
       setError(null)
+      setIsLoading(false)
       worker.terminate()
     }
 
@@ -140,6 +145,7 @@ export function useRecommendations({
       console.error("Recommendation worker error:", workerError)
       setError("Failed to generate recommendations")
       setRecommendedAnime([])
+      setIsLoading(false)
       worker.terminate()
     }
 
