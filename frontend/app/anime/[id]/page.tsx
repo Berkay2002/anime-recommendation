@@ -202,7 +202,7 @@ export default function AnimeDetailPage() {
           <div className="mt-4 space-y-4">
             {reviews && reviews.length > 0 ? (
               reviews.map((review, index) => (
-                <div key={index} className="bg-gray-100 p-4 rounded shadow">
+                <div key={index} className="bg-gray-100 p-4 rounded-sm shadow-sm">
                   <p className="text-gray-800">{review}</p>
                 </div>
               ))

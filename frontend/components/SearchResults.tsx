@@ -26,7 +26,7 @@ interface Anime {
                     alt={anime.title}
                     width={48} // Equivalent to w-12 (12 * 4 = 48px)
                     height={48} // Equivalent to h-12
-                    className="mr-4 rounded"
+                    className="mr-4 rounded-sm"
                   />
                 )}
                 <span className="text-lg font-semibold">{anime.title}</span>

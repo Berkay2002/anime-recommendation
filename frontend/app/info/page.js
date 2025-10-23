@@ -7,7 +7,7 @@ export default function InfoPage() {
         <Link href="/" className="text-blue-500 hover:underline">← Back to Home</Link>
 
 
-      <div className="mt-4 bg-white p-6 rounded shadow">
+      <div className="mt-4 bg-white p-6 rounded-sm shadow-sm">
         <h1 className="text-2xl font-bold text-blue-600">About This Project</h1>
         <p className="text-gray-700 mt-2">
           This Anime Recommendation System is a university project aimed at

@@ -67,10 +67,10 @@ export default function SearchBar() {
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
 
-        className="border p-2 rounded w-full text-black placeholder-black"
+        className="border p-2 rounded-sm w-full text-black placeholder-black"
       />
       {showDropdown && results.length > 0 && (
-        <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto">
+        <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-sm shadow-lg max-h-60 overflow-y-auto">
           {results.map((anime) => (
             <li key={anime.anime_id}>
               <a

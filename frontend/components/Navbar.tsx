@@ -12,7 +12,7 @@ const Navbar: React.FC = () => {
         <div className="text-teal-500 text-5xl font-bold">
           <Link href="/">AniMatch</Link>
         </div>
-        <div className="flex-grow mx-6 max-w-xl">
+        <div className="grow mx-6 max-w-xl">
           <SearchBar />
         </div>
         <div className="space-x-6">
