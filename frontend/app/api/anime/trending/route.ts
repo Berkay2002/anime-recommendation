@@ -56,7 +56,13 @@ export async function GET(): Promise<NextResponse> {
       title: anime.English || anime.Synonyms || anime.Japanese || "Unknown Title"
     }));
 
-    return NextResponse.json(formattedAnime);
+    // Add cache headers for better performance
+    // Cache for 5 minutes, serve stale content while revalidating
+    return NextResponse.json(formattedAnime, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      },
+    });
   } catch (error) {
     console.error('Failed to fetch trending anime:', error);
     return NextResponse.json(

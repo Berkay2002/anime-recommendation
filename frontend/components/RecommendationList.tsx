@@ -1,6 +1,7 @@
 import AnimatedAnimeCard from './AnimatedAnimeCard';
 import { useScroll } from '../hooks/useScroll';
 import ScrollButton from './ScrollButton';
+import { memo } from 'react';
 
 interface Anime {
     anime_id: number;
@@ -21,7 +22,7 @@ interface RecommendationListProps {
   showIcon?: boolean;
 }
 
-export default function RecommendationList({ recommendedAnime, onSelectAnime, showIcon = true }: RecommendationListProps) {
+function RecommendationList({ recommendedAnime, onSelectAnime, showIcon = true }: RecommendationListProps) {
   const { containerRef, cardRef, showLeftArrow, showRightArrow, scrollLeft, scrollRight } = useScroll();
 
   return (
@@ -71,3 +72,5 @@ export default function RecommendationList({ recommendedAnime, onSelectAnime, sh
     </div>
   );
 }
+
+export default memo(RecommendationList);

@@ -85,7 +85,13 @@ export async function GET(request: Request) {
       themes: Array.isArray(anime.themes) ? anime.themes : [],
     }));
 
-    return NextResponse.json(formattedFeatures);
+    // Add cache headers for better performance
+    // Cache for 5 minutes, serve stale content while revalidating
+    return NextResponse.json(formattedFeatures, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      },
+    });
   } catch (error) {
     console.error('Failed to fetch trending anime:', error);
     return NextResponse.json(

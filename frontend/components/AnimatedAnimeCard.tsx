@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import AnimeCard from './AnimeCard';
 import { FaPlus, FaMinus } from 'react-icons/fa';
+import { memo, useCallback } from 'react';
 
 interface Anime {
   anime_id: number;
@@ -21,13 +22,13 @@ interface AnimatedAnimeCardProps {
 }
 
 const AnimatedAnimeCard: React.FC<AnimatedAnimeCardProps> = ({ anime, cardRef, iconType, onSelect, onRemove, showIcon = true }) => {
-  function handleClick() {
+  const handleClick = useCallback(() => {
     if (iconType === 'plus' && onSelect) {
       onSelect(anime);
     } else if (iconType === 'minus' && onRemove) {
       onRemove(anime);
     }
-  }
+  }, [iconType, onSelect, onRemove, anime]);
 
   return (
     <motion.div
@@ -58,4 +59,4 @@ const AnimatedAnimeCard: React.FC<AnimatedAnimeCardProps> = ({ anime, cardRef, i
   );
 };
 
-export default AnimatedAnimeCard;
+export default memo(AnimatedAnimeCard);

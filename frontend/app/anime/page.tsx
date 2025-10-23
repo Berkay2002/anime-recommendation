@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -15,7 +15,6 @@ interface Anime {
 
 const AnimePage: React.FC = () => {
   const [animeList, setAnimeList] = useState<Anime[]>([]);
-  const [filteredAnimeList, setFilteredAnimeList] = useState<Anime[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
@@ -23,26 +22,17 @@ const AnimePage: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const apiUrl = '/api/anime/features?limit=500'; // Ensure this URL is correct
-    console.log(`Fetching data from ${apiUrl}`);
+    const apiUrl = '/api/anime/features?limit=500';
 
     fetch(apiUrl)
       .then(response => {
-        console.log(`Response status: ${response.status}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         return response.json();
       })
       .then(data => {
-        console.log('Data fetched successfully:', data);
-        // Log each anime item to check the data structure
-        data.forEach((anime: Anime) => {
-          console.log('Fetched anime:', anime);
-          console.log('Description:', anime.Description); // Debugging Description
-        });
         setAnimeList(data);
-        setFilteredAnimeList(data);
         setLoading(false);
       })
       .catch(error => {
@@ -52,50 +42,51 @@ const AnimePage: React.FC = () => {
       });
   }, []);
 
-  useEffect(() => {
-    console.log('Selected Genres:', selectedGenres);
-    console.log('Anime List:', animeList);
-
-    if (selectedGenres.length > 0) {
-      const filtered = animeList.filter(anime => {
-        console.log('Checking anime:', anime.title, 'Genres:', anime.Genres);
-        return anime.Genres && selectedGenres.every(selectedGenre =>
-          anime.Genres.some(genre => genre.toLowerCase() === selectedGenre.toLowerCase())
-        );
-      });
-      console.log('Filtered List:', filtered);
-      const sorted = filtered.sort((a, b) => b.rating - a.rating);
-      console.log('Sorted List:', sorted);
-      setFilteredAnimeList(sorted);
-    } else {
-      setFilteredAnimeList(animeList);
+  // Memoize the filtered and sorted list to avoid recalculating on every render
+  const filteredAnimeList = useMemo(() => {
+    if (selectedGenres.length === 0) {
+      return animeList;
     }
+
+    // Pre-convert selected genres to lowercase for efficient comparison
+    const lowerSelectedGenres = selectedGenres.map(g => g.toLowerCase());
+
+    const filtered = animeList.filter(anime => {
+      if (!anime.Genres) return false;
+      const lowerAnimeGenres = anime.Genres.map(g => g.toLowerCase());
+      return lowerSelectedGenres.every(selectedGenre =>
+        lowerAnimeGenres.includes(selectedGenre)
+      );
+    });
+
+    // Sort by rating (descending)
+    return filtered.sort((a, b) => b.rating - a.rating);
   }, [selectedGenres, animeList]);
 
-  const handleGenreChange = (genre: string) => {
+  const handleGenreChange = useCallback((genre: string) => {
     setSelectedGenres(prevSelectedGenres =>
       prevSelectedGenres.includes(genre)
         ? prevSelectedGenres.filter(g => g !== genre)
         : [...prevSelectedGenres, genre]
     );
-  };
+  }, []);
 
-  const handleDropdownToggle = () => {
-    setDropdownOpen(!dropdownOpen);
-  };
+  const handleDropdownToggle = useCallback(() => {
+    setDropdownOpen(prev => !prev);
+  }, []);
 
-  const handleClickOutside = (event: MouseEvent) => {
+  const handleClickOutside = useCallback((event: MouseEvent) => {
     if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
       setDropdownOpen(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [handleClickOutside]);
 
   if (loading) {
     return <p>Loading...</p>;

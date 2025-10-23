@@ -3,6 +3,7 @@
 import SectionHeader from './SectionHeader';
 import { useRecommendations } from '../hooks/useRecommendations';
 import RecommendationList from './RecommendationList';
+import { memo } from 'react';
 
 interface Anime {
   anime_id: number;
@@ -22,7 +23,7 @@ interface RecommendedSectionProps {
   selectedAnimeIds: number[];
 }
 
-export default function RecommendedSection({ onSelectAnime, selectedAnimeIds }: RecommendedSectionProps) {
+function RecommendedSection({ onSelectAnime, selectedAnimeIds }: RecommendedSectionProps) {
   const { recommendedAnime, isLoading, error } = useRecommendations({ selectedAnimeIds });
 
   if (!recommendedAnime.length && !isLoading) {
@@ -42,3 +43,5 @@ export default function RecommendedSection({ onSelectAnime, selectedAnimeIds }: 
     </section>
   );
 }
+
+export default memo(RecommendedSection);
