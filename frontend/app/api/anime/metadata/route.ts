@@ -69,6 +69,7 @@ export async function GET(request: Request) {
         bert_genres: 0,
         bert_demographic: 0,
         bert_themes: 0,
+        bert_rating: 0,
       })
       .sort({ [sortBy]: sortOrder })
       .limit(limit)
