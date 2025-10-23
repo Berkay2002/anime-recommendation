@@ -6,6 +6,13 @@ const STORE_NAME = 'animeEmbeddings';
 const DB_VERSION = 1;
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
+/**
+ * Default number of anime with embeddings to load for recommendation computation.
+ * This represents the complete dataset of anime with BERT embeddings available
+ * in the database for client-side cosine similarity calculations.
+ */
+export const DEFAULT_ANIME_LIMIT = 657;
+
 interface CacheMetadata {
   version: number;
   timestamp: number;
@@ -204,7 +211,7 @@ export async function clearCache(): Promise<void> {
 /**
  * Fetch anime with embeddings, using cache when available
  */
-export async function fetchAnimeWithCache(limit: number = 657): Promise<AnimeWithEmbeddings[]> {
+export async function fetchAnimeWithCache(limit: number = DEFAULT_ANIME_LIMIT): Promise<AnimeWithEmbeddings[]> {
   try {
     // Check if cache is valid
     const cacheValid = await isCacheValid();

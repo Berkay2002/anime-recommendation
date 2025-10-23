@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import RecommendationList from '../../../components/RecommendationList';
-import { fetchAnimeWithCache } from '../../../lib/animeCache';
+import { fetchAnimeWithCache, DEFAULT_ANIME_LIMIT } from '../../../lib/animeCache';
 
 interface Anime {
   anime_id: number;
@@ -54,27 +54,48 @@ export default function AnimeDetailPage() {
 
   useEffect(() => {
     async function fetchGeneralFeatures() {
+      let metadataLoaded = false;
+
       try {
         // First, quickly load metadata for immediate UI display
-        const metadataResponse = await fetch(`/api/anime/metadata?limit=657`);
+        const metadataResponse = await fetch(`/api/anime/metadata?limit=${DEFAULT_ANIME_LIMIT}`);
+
+        if (!metadataResponse.ok) {
+          throw new Error(`Failed to fetch metadata: ${metadataResponse.status}`);
+        }
+
         const metadataList: Anime[] = await metadataResponse.json();
 
         // Find and display the selected anime immediately
         const selectedAnime = metadataList.find((anime) => anime.anime_id === numericId);
-        if (selectedAnime) setAnime(selectedAnime);
+        if (selectedAnime) {
+          setAnime(selectedAnime);
+          metadataLoaded = true;
+        }
+
+        // Always set loading to false once metadata is loaded
         setLoading(false);
 
         // Then load full data with embeddings from cache (or API)
         // This happens in the background for recommendations
-        const featuresData = await fetchAnimeWithCache(657);
-        setGeneralFeatures(featuresData);
+        // Errors here won't affect the UI since metadata is already displayed
+        try {
+          const featuresData = await fetchAnimeWithCache();
+          setGeneralFeatures(featuresData);
 
-        // Update selected anime with full data if needed
-        const selectedWithEmbeddings = featuresData.find((anime) => anime.anime_id === numericId);
-        if (selectedWithEmbeddings) setAnime(selectedWithEmbeddings);
+          // Update selected anime with full data if needed
+          const selectedWithEmbeddings = featuresData.find((anime) => anime.anime_id === numericId);
+          if (selectedWithEmbeddings) setAnime(selectedWithEmbeddings);
+        } catch (embeddingError) {
+          console.error("Error fetching embeddings (recommendations will be unavailable):", embeddingError);
+          // Don't throw - we already have metadata for display
+        }
       } catch (error) {
-        console.error("Error fetching general features:", error);
-        setLoading(false);
+        console.error("Error fetching anime metadata:", error);
+        // Only set loading to false if metadata hasn't been loaded yet
+        if (!metadataLoaded) {
+          setLoading(false);
+        }
       }
     }
 
