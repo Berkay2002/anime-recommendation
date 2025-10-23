@@ -6,7 +6,6 @@ import RecommendedSection from '../components/RecommendedSection';
 import TrendingSection from '../components/TrendingSection';
 import TopRankedSection from '../components/TopRankedSection';
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import Cookies from 'js-cookie';
 
 interface Anime {
   anime_id: number;
@@ -23,12 +22,18 @@ const HomePage: React.FC = () => {
   // Create a Set for O(1) lookup performance
   const selectedAnimeIdSet = useMemo(() => new Set(selectedAnimeIds), [selectedAnimeIds]);
 
+  // Load saved choices from localStorage on mount
   useEffect(() => {
-    const savedChoices = Cookies.get('userChoices');
+    const savedChoices = localStorage.getItem('userChoices');
     if (savedChoices) {
-      const parsedChoices: Anime[] = JSON.parse(savedChoices);
-      setSelectedAnime(parsedChoices);
-      setSelectedAnimeIds(parsedChoices.map((anime) => anime.anime_id));
+      try {
+        const parsedChoices: Anime[] = JSON.parse(savedChoices);
+        setSelectedAnime(parsedChoices);
+        setSelectedAnimeIds(parsedChoices.map((anime) => anime.anime_id));
+      } catch (error) {
+        console.error('Failed to parse saved choices from localStorage:', error);
+        localStorage.removeItem('userChoices'); // Clear invalid data
+      }
     }
   }, []);
 
@@ -37,7 +42,8 @@ const HomePage: React.FC = () => {
       const updatedSelectedAnime = [...selectedAnime, anime];
       setSelectedAnime(updatedSelectedAnime);
       setSelectedAnimeIds([...selectedAnimeIds, anime.anime_id]);
-      Cookies.set('userChoices', JSON.stringify(updatedSelectedAnime), { expires: 7 });
+      // Save to localStorage
+      localStorage.setItem('userChoices', JSON.stringify(updatedSelectedAnime));
     }
   }, [selectedAnime, selectedAnimeIds, selectedAnimeIdSet]);
 
@@ -45,7 +51,8 @@ const HomePage: React.FC = () => {
     const updatedSelectedAnime = selectedAnime.filter((a) => a.anime_id !== anime.anime_id);
     setSelectedAnime(updatedSelectedAnime);
     setSelectedAnimeIds(updatedSelectedAnime.map((a) => a.anime_id));
-    Cookies.set('userChoices', JSON.stringify(updatedSelectedAnime), { expires: 7 });
+    // Save to localStorage
+    localStorage.setItem('userChoices', JSON.stringify(updatedSelectedAnime));
   }, [selectedAnime]);
 
   return (

@@ -1,5 +1,5 @@
 self.onmessage = function (e) {
-  const { selectedEmbedding, allEmbeddings, selectedTitle, selectedAnimeIds, weights } = e.data;
+  const { selectedEmbeddings, allEmbeddings, selectedTitles, selectedAnimeIds, weights } = e.data;
 
   const defaultWeights = {
     bert_description: 0.25,
@@ -49,45 +49,53 @@ self.onmessage = function (e) {
       .trim();
   };
 
-  if (!selectedEmbedding || !Array.isArray(allEmbeddings) || !selectedTitle) {
-    console.error('Worker received invalid input data.', { selectedEmbedding, allEmbeddings, selectedTitle });
+  // Validate input - now expecting arrays
+  if (!Array.isArray(selectedEmbeddings) || selectedEmbeddings.length === 0 ||
+      !Array.isArray(allEmbeddings) || !Array.isArray(selectedTitles)) {
+    console.error('Worker received invalid input data.', { selectedEmbeddings, allEmbeddings, selectedTitles });
     self.postMessage([]);
     return;
   }
 
-  const selectedBaseTitle = extractBaseTitle(selectedTitle);
-  const selectedWeightedEmbedding = weightedEmbedding(selectedEmbedding, finalWeights);
+  // Create weighted embeddings for ALL selected anime
+  const selectedWeightedEmbeddings = selectedEmbeddings.map(embedding =>
+    weightedEmbedding(embedding, finalWeights)
+  );
 
+  // Build base title set from all selected anime
   const baseTitleSet = new Set();
-  baseTitleSet.add(selectedBaseTitle);
-
-  selectedAnimeIds.forEach((id) => {
-    const anime = allEmbeddings.find((anime) => anime.anime_id === id);
-    if (anime) {
-      const baseTitle = extractBaseTitle(anime.title);
-      baseTitleSet.add(baseTitle);
-    }
+  selectedTitles.forEach(title => {
+    const baseTitle = extractBaseTitle(title);
+    baseTitleSet.add(baseTitle);
   });
 
+  // Calculate multi-similarity with mean aggregation
   const similarities = allEmbeddings
     .map((embedding) => {
-      const combinedEmbedding = weightedEmbedding(embedding, finalWeights);
+      const candidateEmbedding = weightedEmbedding(embedding, finalWeights);
 
-      if (selectedWeightedEmbedding.length !== combinedEmbedding.length) {
-        console.warn('Skipping anime due to vector mismatch:', {
-          animeId: embedding.anime_id,
-          title: embedding.title,
-        });
-        return null;
-      }
+      // Calculate similarity to EACH selected anime
+      const similarityScores = selectedWeightedEmbeddings.map(selectedEmbedding => {
+        if (selectedEmbedding.length !== candidateEmbedding.length) {
+          console.warn('Vector length mismatch detected:', {
+            animeId: embedding.anime_id,
+            title: embedding.title,
+          });
+          return 0;
+        }
+        return cosineSimilarity(selectedEmbedding, candidateEmbedding);
+      });
+
+      // Aggregate using mean: sum of similarities / count
+      const meanSimilarity = similarityScores.reduce((sum, score) => sum + score, 0) / similarityScores.length;
 
       return {
         anime_id: embedding.anime_id,
         title: embedding.title,
-        similarity: cosineSimilarity(selectedWeightedEmbedding, combinedEmbedding),
+        similarity: meanSimilarity,
       };
     })
-    .filter(Boolean);
+    .filter(result => result.similarity > 0);
 
   const filteredSimilarities = similarities.filter((sim) => {
     const baseTitle = extractBaseTitle(sim.title);

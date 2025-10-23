@@ -60,22 +60,28 @@ export function useRecommendations({ selectedAnimeIds }: UseRecommendationsProps
 
   useEffect(() => {
     if (selectedAnimeIds.length > 0 && allAnime.length > 0) {
-      const selectedAnime = allAnime.find(anime => selectedAnimeIds.includes(anime.anime_id));
-      if (!selectedAnime) return;
+      // Get ALL selected anime instead of just the first one
+      const selectedAnimeList = allAnime.filter(anime => selectedAnimeIds.includes(anime.anime_id));
 
-      const selectedEmbedding = {
-        bert_description: selectedAnime.bert_description,
-        bert_genres: selectedAnime.bert_genres,
-        bert_demographic: selectedAnime.bert_demographic,
-        bert_rating: selectedAnime.bert_rating,
-        bert_themes: selectedAnime.bert_themes,
-      };
+      // Return early if no valid selected anime found
+      if (selectedAnimeList.length === 0) return;
+
+      // Extract embeddings and titles from all selected anime
+      const selectedEmbeddings = selectedAnimeList.map(anime => ({
+        bert_description: anime.bert_description,
+        bert_genres: anime.bert_genres,
+        bert_demographic: anime.bert_demographic,
+        bert_rating: anime.bert_rating,
+        bert_themes: anime.bert_themes,
+      }));
+
+      const selectedTitles = selectedAnimeList.map(anime => anime.title);
 
       const worker = new Worker('/worker.js');
       worker.postMessage({
-        selectedEmbedding,
+        selectedEmbeddings,  // Array of embeddings
         allEmbeddings: allAnime,
-        selectedTitle: selectedAnime.title,
+        selectedTitles,      // Array of titles
         selectedAnimeIds,
       });
 
