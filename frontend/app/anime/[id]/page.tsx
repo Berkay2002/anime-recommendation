@@ -95,7 +95,7 @@ export default function AnimeDetailPage() {
       return () => worker.terminate(); // Cleanup to avoid memory leaks
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [anime?.anime_id, generalFeatures.length]); // Only trigger when anime ID or features count changes
+  }, [anime?.anime_id, generalFeatures]); // Only trigger when anime ID or features change
 
   useEffect(() => {
     const controller = new AbortController();
