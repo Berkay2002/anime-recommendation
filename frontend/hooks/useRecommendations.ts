@@ -40,7 +40,7 @@ export function useRecommendations({
         setError(null)
 
         const response = await fetch(
-          "/api/anime/features?limit=657&sortBy=Popularity",
+          "/api/anime?withEmbeddings=true&limit=657&sortBy=Popularity",
           { signal: controller.signal }
         )
 

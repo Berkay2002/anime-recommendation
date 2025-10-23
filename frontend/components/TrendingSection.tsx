@@ -31,7 +31,7 @@ function TrendingSection({
   selectedAnimeIdSet,
 }: TrendingSectionProps) {
   const [trendingAnime, loading, error] = useFetchData<Anime[]>(
-    "/api/anime/trending"
+    "/api/anime?type=trending"
   )
   const {
     containerRef,

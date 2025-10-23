@@ -30,7 +30,7 @@ function TopRankedSection({
   selectedAnimeIdSet,
 }: TopRankedSectionProps) {
   const [topRankedAnime, loading, error] = useFetchData<Anime[]>(
-    "/api/anime/top-ranked"
+    "/api/anime?type=top-ranked"
   )
   const {
     containerRef,

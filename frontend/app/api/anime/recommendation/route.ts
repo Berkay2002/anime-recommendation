@@ -1,31 +1,15 @@
-// /frontend/app/api/anime/recommendations/route.ts
-
-import clientPromise from '../../../../lib/mongodb';
 import { NextResponse } from 'next/server';
-
-interface SimilarAnime {
-  anime_id: number;
-  title: string;
-  similarity: number;
-}
-
-interface Recommendation {
-  _id: string;
-  anime_id: number;
-  title: string;
-  similar_anime: SimilarAnime[];
-}
+import { getRecommendations } from '../../../../services/animeService';
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     const { animeIds } = await request.json();
-    const client = await clientPromise;
-    const db = client.db('animeDB');
 
-    const recommendations: Recommendation[] = await db
-      .collection('recommendations')
-      .find({ anime_id: { $in: animeIds } })
-      .toArray();
+    if (!Array.isArray(animeIds) || animeIds.length === 0) {
+      return NextResponse.json({ message: 'animeIds must be a non-empty array' }, { status: 400 });
+    }
+
+    const recommendations = await getRecommendations(animeIds);
 
     return NextResponse.json(recommendations);
   } catch (error) {

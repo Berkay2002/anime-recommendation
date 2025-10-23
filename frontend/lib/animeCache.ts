@@ -227,7 +227,7 @@ export async function fetchAnimeWithCache(limit: number = DEFAULT_ANIME_LIMIT): 
 
     // Cache miss or expired - fetch from API
     console.log('Cache miss - fetching anime from API');
-    const response = await fetch(`/api/anime/features?limit=${limit}`);
+    const response = await fetch(`/api/anime?withEmbeddings=true&limit=${limit}`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch anime: ${response.status}`);
