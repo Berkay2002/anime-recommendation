@@ -23,6 +23,7 @@ interface Anime {
   bert_themes: number[];
   bert_genres: number[];
   bert_demographic: number[];
+  bert_rating: number[];
 }
 
 export async function GET(request: Request) {
@@ -70,6 +71,7 @@ export async function GET(request: Request) {
         bert_description: 1,
         bert_genres: 1,
         bert_demographic: 1,
+        bert_rating: 1,
         bert_themes: 1,
       })
       .sort({ [sortBy]: sortOrder })

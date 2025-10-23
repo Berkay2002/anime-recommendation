@@ -33,6 +33,7 @@ interface AnimeWithEmbeddings {
   bert_description: number[];
   bert_genres: number[];
   bert_demographic: number[];
+  bert_rating: number[];
   bert_themes: number[];
   English?: string;
   Japanese?: string;
