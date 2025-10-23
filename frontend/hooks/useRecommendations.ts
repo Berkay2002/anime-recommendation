@@ -50,14 +50,14 @@ export function useRecommendations({
           )
         }
 
-        const data: Anime[] = await response.json()
+        const data = await response.json()
 
-        if (!Array.isArray(data) || data.length === 0) {
+        if (!data || !Array.isArray(data.anime) || data.anime.length === 0) {
           throw new Error("No anime data received from API")
         }
 
         if (isMounted) {
-          setAllAnime(data)
+          setAllAnime(data.anime)
           setError(null)
         }
       } catch (err: any) {

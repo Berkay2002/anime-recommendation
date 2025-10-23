@@ -19,6 +19,7 @@ interface Anime {
 }
 
 interface TopRankedSectionProps {
+  initialData?: Anime[]
   onSelectAnime: (anime: Anime) => void
   selectedAnimeIdSet: Set<number>
 }
@@ -26,12 +27,14 @@ interface TopRankedSectionProps {
 const skeletonItems = Array.from({ length: 10 })
 
 function TopRankedSection({
+  initialData,
   onSelectAnime,
   selectedAnimeIdSet,
 }: TopRankedSectionProps) {
-  const [topRankedAnime, loading, error] = useFetchData<Anime[]>(
-    "/api/anime?type=top-ranked"
+  const [clientData, loading, error] = useFetchData<Anime[]>(
+    initialData ? null : "/api/anime?type=top-ranked"
   )
+  const topRankedAnime = initialData || clientData
   const {
     containerRef,
     cardRef,

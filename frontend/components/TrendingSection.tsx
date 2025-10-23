@@ -20,6 +20,7 @@ interface Anime {
 }
 
 interface TrendingSectionProps {
+  initialData?: Anime[]
   onSelectAnime: (anime: Anime) => void
   selectedAnimeIdSet: Set<number>
 }
@@ -27,12 +28,14 @@ interface TrendingSectionProps {
 const skeletonItems = Array.from({ length: 10 })
 
 function TrendingSection({
+  initialData,
   onSelectAnime,
   selectedAnimeIdSet,
 }: TrendingSectionProps) {
-  const [trendingAnime, loading, error] = useFetchData<Anime[]>(
-    "/api/anime?type=trending"
+  const [clientData, loading, error] = useFetchData<Anime[]>(
+    initialData ? null : "/api/anime?type=trending"
   )
+  const trendingAnime = initialData || clientData
   const {
     containerRef,
     cardRef,

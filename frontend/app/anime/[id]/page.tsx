@@ -75,7 +75,8 @@ export default function AnimeDetailPage() {
           throw new Error(`Failed to fetch metadata: ${metadataResponse.status}`)
         }
 
-        const metadataList: Anime[] = await metadataResponse.json()
+        const metadataPayload = await metadataResponse.json()
+        const metadataList: Anime[] = metadataPayload.anime || []
 
         const selectedAnime = metadataList.find(
           (item) => item.anime_id === numericId

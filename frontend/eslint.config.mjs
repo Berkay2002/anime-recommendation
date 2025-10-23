@@ -25,7 +25,7 @@ const eslintConfig = [
       '*.config.mjs',
     ],
   },
-  ...compat.extends('next/core-web-vitals', 'eslint:recommended'),
+  ...compat.extends('plugin:@next/next/recommended', 'next/core-web-vitals', 'eslint:recommended'),
   {
     rules: {
       'no-undef': 'off',
