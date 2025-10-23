@@ -28,7 +28,7 @@ const AnimatedAnimeCard: React.FC<AnimatedAnimeCardProps> = ({ anime, cardRef, i
     } else if (iconType === 'minus' && onRemove) {
       onRemove(anime);
     }
-  }, [iconType, onSelect, onRemove, anime]);
+  }, [iconType, onSelect, onRemove, anime.anime_id]);
 
   return (
     <motion.div
