@@ -139,7 +139,7 @@ const AnimePage: React.FC = () => {
           setTotalPages(data.totalPages)
           setCurrentPage(data.currentPage)
           setLoading(false)
-          setIsInitialLoad((prev) => (prev ? false : prev))
+          setIsInitialLoad(() => false)
         })
         .catch((fetchError: Error) => {
           console.error("Error fetching anime list:", fetchError)
