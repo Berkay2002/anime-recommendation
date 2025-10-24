@@ -54,7 +54,7 @@ interface Anime {
   title: string
   image_url?: string
   Genres?: string[]
-  rating?: number
+  Score?: number
   Description?: string
 }
 
@@ -67,9 +67,9 @@ interface ApiResponse {
 const skeletonPlaceholders = Array.from({ length: 6 })
 const badgeSkeletonPlaceholders = Array.from({ length: 3 })
 
-const formatRating = (rating?: number) => {
-  if (typeof rating !== "number" || !Number.isFinite(rating)) return "N/A"
-  return rating.toFixed(1)
+const formatScore = (score?: number) => {
+  if (typeof score !== "number" || !Number.isFinite(score)) return "N/A"
+  return score.toFixed(1)
 }
 
 const AnimePage: React.FC = () => {
@@ -149,7 +149,7 @@ const AnimePage: React.FC = () => {
           lowerAnimeGenres.includes(genre)
         )
       })
-      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+      .sort((a, b) => (b.Score ?? 0) - (a.Score ?? 0))
   }, [animeList, selectedGenres])
 
   const hasSelection = selectedGenres.length > 0
@@ -242,9 +242,9 @@ const AnimePage: React.FC = () => {
                       {anime.title}
                     </Link>
                     <p className="text-sm text-muted-foreground">
-                      Rating:{" "}
+                      Score:{" "}
                       <span className="font-medium text-foreground">
-                        {formatRating(anime.rating)}
+                        {formatScore(anime.Score)}
                       </span>
                     </p>
                   </div>
