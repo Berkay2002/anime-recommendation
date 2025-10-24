@@ -136,26 +136,59 @@ export async function getAnime(params: GetAnimeParams = {}) {
 export async function searchAnime(query: string) {
   const db = await getDb();
   const collection: Collection<Anime> = db.collection('sorted_anime');
-
   const regexPattern = new RegExp(query, 'i');
 
   const animeList = await collection
-    .find({
-      $or: [
-        { English: { $regex: regexPattern } },
-        { Synonyms: { $regex: regexPattern } },
-        { Japanese: { $regex: regexPattern } },
-        { title: { $regex: regexPattern } },
-      ],
-    })
-    .project({
-      anime_id: 1,
-      English: 1,
-      Synonyms: 1,
-      Japanese: 1,
-      title: 1,
-      image_url: 1,
-    })
+    .aggregate([
+      {
+        $match: {
+          $or: [
+            { English: { $regex: regexPattern } },
+            { Synonyms: { $regex: regexPattern } },
+            { Japanese: { $regex: regexPattern } },
+            { title: { $regex: regexPattern } },
+            { Description: { $regex: regexPattern } },
+            { Genres: { $regex: regexPattern } },
+          ],
+        },
+      },
+      {
+        $addFields: {
+          score: {
+            $cond: {
+              if: {
+                $or: [
+                  { $regexMatch: { input: '$English', regex: query, options: 'i' } },
+                  { $regexMatch: { input: '$Synonyms', regex: query, options: 'i' } },
+                  { $regexMatch: { input: '$Japanese', regex: query, options: 'i' } },
+                  { $regexMatch: { input: '$title', regex: query, options: 'i' } },
+                ],
+              },
+              then: 2,
+              else: 1,
+            },
+          },
+        },
+      },
+      {
+        $sort: {
+          score: -1,
+          Popularity: 1,
+        },
+      },
+      {
+        $project: {
+          anime_id: 1,
+          English: 1,
+          Synonyms: 1,
+          Japanese: 1,
+          title: 1,
+          image_url: 1,
+          score: 1,
+          Popularity: 1,
+        },
+      },
+    ])
     .toArray();
 
   return animeList.map(formatAnime);
