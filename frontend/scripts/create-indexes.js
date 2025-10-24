@@ -2,9 +2,10 @@
 // Run with: node scripts/create-indexes.js
 // Make sure to set MONGODB_URI environment variable before running
 
-const { MongoClient } = require('mongodb');
-const fs = require('fs');
-const path = require('path');
+import { MongoClient } from "mongodb"
+import fs from "fs"
+import path from "path"
+import { fileURLToPath } from "url"
 
 async function createIndexes() {
   // Try to read from .env.local file
@@ -13,13 +14,15 @@ async function createIndexes() {
   if (!uri) {
     // Try .env.local next
     try {
-      const envPath = path.join(__dirname, '..', '.env.local');
-      const envContent = fs.readFileSync(envPath, 'utf8');
-      const match = envContent.match(/MONGODB_URI=(.+)/);
+      const __filename = fileURLToPath(import.meta.url)
+      const __dirname = path.dirname(__filename)
+      const envPath = path.join(__dirname, "..", ".env.local")
+      const envContent = fs.readFileSync(envPath, "utf8")
+      const match = envContent.match(/MONGODB_URI=(.+)/)
       if (match) {
-        uri = match[1].trim();
+        uri = match[1].trim()
       }
-    } catch (error) {
+    } catch {
       // Ignore and fall through to failure message
     }
   }

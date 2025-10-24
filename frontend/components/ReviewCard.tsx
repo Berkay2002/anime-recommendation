@@ -7,12 +7,11 @@ import { ChevronDown, ChevronUp, MessageSquare } from "lucide-react"
 
 interface ReviewCardProps {
   review: string
-  index: number
 }
 
 const CHARACTER_LIMIT = 500
 
-export default function ReviewCard({ review, index }: ReviewCardProps) {
+export default function ReviewCard({ review }: ReviewCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const shouldTruncate = review.length > CHARACTER_LIMIT
 

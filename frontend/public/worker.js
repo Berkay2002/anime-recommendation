@@ -1,5 +1,5 @@
 self.onmessage = function (e) {
-  const { selectedEmbeddings, allEmbeddings, selectedTitles, selectedAnimeIds, weights } = e.data;
+  const { selectedEmbeddings, allEmbeddings, selectedTitles, weights } = e.data;
 
   const defaultWeights = {
     bert_description: 0.25,

@@ -27,6 +27,13 @@ interface Anime {
   bert_rating?: number[];
 }
 
+// Type for raw data from DB before formatting
+interface RawAnime extends Omit<Anime, "Genres" | "Studios" | "themes"> {
+  Genres?: string | string[];
+  Studios?: string | string[];
+  themes?: string | string[];
+}
+
 // --- DATABASE HELPER ---
 async function getDb(): Promise<Db> {
   const client = await clientPromise;
@@ -34,24 +41,34 @@ async function getDb(): Promise<Db> {
 }
 
 // --- DATA FORMATTING HELPER ---
-function formatAnime(anime: any): Anime {
+function formatAnime(anime: RawAnime): Anime {
   return {
     ...anime,
-    title: anime.English || anime.Synonyms || anime.Japanese || 'Unknown Title',
-    Genres: typeof anime.Genres === 'string' ? anime.Genres.split(',').map((g: string) => g.trim()) : anime.Genres,
-    Studios: typeof anime.Studios === 'string' ? anime.Studios.split(',').map((s: string) => s.trim()) : anime.Studios,
+    title: anime.English || anime.Synonyms || anime.Japanese || "Unknown Title",
+    Genres:
+      typeof anime.Genres === "string"
+        ? anime.Genres.split(",").map((g) => g.trim())
+        : Array.isArray(anime.Genres)
+        ? anime.Genres
+        : [],
+    Studios:
+      typeof anime.Studios === "string"
+        ? anime.Studios.split(",").map((s) => s.trim())
+        : Array.isArray(anime.Studios)
+        ? anime.Studios
+        : [],
     themes: Array.isArray(anime.themes) ? anime.themes : [],
   };
 }
 
 // --- CORE ANIME FETCHING LOGIC ---
 interface GetAnimeParams {
-  sortBy?: string;
-  limit?: number;
-  page?: number;
-  projection?: Record<string, 1 | 0>;
-  filter?: Record<string, any>;
-  withEmbeddings?: boolean;
+  sortBy?: string
+  limit?: number
+  page?: number
+  projection?: Record<string, 1 | 0>
+  filter?: Record<string, unknown>
+  withEmbeddings?: boolean
 }
 
 export async function getAnime(params: GetAnimeParams = {}) {
@@ -64,7 +81,7 @@ export async function getAnime(params: GetAnimeParams = {}) {
   } = params;
 
   const db = await getDb();
-  const collection: Collection<Anime> = db.collection('anime_general');
+  const collection: Collection<RawAnime> = db.collection("anime_general");
 
   const skip = (page - 1) * limit;
 
@@ -135,11 +152,11 @@ export async function getAnime(params: GetAnimeParams = {}) {
 // --- SEARCH ANIME LOGIC ---
 export async function searchAnime(query: string) {
   const db = await getDb();
-  const collection: Collection<Anime> = db.collection('sorted_anime');
+  const collection: Collection<RawAnime> = db.collection("sorted_anime");
   const regexPattern = new RegExp(query, 'i');
 
   const animeList = await collection
-    .aggregate([
+    .aggregate<RawAnime>([
       {
         $match: {
           $or: [

@@ -172,11 +172,13 @@ export default function AnimeDetailPage() {
         const data = await response.json()
         setReviews(data.reviews || [])
         setCurrentPage(1) // Reset to first page when new reviews load
-      } catch (reviewsError: any) {
-        if (reviewsError.name === "AbortError") {
-          console.debug("Reviews fetch aborted")
+      } catch (reviewsError: unknown) {
+        if (reviewsError instanceof Error) {
+          if (reviewsError.name !== "AbortError") {
+            console.error("Error fetching reviews:", reviewsError)
+          }
         } else {
-          console.error("Error fetching reviews:", reviewsError)
+          console.error("An unknown error occurred:", reviewsError)
         }
       }
     }
@@ -399,7 +401,6 @@ export default function AnimeDetailPage() {
                 <ReviewCard
                   key={`review-${(currentPage - 1) * REVIEWS_PER_PAGE + index}`}
                   review={review}
-                  index={(currentPage - 1) * REVIEWS_PER_PAGE + index}
                 />
               ))}
             </div>

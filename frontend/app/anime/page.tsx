@@ -1,21 +1,13 @@
 "use client"
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react"
-import Image from "next/image"
-import Link from "next/link"
+import { useCallback, useEffect, useState } from "react"
 import { Check, ChevronsUpDown, SlidersHorizontal, X } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import AnimeBrowseCard from "@/components/AnimeBrowseCard"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import {
   Command,
   CommandEmpty,
@@ -119,8 +111,12 @@ const AnimePage: React.FC = () => {
   const debouncedSelectedGenres = useDebounce(selectedGenres, 300)
   const debouncedSortBy = useDebounce(sortBy, 300)
 
-  const fetchAnime = useCallback(
-    (page: number, sortByValue: SortOption, genres: GenreOption[]) => {
+  useEffect(() => {
+    const fetchAnime = (
+      page: number,
+      sortByValue: SortOption,
+      genres: GenreOption[]
+    ) => {
       setLoading(true)
       let apiUrl = `/api/anime?limit=50&page=${page}&sortBy=${sortByValue}`
       if (genres.length > 0) {
@@ -148,13 +144,9 @@ const AnimePage: React.FC = () => {
           )
           setLoading(false)
         })
-    },
-    []
-  )
-
-  useEffect(() => {
+    }
     fetchAnime(currentPage, debouncedSortBy, debouncedSelectedGenres)
-  }, [fetchAnime, currentPage, debouncedSortBy, debouncedSelectedGenres])
+  }, [currentPage, debouncedSortBy, debouncedSelectedGenres])
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {

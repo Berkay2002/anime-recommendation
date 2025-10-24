@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
 import RecommendedSection from "@/components/RecommendedSection"
 import TopRankedSection from "@/components/TopRankedSection"
@@ -17,8 +17,27 @@ interface Anime {
 }
 
 const HomePage = () => {
-  const [selectedAnime, setSelectedAnime] = useState<Anime[]>([])
-  const [selectedAnimeIds, setSelectedAnimeIds] = useState<number[]>([])
+  const [selectedAnime, setSelectedAnime] = useState<Anime[]>(() => {
+    if (typeof window !== "undefined") {
+      const savedChoices = localStorage.getItem("userChoices")
+      if (savedChoices) {
+        try {
+          return JSON.parse(savedChoices)
+        } catch (parseError) {
+          console.error(
+            "Failed to parse saved choices from localStorage:",
+            parseError
+          )
+          localStorage.removeItem("userChoices")
+        }
+      }
+    }
+    return []
+  })
+
+  const [selectedAnimeIds, setSelectedAnimeIds] = useState<number[]>(() =>
+    selectedAnime.map((anime) => anime.anime_id)
+  )
 
   const selectedAnimeIdSet = useMemo(
     () => new Set(selectedAnimeIds),
@@ -28,20 +47,6 @@ const HomePage = () => {
   const syncSelections = useCallback((nextSelections: Anime[]) => {
     setSelectedAnimeIds(nextSelections.map((item) => item.anime_id))
     localStorage.setItem("userChoices", JSON.stringify(nextSelections))
-  }, [])
-
-  useEffect(() => {
-    const savedChoices = localStorage.getItem("userChoices")
-    if (savedChoices) {
-      try {
-        const parsedChoices: Anime[] = JSON.parse(savedChoices)
-        setSelectedAnime(parsedChoices)
-        setSelectedAnimeIds(parsedChoices.map((anime) => anime.anime_id))
-      } catch (parseError) {
-        console.error("Failed to parse saved choices from localStorage:", parseError)
-        localStorage.removeItem("userChoices")
-      }
-    }
   }, [])
 
   const handleSelectAnime = useCallback(

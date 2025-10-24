@@ -2,11 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 
 const cache = new Map();
 
-export const useFetchData = <T,>(url: string): [T | null, boolean, any] => {
-  const [data, setData] = useState<T | null>(null);
-  const cacheRef = useRef(cache);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<any>(null);
+export const useFetchData = <T,>(
+  url: string
+): [T | null, boolean, Error | null] => {
+  const [data, setData] = useState<T | null>(null)
+  const cacheRef = useRef(cache)
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
     if (!url) {

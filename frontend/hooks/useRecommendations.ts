@@ -60,7 +60,7 @@ export function useRecommendations({
           setAllAnime(data.anime)
           setError(null)
         }
-      } catch (err: any) {
+      } catch (err) {
         if (controller.signal.aborted) {
           // Ignore aborted requests triggered by client-side navigation
           return
@@ -68,7 +68,11 @@ export function useRecommendations({
 
         console.error("Failed to fetch anime features:", err)
         if (isMounted) {
-          setError(err?.message || "Unknown error occurred")
+          if (err instanceof Error) {
+            setError(err.message)
+          } else {
+            setError("An unknown error occurred while fetching anime features.")
+          }
           setAllAnime([])
         }
       } finally {

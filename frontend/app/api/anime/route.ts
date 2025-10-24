@@ -1,6 +1,20 @@
 import { NextResponse } from 'next/server';
 import { getAnime } from '../../../services/animeService';
 
+interface GetAnimeParams {
+  sortBy: string;
+  limit: number;
+  page: number;
+  withEmbeddings: boolean;
+  filter?: {
+    $and: {
+      Genres: {
+        $regex: RegExp;
+      };
+    }[];
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -11,7 +25,7 @@ export async function GET(request: Request) {
     const withEmbeddings = searchParams.get('withEmbeddings') === 'true';
     const genres = searchParams.get('genres')?.split(',');
 
-    let params: any = { sortBy, limit, page, withEmbeddings };
+    const params: GetAnimeParams = { sortBy, limit, page, withEmbeddings };
     if (genres && genres.length > 0) {
       const regexConditions = genres.map((genre) => ({
         Genres: {
