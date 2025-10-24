@@ -33,7 +33,7 @@ export default function ReviewCard({ review, index }: ReviewCardProps) {
     <Card className="group relative overflow-hidden border border-border/60 bg-card/50 shadow-sm backdrop-blur-sm transition-all hover:border-border/80 hover:bg-card/70 hover:shadow-md">
       <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-primary/60 via-primary/30 to-transparent" />
 
-      <CardContent className="px-6 py-6 pl-8">
+      <CardContent className="px-4 py-5 pl-6 sm:px-6 sm:py-6 sm:pl-8">
         <div className="space-y-4">
           <div className="flex items-start gap-3">
             <MessageSquare className="mt-1 h-5 w-5 shrink-0 text-primary/60" />

@@ -1,11 +1,13 @@
 "use client"
 
+import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import RecommendedSection from "@/components/RecommendedSection"
 import TopRankedSection from "@/components/TopRankedSection"
 import TrendingSection from "@/components/TrendingSection"
 import YourChoiceSection from "@/components/YourChoiceSection"
+import { Button } from "@/components/ui/button"
 
 interface Anime {
   anime_id: number
@@ -70,23 +72,40 @@ const HomePage = () => {
   )
 
   return (
-    <div className="container mx-auto flex flex-col gap-10 px-6 py-8">
-      <YourChoiceSection
-        selectedAnime={selectedAnime}
-        onRemoveAnime={handleRemoveAnime}
-      />
-      <RecommendedSection
-        selectedAnimeIds={selectedAnimeIds}
-        onSelectAnime={handleSelectAnime}
-      />
-      <TrendingSection
-        onSelectAnime={handleSelectAnime}
-        selectedAnimeIdSet={selectedAnimeIdSet}
-      />
-      <TopRankedSection
-        onSelectAnime={handleSelectAnime}
-        selectedAnimeIdSet={selectedAnimeIdSet}
-      />
+    <div className="container mx-auto flex flex-col gap-8 px-4 py-6 sm:gap-10 sm:px-6 lg:gap-12 lg:py-10">
+      <section className="order-1 space-y-4 md:order-1">
+        <YourChoiceSection
+          selectedAnime={selectedAnime}
+          onRemoveAnime={handleRemoveAnime}
+        />
+      </section>
+
+      <section className="order-2 md:order-2">
+        <RecommendedSection
+          selectedAnimeIds={selectedAnimeIds}
+          onSelectAnime={handleSelectAnime}
+        />
+      </section>
+
+      <section className="order-3 md:order-3">
+        <TrendingSection
+          onSelectAnime={handleSelectAnime}
+          selectedAnimeIdSet={selectedAnimeIdSet}
+        />
+      </section>
+
+      <section className="order-4 hidden md:block">
+        <TopRankedSection
+          onSelectAnime={handleSelectAnime}
+          selectedAnimeIdSet={selectedAnimeIdSet}
+        />
+      </section>
+
+      <div className="order-4 md:hidden">
+        <Button asChild variant="outline" className="w-full">
+          <Link href="/anime?sortBy=Rank">Browse top ranked picks</Link>
+        </Button>
+      </div>
     </div>
   )
 }
