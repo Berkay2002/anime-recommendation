@@ -55,7 +55,7 @@ function TrendingSection({
   const renderContent = () => {
     if (loading) {
       return (
-        <div className="flex gap-4 overflow-x-auto px-6 pb-2 pt-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex gap-3 overflow-x-auto px-4 pb-2 pt-4 scroll-smooth sm:gap-4 sm:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {skeletonItems.map((_, index) => (
             <AnimeCardSkeleton key={`trending-skeleton-${index}`} />
           ))}
@@ -70,7 +70,7 @@ function TrendingSection({
           : error?.message ?? "Please try again in a moment."
 
       return (
-        <div className="px-6 pb-6">
+        <div className="px-4 pb-6 sm:px-6">
           <Alert variant="destructive">
             <AlertTitle>Could not load trending anime</AlertTitle>
             <AlertDescription>{message}</AlertDescription>
@@ -81,7 +81,7 @@ function TrendingSection({
 
     if (!filteredAnime.length) {
       return (
-        <div className="px-6 pb-6">
+        <div className="px-4 pb-6 sm:px-6">
           <Empty>
             <EmptyTitle>No new trending anime</EmptyTitle>
             <EmptyDescription>
@@ -97,7 +97,7 @@ function TrendingSection({
       <div className="relative">
         <div
           ref={containerRef}
-          className="flex gap-4 overflow-x-auto px-6 pb-2 pt-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex gap-3 overflow-x-auto px-4 pb-2 pt-4 scroll-smooth sm:gap-4 sm:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {filteredAnime.map((anime) => (
             <AnimatedAnimeCard

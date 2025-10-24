@@ -35,21 +35,21 @@ const formatScore = (score?: number) => {
 const AnimeBrowseCard: React.FC<AnimeBrowseCardProps> = ({ anime }) => {
   return (
     <Card className="group overflow-hidden transition-all duration-300 hover:border-primary/50 hover:shadow-lg">
-      <CardContent className="flex gap-4 p-4">
+      <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:gap-4 sm:p-5">
         <Link
           href={`/anime/${anime.anime_id}`}
-          className="relative aspect-[2/3] w-40 shrink-0 overflow-hidden rounded-lg"
+          className="relative aspect-[2/3] w-full shrink-0 overflow-hidden rounded-lg sm:w-36 md:w-40"
         >
           <Image
             src={anime.image_url || "/placeholder.jpg"}
             alt={anime.title || "Anime poster"}
             fill
-            sizes="160px"
+            sizes="(max-width: 640px) 100vw, 160px"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         </Link>
         <div className="flex flex-1 flex-col gap-2">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <Link
               href={`/anime/${anime.anime_id}`}
               className="text-base font-semibold text-foreground transition-colors hover:text-primary"
@@ -59,7 +59,7 @@ const AnimeBrowseCard: React.FC<AnimeBrowseCardProps> = ({ anime }) => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1 rounded-full bg-amber-400/20 px-2 py-0.5 text-xs font-semibold text-amber-600">
+                  <div className="flex items-center gap-1 self-start rounded-full bg-amber-400/20 px-2 py-0.5 text-xs font-semibold text-amber-600 sm:self-auto">
                     <Star className="size-3 fill-current" />
                     <span>{formatScore(anime.Score)}</span>
                   </div>

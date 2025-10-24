@@ -7,7 +7,7 @@ interface SectionHeaderProps {
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({ title, description }) => {
   return (
-    <div className="space-y-2 px-6 pt-6">
+    <div className="space-y-2 px-4 pt-5 sm:px-6 sm:pt-6">
       <div>
         <h2 className="text-lg font-semibold tracking-tight text-foreground">
           {title}

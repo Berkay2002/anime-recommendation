@@ -45,7 +45,7 @@ function RecommendationList({
     <div className="relative">
       <div
         ref={containerRef}
-        className="flex gap-4 overflow-x-auto px-6 pb-2 pt-4 transition-[scroll-snap-type] scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex gap-3 overflow-x-auto px-4 pb-2 pt-4 transition-[scroll-snap-type] scroll-smooth sm:gap-4 sm:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {recommendedAnime.map((anime) => (
           <AnimatedAnimeCard
