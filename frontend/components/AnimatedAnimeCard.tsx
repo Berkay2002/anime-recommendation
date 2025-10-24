@@ -12,7 +12,7 @@ interface Anime {
 
 interface AnimatedAnimeCardProps {
   anime: Anime
-  cardRef: RefObject<HTMLDivElement>
+  cardRef: RefObject<HTMLDivElement | null>
   iconType?: "plus" | "minus"
   onSelect?: (anime: Anime) => void
   onRemove?: (anime: Anime) => void
