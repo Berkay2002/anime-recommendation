@@ -70,7 +70,7 @@ const HomePage = () => {
   )
 
   return (
-    <div className="container mx-auto flex flex-col gap-10 px-6 py-8">
+    <div className="container mx-auto flex flex-col gap-8 px-4 py-6 sm:gap-10 sm:px-6 lg:gap-12 lg:py-10">
       <YourChoiceSection
         selectedAnime={selectedAnime}
         onRemoveAnime={handleRemoveAnime}

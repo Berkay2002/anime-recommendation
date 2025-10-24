@@ -127,7 +127,7 @@ const AnimePage: React.FC = () => {
           setTotalPages(data.totalPages)
           setCurrentPage(data.currentPage)
           setLoading(false)
-          if (isInitialLoad) setIsInitialLoad(false)
+          setIsInitialLoad((prev) => (prev ? false : prev))
         })
         .catch((fetchError: Error) => {
           console.error("Error fetching anime list:", fetchError)
@@ -172,7 +172,7 @@ const AnimePage: React.FC = () => {
   const hasSelection = selectedGenres.length > 0
 
   return (
-    <div className="container mx-auto flex flex-col gap-6 px-6 py-8">
+    <div className="container mx-auto flex flex-col gap-6 px-4 py-6 sm:px-6 lg:gap-8 lg:py-8">
       {loading ? (
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
@@ -354,7 +354,7 @@ const AnimePage: React.FC = () => {
 
       {!loading && !error && totalPages > 1 && (
         <Pagination>
-          <PaginationContent>
+          <PaginationContent className="flex-wrap justify-center gap-1.5 sm:gap-2">
             <PaginationItem>
               <PaginationPrevious
                 href="#"
@@ -376,6 +376,7 @@ const AnimePage: React.FC = () => {
                     handlePageChange(page)
                   }}
                   isActive={currentPage === page}
+                  size="default"
                 >
                   {page}
                 </PaginationLink>

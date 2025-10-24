@@ -54,7 +54,7 @@ function TopRankedSection({
   const renderContent = () => {
     if (loading) {
       return (
-        <div className="flex gap-4 overflow-x-auto px-6 pb-2 pt-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex gap-3 overflow-x-auto px-4 pb-2 pt-4 scroll-smooth sm:gap-4 sm:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {skeletonItems.map((_, index) => (
             <AnimeCardSkeleton key={`top-ranked-skeleton-${index}`} />
           ))}
@@ -69,7 +69,7 @@ function TopRankedSection({
           : error?.message ?? "Please try again soon."
 
       return (
-        <div className="px-6 pb-6">
+        <div className="px-4 pb-6 sm:px-6">
           <Alert variant="destructive">
             <AlertTitle>Could not load top ranked anime</AlertTitle>
             <AlertDescription>{message}</AlertDescription>
@@ -86,7 +86,7 @@ function TopRankedSection({
       <div className="relative">
         <div
           ref={containerRef}
-          className="flex gap-4 overflow-x-auto px-6 pb-2 pt-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex gap-3 overflow-x-auto px-4 pb-2 pt-4 scroll-smooth sm:gap-4 sm:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {filteredAnime.map((anime) => (
             <AnimatedAnimeCard

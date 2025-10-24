@@ -190,7 +190,7 @@ export default function AnimeDetailPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto flex flex-col gap-6 px-6 py-8">
+      <div className="container mx-auto flex flex-col gap-6 px-4 py-6 sm:px-6 lg:gap-8 lg:py-8">
         <Card className="overflow-hidden border border-border/60 bg-card/80 shadow-sm">
           <CardContent className="flex flex-col gap-6 px-4 py-6 md:flex-row md:items-start md:gap-8">
             <div className="relative aspect-[2/3] w-full max-w-[450px] shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
@@ -277,7 +277,7 @@ export default function AnimeDetailPage() {
 
   if (!anime) {
     return (
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-4 py-6 sm:px-6 lg:py-8">
         <Alert variant="destructive">
           <AlertTitle>Anime not found</AlertTitle>
           <AlertDescription>
@@ -297,7 +297,7 @@ export default function AnimeDetailPage() {
   ]
 
   return (
-    <div className="container mx-auto flex flex-col gap-10 px-6 py-8">
+    <div className="container mx-auto flex flex-col gap-8 px-4 py-6 sm:gap-10 sm:px-6 lg:gap-12 lg:py-10">
       <Card className="overflow-hidden border border-border/60 bg-card/80 shadow-sm">
         <CardContent className="flex flex-col gap-6 px-4 py-6 md:flex-row md:items-start md:gap-8">
           <div className="relative aspect-[2/3] w-full max-w-[450px] shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
@@ -452,10 +452,10 @@ export default function AnimeDetailPage() {
 function ButtonRow({ animeId }: { animeId: number }) {
   return (
     <div className="flex flex-wrap gap-3">
-      <Button asChild>
+      <Button asChild className="w-full sm:w-auto">
         <Link href={`/anime/${animeId}`}>View full details</Link>
       </Button>
-      <Button asChild variant="outline">
+      <Button asChild variant="outline" className="w-full sm:w-auto">
         <Link href="#reviews">Jump to reviews</Link>
       </Button>
     </div>

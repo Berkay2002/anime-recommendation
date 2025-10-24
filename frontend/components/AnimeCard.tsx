@@ -67,7 +67,7 @@ const AnimeCard: React.FC<AnimeCardProps> = ({
     <div
       ref={resolvedRef}
       className={cn(
-        "min-w-[13rem] max-w-[13rem] shrink-0 transition duration-300 ease-out",
+        "min-w-[10rem] max-w-[10rem] shrink-0 transition duration-300 ease-out sm:min-w-[12rem] sm:max-w-[12rem] lg:min-w-[13rem] lg:max-w-[13rem]",
         isFading ? "opacity-0" : "opacity-100"
       )}
     >
