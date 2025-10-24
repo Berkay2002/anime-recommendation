@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useParams } from "next/navigation"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import RecommendationList from "@/components/RecommendationList"
+import ReviewCard from "@/components/ReviewCard"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -49,6 +51,9 @@ export default function AnimeDetailPage() {
   const [reviews, setReviews] = useState<string[]>([])
   const [generalFeatures, setGeneralFeatures] = useState<Anime[]>([])
   const [loading, setLoading] = useState<boolean>(true)
+  const [currentPage, setCurrentPage] = useState<number>(1)
+
+  const REVIEWS_PER_PAGE = 3
 
   const recommendedAnime = useMemo(() => {
     if (!recommendations.length || !generalFeatures.length) {
@@ -61,6 +66,14 @@ export default function AnimeDetailPage() {
       .map((rec) => featureMap.get(rec.anime_id))
       .filter(Boolean) as Anime[]
   }, [generalFeatures, recommendations])
+
+  const paginatedReviews = useMemo(() => {
+    const startIndex = (currentPage - 1) * REVIEWS_PER_PAGE
+    const endIndex = startIndex + REVIEWS_PER_PAGE
+    return reviews.slice(startIndex, endIndex)
+  }, [reviews, currentPage, REVIEWS_PER_PAGE])
+
+  const totalPages = Math.ceil(reviews.length / REVIEWS_PER_PAGE)
 
   useEffect(() => {
     async function fetchGeneralFeatures() {
@@ -158,6 +171,7 @@ export default function AnimeDetailPage() {
         }
         const data = await response.json()
         setReviews(data.reviews || [])
+        setCurrentPage(1) // Reset to first page when new reviews load
       } catch (reviewsError: any) {
         if (reviewsError.name === "AbortError") {
           console.debug("Reviews fetch aborted")
@@ -179,7 +193,7 @@ export default function AnimeDetailPage() {
       <div className="container mx-auto flex flex-col gap-6 px-6 py-8">
         <Card className="overflow-hidden border border-border/60 bg-card/80 shadow-sm">
           <CardContent className="flex flex-col gap-6 px-4 py-6 md:flex-row md:items-start md:gap-8">
-            <div className="relative aspect-[2/3] w-full max-w-[220px] shrink-0 overflow-hidden rounded-3xl border border-border/40 bg-muted">
+            <div className="relative aspect-[2/3] w-full max-w-[450px] shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
               <Skeleton className="h-full w-full" />
             </div>
 
@@ -286,13 +300,14 @@ export default function AnimeDetailPage() {
     <div className="container mx-auto flex flex-col gap-10 px-6 py-8">
       <Card className="overflow-hidden border border-border/60 bg-card/80 shadow-sm">
         <CardContent className="flex flex-col gap-6 px-4 py-6 md:flex-row md:items-start md:gap-8">
-          <div className="relative aspect-[2/3] w-full max-w-[220px] shrink-0 overflow-hidden rounded-3xl border border-border/40 bg-muted">
+          <div className="relative aspect-[2/3] w-full max-w-[450px] shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
             <Image
               src={anime.image_url || "/placeholder.jpg"}
               alt={anime.title || "Anime artwork"}
               fill
-              sizes="220px"
+              sizes="(max-width: 768px) 100vw, 450px"
               className="object-cover"
+              priority
             />
           </div>
 
@@ -363,28 +378,64 @@ export default function AnimeDetailPage() {
         )}
       </section>
 
-      <section className="space-y-4" id="reviews">
-        <div className="space-y-1">
+      <section className="space-y-6" id="reviews">
+        <div className="space-y-2">
           <h2 className="text-2xl font-semibold tracking-tight text-foreground">
             Reviews
+            {reviews.length > 0 && (
+              <span className="ml-3 text-base font-normal text-muted-foreground">
+                ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
+              </span>
+            )}
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm leading-relaxed text-muted-foreground">
             What fans are saying about this anime.
           </p>
         </div>
         {reviews.length ? (
-          <div className="grid gap-4">
-            {reviews.map((review, index) => (
-              <Card
-                key={`review-${index}`}
-                className="border border-border/60 bg-card/80 shadow-sm"
-              >
-                <CardContent className="px-4 py-4 text-sm leading-relaxed text-muted-foreground">
-                  {review}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <>
+            <div className="grid gap-5">
+              {paginatedReviews.map((review, index) => (
+                <ReviewCard
+                  key={`review-${(currentPage - 1) * REVIEWS_PER_PAGE + index}`}
+                  review={review}
+                  index={(currentPage - 1) * REVIEWS_PER_PAGE + index}
+                />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between gap-4 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="gap-1.5"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="gap-1.5"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
           <Alert>
             <AlertTitle>No reviews available</AlertTitle>
