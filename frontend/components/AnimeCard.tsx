@@ -98,6 +98,7 @@ const AnimeCard: React.FC<AnimeCardProps> = ({
                 width={320}
                 height={480}
                 className="size-full object-cover transition duration-500 group-hover:scale-105"
+                quality={80}
               />
             </div>
 

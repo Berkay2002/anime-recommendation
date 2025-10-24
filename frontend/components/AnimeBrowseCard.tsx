@@ -46,6 +46,7 @@ const AnimeBrowseCard: React.FC<AnimeBrowseCardProps> = ({ anime }) => {
             fill
             sizes="(max-width: 640px) 100vw, 160px"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
+            quality={80}
           />
         </Link>
         <div className="flex flex-1 flex-col gap-2">

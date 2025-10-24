@@ -214,6 +214,7 @@ export default function SearchBar() {
                           width={56}
                           height={80}
                           className="h-20 w-14 rounded-sm object-cover"
+                          quality={80}
                         />
                       ) : (
                         <div className="bg-muted flex h-20 w-14 items-center justify-center rounded-sm text-xs text-muted-foreground">

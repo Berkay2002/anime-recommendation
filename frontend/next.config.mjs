@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    cacheComponents: true,
     images: {
       remotePatterns: [
         {
@@ -7,6 +8,7 @@ const nextConfig = {
           hostname: 'cdn.myanimelist.net',
         },
       ],
+      qualities: [75, 80],
     },
   };
   

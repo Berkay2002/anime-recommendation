@@ -1,5 +1,7 @@
+import { cache } from 'react';
 import clientPromise from '../lib/mongodb';
 import { Collection, Db } from 'mongodb';
+import { revalidateTag } from 'next/cache';
 
 // Comprehensive Anime Interface
 interface Anime {
@@ -71,7 +73,7 @@ interface GetAnimeParams {
   withEmbeddings?: boolean
 }
 
-export async function getAnime(params: GetAnimeParams = {}) {
+export const getAnime = cache(async (params: GetAnimeParams = {}) => {
   const {
     sortBy = 'Popularity',
     limit = 30,
@@ -147,10 +149,10 @@ export async function getAnime(params: GetAnimeParams = {}) {
     totalPages,
     currentPage: page,
   };
-}
+});
 
 // --- SEARCH ANIME LOGIC ---
-export async function searchAnime(query: string) {
+export const searchAnime = cache(async (query: string) => {
   const db = await getDb();
   const collection: Collection<RawAnime> = db.collection("sorted_anime");
   const regexPattern = new RegExp(query, 'i');
@@ -209,10 +211,10 @@ export async function searchAnime(query: string) {
     .toArray();
 
   return animeList.map(formatAnime);
-}
+});
 
 // --- RECOMMENDATIONS LOGIC ---
-export async function getRecommendations(animeIds: number[]) {
+export const getRecommendations = cache(async (animeIds: number[]) => {
   const db = await getDb();
   const collection = db.collection('recommendations');
 
@@ -221,10 +223,10 @@ export async function getRecommendations(animeIds: number[]) {
     .toArray();
 
   return recommendations;
-}
+});
 
 // --- REVIEWS LOGIC ---
-export async function getReviews(animeId: number) {
+export const getReviews = cache(async (animeId: number) => {
   const db = await getDb();
   const collection = db.collection('anime_reviews');
 
@@ -240,4 +242,4 @@ export async function getReviews(animeId: number) {
   );
 
   return review;
-}
+});
