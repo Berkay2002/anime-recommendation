@@ -34,7 +34,7 @@ const Navbar: React.FC = () => {
 
   return (
     <header className="supports-[backdrop-filter]:bg-background/60 bg-background/80 sticky top-0 z-40 border-b backdrop-blur">
-      <div className="container mx-auto flex flex-col gap-4 py-4">
+      <div className="container mx-auto flex flex-col gap-4 px-5 py-4 md:px-4">
         <div className="flex items-center justify-between md:hidden">
           <Link
             href="/"
@@ -56,7 +56,8 @@ const Navbar: React.FC = () => {
                 </Button>
               </SheetTrigger>
               <SheetContent
-                side="left"
+                side="right"
+                onOpenAutoFocus={(event) => event.preventDefault()}
                 className="flex w-full max-w-xs flex-col gap-6 border-border/60 bg-background/95 px-6 py-6 backdrop-blur"
               >
                 <SheetHeader className="space-y-1 text-left">

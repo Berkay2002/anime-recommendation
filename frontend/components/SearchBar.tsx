@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { type PointerEvent, useCallback, useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Command as CommandPrimitive } from "cmdk"
@@ -28,6 +28,7 @@ const SEARCH_ENDPOINT = "/api/anime/search"
 export default function SearchBar() {
   const router = useRouter()
   const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
 
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<Anime[]>([])
@@ -36,6 +37,7 @@ export default function SearchBar() {
 
   const focusInput = useCallback(() => {
     const input =
+      inputRef.current ??
       containerRef.current?.querySelector<HTMLInputElement>(
         'input[data-slot="input-group-control"]'
       ) ??
@@ -140,6 +142,15 @@ export default function SearchBar() {
 
   const shouldShowResults = isOpen && query.trim().length > 0
 
+  const handleResultsPointerDown = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      if (event.pointerType !== "mouse") {
+        inputRef.current?.blur()
+      }
+    },
+    []
+  )
+
   return (
     <div ref={containerRef} className="relative">
       <Command
@@ -160,6 +171,7 @@ export default function SearchBar() {
             onFocus={() => setIsOpen(true)}
             placeholder="Search anime..."
             className="placeholder:text-muted-foreground flex-1 rounded-none border-0 bg-transparent py-1.5 text-sm shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
+            ref={inputRef}
           />
           <InputGroupAddon
             align="inline-end"
@@ -171,7 +183,10 @@ export default function SearchBar() {
         </InputGroup>
 
         {shouldShowResults && (
-          <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-md border bg-popover text-popover-foreground shadow-lg">
+          <div
+            className="absolute left-0 right-0 top-full z-50 mt-2 rounded-md border bg-popover text-popover-foreground shadow-lg"
+            onPointerDown={handleResultsPointerDown}
+          >
             <CommandList className="max-h-64">
               {!isLoading && (
                 <CommandEmpty className="py-6 text-sm text-muted-foreground">
