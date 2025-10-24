@@ -42,6 +42,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useDebounce } from "@/hooks/useDebounce"
+import { useLocalStorage } from "@/hooks/useLocalStorage"
 import { cn } from "@/lib/utils"
 
 const genreOptions = [
@@ -88,12 +90,22 @@ const badgeSkeletonPlaceholders = Array.from({ length: 3 })
 const AnimePage: React.FC = () => {
   const [animeList, setAnimeList] = useState<Anime[]>([])
   const [loading, setLoading] = useState<boolean>(true)
+  const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedGenres, setSelectedGenres] = useState<GenreOption[]>([])
+  const [selectedGenres, setSelectedGenres] = useLocalStorage<GenreOption[]>(
+    "selectedGenres",
+    []
+  )
   const [genrePopoverOpen, setGenrePopoverOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
-  const [sortBy, setSortBy] = useState<SortOption>("Popularity")
+  const [sortBy, setSortBy] = useLocalStorage<SortOption>(
+    "sortBy",
+    "Popularity"
+  )
+
+  const debouncedSelectedGenres = useDebounce(selectedGenres, 300)
+  const debouncedSortBy = useDebounce(sortBy, 300)
 
   const fetchAnime = useCallback(
     (page: number, sortByValue: SortOption, genres: GenreOption[]) => {
@@ -115,6 +127,7 @@ const AnimePage: React.FC = () => {
           setTotalPages(data.totalPages)
           setCurrentPage(data.currentPage)
           setLoading(false)
+          if (isInitialLoad) setIsInitialLoad(false)
         })
         .catch((fetchError: Error) => {
           console.error("Error fetching anime list:", fetchError)
@@ -128,8 +141,8 @@ const AnimePage: React.FC = () => {
   )
 
   useEffect(() => {
-    fetchAnime(currentPage, sortBy, selectedGenres)
-  }, [fetchAnime, currentPage, sortBy, selectedGenres])
+    fetchAnime(currentPage, debouncedSortBy, debouncedSelectedGenres)
+  }, [fetchAnime, currentPage, debouncedSortBy, debouncedSelectedGenres])
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -138,73 +151,25 @@ const AnimePage: React.FC = () => {
     }
   }
 
-  const toggleGenre = useCallback((genre: GenreOption) => {
-    setSelectedGenres((prev) =>
-      prev.includes(genre)
-        ? prev.filter((g) => g !== genre)
-        : [...prev, genre]
-    )
-  }, [])
+  const toggleGenre = useCallback(
+    (genre: GenreOption) => {
+      setSelectedGenres((prev) =>
+        prev.includes(genre)
+          ? prev.filter((g) => g !== genre)
+          : [...prev, genre]
+      )
+    },
+    [setSelectedGenres]
+  )
 
-  const removeGenre = useCallback((genre: GenreOption) => {
-    setSelectedGenres((prev) => prev.filter((g) => g !== genre))
-  }, [])
-
+  const removeGenre = useCallback(
+    (genre: GenreOption) => {
+      setSelectedGenres((prev) => prev.filter((g) => g !== genre))
+    },
+    [setSelectedGenres]
+  )
 
   const hasSelection = selectedGenres.length > 0
-
-  let content: ReactNode = null
-
-  if (loading) {
-    content = (
-      <div className="grid gap-4 md:grid-cols-2">
-        {skeletonPlaceholders.map((_, index) => (
-          <Card key={`anime-skeleton-${index}`} className="flex gap-4 p-4">
-            <Skeleton className="h-36 w-28 shrink-0 rounded-lg" />
-            <div className="flex w-full flex-1 flex-col gap-3">
-              <div className="flex items-start justify-between gap-4">
-                <Skeleton className="h-5 w-3/4" />
-                <Skeleton className="h-5 w-12 rounded-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-5/6" />
-              </div>
-              <div className="mt-auto flex gap-2">
-                <Skeleton className="h-5 w-16 rounded-full" />
-                <Skeleton className="h-5 w-20 rounded-full" />
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
-    )
-  } else if (error) {
-    content = (
-      <Alert variant="destructive">
-        <AlertTitle>Something went wrong</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    )
-  } else if (!animeList.length) {
-    content = (
-      <Alert>
-        <AlertTitle>No matches found</AlertTitle>
-        <AlertDescription>
-          Try selecting different genres to discover more series.
-        </AlertDescription>
-      </Alert>
-    )
-  } else {
-    content = (
-      <div className="grid gap-4 md:grid-cols-2">
-        {animeList.map((anime) => (
-          <AnimeBrowseCard key={anime.anime_id} anime={anime} />
-        ))}
-      </div>
-    )
-  }
 
   return (
     <div className="container mx-auto flex flex-col gap-6 px-6 py-8">
@@ -337,7 +302,55 @@ const AnimePage: React.FC = () => {
         </div>
       ) : null}
 
-      {content}
+      <div
+        className={cn(
+          "transition-opacity",
+          loading && !isInitialLoad ? "opacity-50" : "opacity-100"
+        )}
+      >
+        {isInitialLoad && loading ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {skeletonPlaceholders.map((_, index) => (
+              <Card key={`anime-skeleton-${index}`} className="flex gap-4 p-4">
+                <Skeleton className="h-60 w-40 shrink-0 rounded-lg" />
+                <div className="flex w-full flex-1 flex-col gap-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-5 w-12 rounded-full" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
+                  </div>
+                  <div className="mt-auto flex gap-2">
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : error ? (
+          <Alert variant="destructive">
+            <AlertTitle>Something went wrong</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : !loading && animeList.length === 0 ? (
+          <Alert>
+            <AlertTitle>No matches found</AlertTitle>
+            <AlertDescription>
+              Try selecting different genres to discover more series.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {animeList.map((anime) => (
+              <AnimeBrowseCard key={anime.anime_id} anime={anime} />
+            ))}
+          </div>
+        )}
+      </div>
 
       {!loading && !error && totalPages > 1 && (
         <Pagination>

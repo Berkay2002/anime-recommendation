@@ -38,13 +38,13 @@ const AnimeBrowseCard: React.FC<AnimeBrowseCardProps> = ({ anime }) => {
       <CardContent className="flex gap-4 p-4">
         <Link
           href={`/anime/${anime.anime_id}`}
-          className="relative aspect-[2/3] w-28 shrink-0 overflow-hidden rounded-lg"
+          className="relative aspect-[2/3] w-40 shrink-0 overflow-hidden rounded-lg"
         >
           <Image
             src={anime.image_url || "/placeholder.jpg"}
             alt={anime.title || "Anime poster"}
             fill
-            sizes="112px"
+            sizes="160px"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         </Link>
@@ -78,7 +78,7 @@ const AnimeBrowseCard: React.FC<AnimeBrowseCardProps> = ({ anime }) => {
           )}
 
           {anime.Genres?.length ? (
-            <div className="mt-auto flex flex-wrap gap-1.5 pt-2">
+            <div className="flex flex-wrap gap-1.5">
               {anime.Genres.slice(0, 3).map((genre) => (
                 <Badge key={genre} variant="outline" className="text-xs">
                   {genre}
