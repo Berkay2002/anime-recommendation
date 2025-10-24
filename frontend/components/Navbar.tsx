@@ -47,7 +47,7 @@ const Navbar: React.FC = () => {
                       className={cn(
                         "rounded-md px-4 py-2 text-lg font-medium transition-colors",
                         isActive
-                          ? "bg-accent text-accent-foreground shadow-sm"
+                          ? "bg-primary text-primary-foreground shadow-sm"
                           : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                       )}
                     >

@@ -14,6 +14,7 @@ import { Check, ChevronsUpDown, X } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import AnimeBrowseCard from "@/components/AnimeBrowseCard"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Command,
@@ -33,6 +34,13 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
@@ -49,6 +57,14 @@ const genreOptions = [
 
 type GenreOption = (typeof genreOptions)[number]
 
+const sortOptions = [
+  { value: "Popularity", label: "Popularity" },
+  { value: "Score", label: "Score" },
+  { value: "Rank", label: "Rank" },
+] as const
+
+type SortOption = (typeof sortOptions)[number]["value"]
+
 interface Anime {
   anime_id: number
   title: string
@@ -56,6 +72,7 @@ interface Anime {
   Genres?: string[]
   Score?: number
   Description?: string
+  Rank?: number
 }
 
 interface ApiResponse {
@@ -67,10 +84,6 @@ interface ApiResponse {
 const skeletonPlaceholders = Array.from({ length: 6 })
 const badgeSkeletonPlaceholders = Array.from({ length: 3 })
 
-const formatScore = (score?: number) => {
-  if (typeof score !== "number" || !Number.isFinite(score)) return "N/A"
-  return score.toFixed(1)
-}
 
 const AnimePage: React.FC = () => {
   const [animeList, setAnimeList] = useState<Anime[]>([])
@@ -80,36 +93,43 @@ const AnimePage: React.FC = () => {
   const [genrePopoverOpen, setGenrePopoverOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
+  const [sortBy, setSortBy] = useState<SortOption>("Popularity")
 
-  const fetchAnime = useCallback((page: number) => {
-    setLoading(true)
-    const apiUrl = `/api/anime?limit=50&page=${page}`
+  const fetchAnime = useCallback(
+    (page: number, sortByValue: SortOption, genres: GenreOption[]) => {
+      setLoading(true)
+      let apiUrl = `/api/anime?limit=50&page=${page}&sortBy=${sortByValue}`
+      if (genres.length > 0) {
+        apiUrl += `&genres=${genres.join(",")}`
+      }
 
-    fetch(apiUrl)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-        return response.json()
-      })
-      .then((data: ApiResponse) => {
-        setAnimeList(data.anime)
-        setTotalPages(data.totalPages)
-        setCurrentPage(data.currentPage)
-        setLoading(false)
-      })
-      .catch((fetchError: Error) => {
-        console.error("Error fetching anime list:", fetchError)
-        setError(
-          `Failed to load anime list. Please try again later. (${fetchError.message})`
-        )
-        setLoading(false)
-      })
-  }, [])
+      fetch(apiUrl)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+          return response.json()
+        })
+        .then((data: ApiResponse) => {
+          setAnimeList(data.anime)
+          setTotalPages(data.totalPages)
+          setCurrentPage(data.currentPage)
+          setLoading(false)
+        })
+        .catch((fetchError: Error) => {
+          console.error("Error fetching anime list:", fetchError)
+          setError(
+            `Failed to load anime list. Please try again later. (${fetchError.message})`
+          )
+          setLoading(false)
+        })
+    },
+    []
+  )
 
   useEffect(() => {
-    fetchAnime(currentPage)
-  }, [fetchAnime, currentPage])
+    fetchAnime(currentPage, sortBy, selectedGenres)
+  }, [fetchAnime, currentPage, sortBy, selectedGenres])
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -130,27 +150,6 @@ const AnimePage: React.FC = () => {
     setSelectedGenres((prev) => prev.filter((g) => g !== genre))
   }, [])
 
-  const filteredAnimeList = useMemo(() => {
-    if (!selectedGenres.length) {
-      return animeList
-    }
-
-    const lowerSelectedGenres = selectedGenres.map((genre) =>
-      genre.toLowerCase()
-    )
-
-    return [...animeList]
-      .filter((anime) => {
-        if (!anime?.Genres?.length) return false
-        const lowerAnimeGenres = anime.Genres.map((genre) =>
-          genre.toLowerCase()
-        )
-        return lowerSelectedGenres.every((genre) =>
-          lowerAnimeGenres.includes(genre)
-        )
-      })
-      .sort((a, b) => (b.Score ?? 0) - (a.Score ?? 0))
-  }, [animeList, selectedGenres])
 
   const hasSelection = selectedGenres.length > 0
 
@@ -158,38 +157,25 @@ const AnimePage: React.FC = () => {
 
   if (loading) {
     content = (
-      <div className="grid gap-6">
+      <div className="grid gap-4 md:grid-cols-2">
         {skeletonPlaceholders.map((_, index) => (
-          <Card
-            key={`anime-skeleton-${index}`}
-            className="overflow-hidden border border-border/60 bg-card/80 shadow-sm"
-          >
-            <CardContent className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-start sm:gap-6">
-              <div className="relative aspect-[2/3] w-full max-w-[180px] shrink-0 overflow-hidden rounded-2xl border border-border/50 bg-muted sm:w-40">
-                <Skeleton className="h-full w-full" />
+          <Card key={`anime-skeleton-${index}`} className="flex gap-4 p-4">
+            <Skeleton className="h-36 w-28 shrink-0 rounded-lg" />
+            <div className="flex w-full flex-1 flex-col gap-3">
+              <div className="flex items-start justify-between gap-4">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-5 w-12 rounded-full" />
               </div>
-
-              <div className="flex flex-1 flex-col gap-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="space-y-2">
-                    <Skeleton className="h-6 w-48" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                  <Skeleton className="h-9 w-28" />
-                </div>
-
-                <Skeleton className="h-20 w-full" />
-
-                <div className="flex flex-wrap gap-2">
-                  {badgeSkeletonPlaceholders.map((_, badgeIndex) => (
-                    <Skeleton
-                      key={`badge-skeleton-${badgeIndex}`}
-                      className="h-6 w-20 rounded-full"
-                    />
-                  ))}
-                </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
               </div>
-            </CardContent>
+              <div className="mt-auto flex gap-2">
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+            </div>
           </Card>
         ))}
       </div>
@@ -201,7 +187,7 @@ const AnimePage: React.FC = () => {
         <AlertDescription>{error}</AlertDescription>
       </Alert>
     )
-  } else if (!filteredAnimeList.length) {
+  } else if (!animeList.length) {
     content = (
       <Alert>
         <AlertTitle>No matches found</AlertTitle>
@@ -212,68 +198,9 @@ const AnimePage: React.FC = () => {
     )
   } else {
     content = (
-      <div className="grid gap-6">
-        {filteredAnimeList.map((anime) => (
-          <Card
-            key={anime.anime_id}
-            className="overflow-hidden border border-border/60 bg-card/80 shadow-sm"
-          >
-            <CardContent className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-start sm:gap-6">
-              <Link
-                href={`/anime/${anime.anime_id}`}
-                className="relative aspect-[2/3] w-full max-w-[180px] shrink-0 overflow-hidden rounded-2xl border border-border/50 bg-muted sm:w-40"
-              >
-                <Image
-                  src={anime.image_url || "/placeholder.jpg"}
-                  alt={anime.title || "Anime poster"}
-                  fill
-                  sizes="160px"
-                  className="object-cover transition duration-500 hover:scale-105"
-                />
-              </Link>
-
-              <div className="flex flex-1 flex-col gap-4">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="space-y-1">
-                    <Link
-                      href={`/anime/${anime.anime_id}`}
-                      className="text-xl font-semibold tracking-tight text-foreground transition hover:text-primary"
-                    >
-                      {anime.title}
-                    </Link>
-                    <p className="text-sm text-muted-foreground">
-                      Score:{" "}
-                      <span className="font-medium text-foreground">
-                        {formatScore(anime.Score)}
-                      </span>
-                    </p>
-                  </div>
-
-                  <Button asChild variant="secondary" size="sm">
-                    <Link href={`/anime/${anime.anime_id}`}>
-                      View details
-                    </Link>
-                  </Button>
-                </div>
-
-                {anime.Description ? (
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    {anime.Description}
-                  </p>
-                ) : null}
-
-                {anime.Genres?.length ? (
-                  <div className="flex flex-wrap gap-2">
-                    {anime.Genres.map((genre) => (
-                      <Badge key={`${anime.anime_id}-${genre}`} variant="outline">
-                        {genre}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </CardContent>
-          </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        {animeList.map((anime) => (
+          <AnimeBrowseCard key={anime.anime_id} anime={anime} />
         ))}
       </div>
     )
@@ -300,54 +227,71 @@ const AnimePage: React.FC = () => {
             </p>
           </div>
 
-          <Popover open={genrePopoverOpen} onOpenChange={setGenrePopoverOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={genrePopoverOpen}
-                className="w-full justify-between border-border/60 bg-background/80 backdrop-blur sm:w-72"
-              >
-                <span className="text-sm font-medium">
-                  {hasSelection
-                    ? `${selectedGenres.length} genre${
-                        selectedGenres.length > 1 ? "s" : ""
-                      } selected`
-                    : "Select genres"}
-                </span>
-                <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-60" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="p-0" align="end">
-              <Command>
-                <CommandInput placeholder="Search genres..." />
-                <CommandList>
-                  <CommandEmpty>No genres found.</CommandEmpty>
-                  <CommandGroup>
-                    {genreOptions.map((genre) => {
-                      const isSelected = selectedGenres.includes(genre)
-                      return (
-                        <CommandItem
-                          key={genre}
-                          value={genre}
-                          onSelect={() => toggleGenre(genre)}
-                          className="gap-2"
-                        >
-                          <Check
-                            className={cn(
-                              "size-4",
-                              isSelected ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {genre}
-                        </CommandItem>
-                      )
-                    })}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Select
+              value={sortBy}
+              onValueChange={(value) => setSortBy(value as SortOption)}
+            >
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Popover open={genrePopoverOpen} onOpenChange={setGenrePopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={genrePopoverOpen}
+                  className="w-full justify-between sm:w-72"
+                >
+                  <span className="truncate">
+                    {hasSelection
+                      ? `${selectedGenres.length} genre${
+                          selectedGenres.length > 1 ? "s" : ""
+                        } selected`
+                      : "Select genres"}
+                  </span>
+                  <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-0" align="end">
+                <Command>
+                  <CommandInput placeholder="Search genres..." />
+                  <CommandList>
+                    <CommandEmpty>No genres found.</CommandEmpty>
+                    <CommandGroup>
+                      {genreOptions.map((genre) => {
+                        const isSelected = selectedGenres.includes(genre)
+                        return (
+                          <CommandItem
+                            key={genre}
+                            value={genre}
+                            onSelect={() => toggleGenre(genre)}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 size-4",
+                                isSelected ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {genre}
+                          </CommandItem>
+                        )
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
       )}
 
@@ -365,7 +309,7 @@ const AnimePage: React.FC = () => {
           {selectedGenres.map((genre) => (
             <Badge
               key={`selected-${genre}`}
-              variant="secondary"
+              variant="default"
               className="flex items-center gap-1.5 pr-0"
             >
               {genre}
@@ -386,7 +330,7 @@ const AnimePage: React.FC = () => {
             size="sm"
             variant="ghost"
             onClick={() => setSelectedGenres([])}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:bg-accent hover:text-foreground"
           >
             Clear all
           </Button>

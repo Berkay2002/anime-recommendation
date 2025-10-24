@@ -9,8 +9,20 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '30', 10);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const withEmbeddings = searchParams.get('withEmbeddings') === 'true';
+    const genres = searchParams.get('genres')?.split(',');
 
-    let params = { sortBy, limit, page, withEmbeddings };
+    let params: any = { sortBy, limit, page, withEmbeddings };
+    if (genres && genres.length > 0) {
+      const regexConditions = genres.map((genre) => ({
+        Genres: {
+          $regex: new RegExp(
+            `\\b${genre.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}\\b`,
+            "i"
+          ),
+        },
+      }));
+      params.filter = { $and: regexConditions };
+    }
 
     // Handle specific list types like 'trending' or 'top-ranked'
     if (type === 'trending') {
