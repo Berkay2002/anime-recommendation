@@ -2,6 +2,8 @@
 
 import { getRecommendations } from '../../../../../services/animeService';
 
+export const dynamic = 'force-dynamic';
+
 interface SimilarAnime {
   anime_id: number;
   title: string;

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getRecommendations } from '../../../../services/animeService';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     const { animeIds } = await request.json();

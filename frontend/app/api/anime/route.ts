@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
 import { getAnime } from '../../../services/animeService';
 
+export const dynamic = 'force-dynamic';
+
 interface GetAnimeParams {
-  sortBy: string;
-  limit: number;
-  page: number;
-  withEmbeddings: boolean;
+  sortBy?: string;
+  limit?: number;
+  page?: number;
   filter?: {
-    $and: {
-      Genres: {
-        $regex: RegExp;
-      };
-    }[];
+    genres?: string[];
   };
+  withEmbeddings?: boolean;
 }
 
 export async function GET(request: Request) {
@@ -23,19 +21,11 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '30', 10);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const withEmbeddings = searchParams.get('withEmbeddings') === 'true';
-    const genres = searchParams.get('genres')?.split(',');
+    const genres = searchParams.get('genres')?.split(',').filter(Boolean);
 
     const params: GetAnimeParams = { sortBy, limit, page, withEmbeddings };
     if (genres && genres.length > 0) {
-      const regexConditions = genres.map((genre) => ({
-        Genres: {
-          $regex: new RegExp(
-            `\\b${genre.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}\\b`,
-            "i"
-          ),
-        },
-      }));
-      params.filter = { $and: regexConditions };
+      params.filter = { genres };
     }
 
     // Handle specific list types like 'trending' or 'top-ranked'
