@@ -13,29 +13,40 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { fetchAnimeWithCache, DEFAULT_ANIME_LIMIT } from "@/lib/animeCache"
 
 interface Anime {
   anime_id: number
   title: string
   image_url?: string
+  description?: string
   Description?: string
+  score?: number
   Score?: number
+  rank?: number
   Rank?: number
+  popularity?: number
   Popularity?: number
+  genres?: string[]
   Genres?: string[]
+  demographic?: string
   Demographic?: string
+  rating?: string
   Rating?: string
-  bert_description: number[]
-  bert_genres: number[]
-  bert_demographic: number[]
-  bert_rating: number[]
-  bert_themes: number[]
+  // Embeddings no longer needed on client
+  bert_description?: number[]
+  bert_genres?: number[]
+  bert_demographic?: number[]
+  bert_rating?: number[]
+  bert_themes?: number[]
 }
 
 interface Recommendation {
   anime_id: number
   title: string
+  image_url?: string
+  score?: number
+  popularity?: number
+  genres?: string[]
   similarity: number
 }
 
@@ -49,23 +60,28 @@ export default function AnimeDetailPage() {
   const [anime, setAnime] = useState<Anime | null>(null)
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [reviews, setReviews] = useState<string[]>([])
-  const [generalFeatures, setGeneralFeatures] = useState<Anime[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [currentPage, setCurrentPage] = useState<number>(1)
 
   const REVIEWS_PER_PAGE = 3
 
   const recommendedAnime = useMemo(() => {
-    if (!recommendations.length || !generalFeatures.length) {
-      return []
-    }
-    const featureMap = new Map(
-      generalFeatures.map((item) => [item.anime_id, item])
-    )
-    return recommendations
-      .map((rec) => featureMap.get(rec.anime_id))
-      .filter(Boolean) as Anime[]
-  }, [generalFeatures, recommendations])
+    // API returns complete anime data, use it directly
+    return recommendations.map(rec => ({
+      anime_id: rec.anime_id,
+      title: rec.title,
+      image_url: rec.image_url,
+      score: rec.score,
+      popularity: rec.popularity,
+      genres: rec.genres,
+      // Add empty embeddings for compatibility with RecommendationList
+      bert_description: [],
+      bert_genres: [],
+      bert_demographic: [],
+      bert_rating: [],
+      bert_themes: [],
+    } as Anime))
+  }, [recommendations])
 
   const paginatedReviews = useMemo(() => {
     const startIndex = (currentPage - 1) * REVIEWS_PER_PAGE
@@ -76,88 +92,74 @@ export default function AnimeDetailPage() {
   const totalPages = Math.ceil(reviews.length / REVIEWS_PER_PAGE)
 
   useEffect(() => {
-    async function fetchGeneralFeatures() {
-      let metadataLoaded = false
-
+    async function fetchAnimeDetails() {
       try {
-        const metadataResponse = await fetch(
-          `/api/anime?limit=${DEFAULT_ANIME_LIMIT}`
-        )
+        // Fetch just this anime's metadata - no embeddings needed
+        const response = await fetch(`/api/anime?limit=1000`)
 
-        if (!metadataResponse.ok) {
-          throw new Error(`Failed to fetch metadata: ${metadataResponse.status}`)
+        if (!response.ok) {
+          throw new Error(`Failed to fetch anime: ${response.status}`)
         }
 
-        const metadataPayload = await metadataResponse.json()
-        const metadataList: Anime[] = metadataPayload.anime || []
+        const payload = await response.json()
+        const animeList: Anime[] = payload.anime || []
 
-        const selectedAnime = metadataList.find(
+        const selectedAnime = animeList.find(
           (item) => item.anime_id === numericId
         )
+        
         if (selectedAnime) {
           setAnime(selectedAnime)
-          metadataLoaded = true
         }
-
+      } catch (error) {
+        console.error("Error fetching anime:", error)
+      } finally {
         setLoading(false)
-
-        try {
-          const featuresData = await fetchAnimeWithCache()
-          setGeneralFeatures(featuresData)
-
-          const selectedWithEmbeddings = featuresData.find(
-            (item) => item.anime_id === numericId
-          )
-          if (selectedWithEmbeddings) {
-            setAnime(selectedWithEmbeddings)
-          }
-        } catch (embeddingError) {
-          console.error(
-            "Error fetching embeddings (recommendations will be unavailable):",
-            embeddingError
-          )
-        }
-      } catch (metadataError) {
-        console.error("Error fetching anime metadata:", metadataError)
-        if (!metadataLoaded) {
-          setLoading(false)
-        }
       }
     }
 
-    fetchGeneralFeatures()
+    fetchAnimeDetails()
   }, [numericId])
 
   useEffect(() => {
-    if (anime && generalFeatures.length > 0) {
-      const worker = new Worker("/worker.js")
+    if (!anime) return
 
-      worker.postMessage({
-        selectedEmbeddings: [anime],
-        allEmbeddings: generalFeatures,
-        selectedTitles: [anime.title],
-        selectedAnimeIds: [anime.anime_id],
-        weights: {
-          bert_description: 0.4,
-          bert_genres: 0.35,
-          bert_demographic: 0.15,
-          bert_themes: 0.1,
-        },
-      })
+    const controller = new AbortController()
+    const { signal } = controller
 
-      worker.onmessage = (event) => {
-        setRecommendations(event.data)
-        worker.terminate()
+    async function fetchRecommendations() {
+      try {
+        const response = await fetch(`/api/anime/recommendation/${anime.anime_id}`, { signal })
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            console.log('No recommendations found for this anime')
+            setRecommendations([])
+            return
+          }
+          throw new Error(`Failed to fetch recommendations: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        // Transform server response to match existing Recommendation interface
+        const transformedRecs = data.similar_anime?.map((rec: any) => ({
+          anime_id: rec.anime_id,
+          title: rec.title,
+          similarity: rec.similarity
+        })) || []
+        
+        setRecommendations(transformedRecs)
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Error fetching recommendations:', error)
+        }
       }
-
-      worker.onerror = (workerError) => {
-        console.error("Worker error:", workerError)
-        worker.terminate()
-      }
-
-      return () => worker.terminate()
     }
-  }, [anime, generalFeatures])
+
+    fetchRecommendations()
+
+    return () => controller.abort()
+  }, [anime])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -167,10 +169,17 @@ export default function AnimeDetailPage() {
       try {
         const response = await fetch(`/api/anime/reviews/${id}`, { signal })
         if (!response.ok) {
+          // 404 is expected when there are no reviews, silently handle it
+          if (response.status === 404) {
+            setReviews([])
+            return
+          }
           throw new Error(`Failed to fetch reviews: ${response.statusText}`)
         }
         const data = await response.json()
-        setReviews(data.reviews || [])
+        // Handle the response which has {anime_id, title, reviews: [...]} structure
+        const reviewsList = Array.isArray(data.reviews) ? data.reviews : []
+        setReviews(reviewsList.map((r: any) => r.review_text))
         setCurrentPage(1) // Reset to first page when new reviews load
       } catch (reviewsError: unknown) {
         if (reviewsError instanceof Error) {
@@ -291,11 +300,11 @@ export default function AnimeDetailPage() {
   }
 
   const stats = [
-    { label: "Score", value: anime.Score ?? "N/A" },
-    { label: "Rank", value: anime.Rank ?? "N/A" },
-    { label: "Popularity", value: anime.Popularity ?? "N/A" },
-    { label: "Demographic", value: anime.Demographic ?? "N/A" },
-    { label: "Rating", value: anime.Rating ?? "N/A" },
+    { label: "Score", value: anime.score ?? anime.Score ?? "N/A" },
+    { label: "Rank", value: anime.rank ?? anime.Rank ?? "N/A" },
+    { label: "Popularity", value: anime.popularity ?? anime.Popularity ?? "N/A" },
+    { label: "Demographic", value: anime.demographic ?? anime.Demographic ?? "N/A" },
+    { label: "Rating", value: anime.rating ?? anime.Rating ?? "N/A" },
   ]
 
   return (
@@ -318,9 +327,9 @@ export default function AnimeDetailPage() {
               <h1 className="text-3xl font-semibold leading-tight tracking-tight text-foreground">
                 {anime.title || "Unknown Title"}
               </h1>
-              {anime.Genres?.length ? (
+              {(anime.genres || anime.Genres)?.length ? (
                 <div className="flex flex-wrap items-center gap-2">
-                  {anime.Genres.map((genre) => (
+                  {(anime.genres || anime.Genres)?.map((genre) => (
                     <Badge
                       key={`${anime.anime_id}-${genre}`}
                       variant="outline"
@@ -334,7 +343,7 @@ export default function AnimeDetailPage() {
             </div>
 
             <p className="text-base leading-relaxed text-muted-foreground">
-              {anime.Description || "No description available for this title."}
+              {anime.description || anime.Description || "No description available for this title."}
             </p>
 
             <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

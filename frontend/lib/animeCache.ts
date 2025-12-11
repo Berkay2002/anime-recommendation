@@ -144,6 +144,12 @@ export async function getCachedAnime(): Promise<AnimeWithEmbeddings[]> {
  */
 export async function cacheAnime(animeList: AnimeWithEmbeddings[]): Promise<void> {
   try {
+    // Validate that animeList is an array
+    if (!Array.isArray(animeList)) {
+      console.error('cacheAnime received non-array data:', typeof animeList);
+      throw new Error('animeList must be an array');
+    }
+
     const db = await openDB();
 
     // Use a single transaction for all writes
@@ -233,7 +239,11 @@ export async function fetchAnimeWithCache(limit: number = DEFAULT_ANIME_LIMIT): 
       throw new Error(`Failed to fetch anime: ${response.status}`);
     }
 
-    const animeList: AnimeWithEmbeddings[] = await response.json();
+    const responseData = await response.json();
+    // Handle response which may be an array or {anime: [...]} object
+    const animeList: AnimeWithEmbeddings[] = Array.isArray(responseData) 
+      ? responseData 
+      : (responseData.anime || []);
 
     // Cache the data in the background (don't await)
     cacheAnime(animeList).catch(err =>

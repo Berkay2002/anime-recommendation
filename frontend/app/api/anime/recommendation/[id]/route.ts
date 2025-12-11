@@ -1,9 +1,6 @@
 // /frontend/app/api/anime/recommendation/[id]/route.ts
 
-import clientPromise from '../../../../../lib/mongodb';
-
-// Ensure route is dynamically rendered (no caching)
-export const dynamic = 'force-dynamic';
+import { getRecommendations } from '../../../../../services/animeService';
 
 interface SimilarAnime {
   anime_id: number;
@@ -31,33 +28,17 @@ export async function GET(
     }
 
     try {
-        const client = await clientPromise;
-        const db = client.db('animeDB');
+        // Use PostgreSQL recommendations with pgvector
+        const recommendations = await getRecommendations([numericId], 30);
 
-        const recommendation: Recommendation | null = await db
-            .collection('recommendations')
-            .findOne(
-                { anime_id: numericId },
-                {
-                    projection: {
-                        _id: 1,
-                        anime_id: 1,
-                        title: 1,
-                        'similar_anime.anime_id': 1,
-                        'similar_anime.title': 1,
-                        'similar_anime.similarity': 1,
-                    },
-                }
-            );
-
-        if (!recommendation) {
+        if (!recommendations || recommendations.length === 0) {
             console.error('No recommendations found for anime_id:', numericId);
             return new Response(JSON.stringify({ message: 'Recommendations not found' }), { status: 404 });
         }
 
-        return new Response(JSON.stringify(recommendation), { status: 200 });
+        return new Response(JSON.stringify(recommendations[0]), { status: 200 });
     } catch (error) {
         console.error('Failed to fetch recommendations for anime_id:', numericId, error);
-        return new Response(JSON.stringify({ message: 'Failed to fetch recommendations', error: error.message }), { status: 500 });
+        return new Response(JSON.stringify({ message: 'Failed to fetch recommendations' }), { status: 500 });
     }
 }

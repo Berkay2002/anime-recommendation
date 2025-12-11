@@ -15,8 +15,11 @@ import { Card } from "./ui/card"
 
 interface Anime {
   anime_id: number
+  title?: string
   English?: string
+  english_title?: string
   Japanese?: string
+  japanese_title?: string
   image_url?: string
 }
 
@@ -60,7 +63,7 @@ const AnimeCard: React.FC<AnimeCardProps> = ({
     }, 220)
   }, [anime, iconType, onRemove, onSelect])
 
-  const title = anime.English || anime.Japanese || "Untitled"
+  const title = anime.title || anime.English || anime.english_title || anime.Japanese || anime.japanese_title || "Untitled"
   const ActionIcon = iconType === "plus" ? Plus : Minus
 
   return (
