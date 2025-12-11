@@ -180,9 +180,47 @@ cd frontend
 npm run build
 ```
 
+## � Automatic Updates (Quarterly Sync)
+
+The system now includes automatic quarterly updates using GitHub Actions (100% free):
+
+### How It Works
+1. **Scheduled**: Runs every quarter (Jan 1, Apr 1, Jul 1, Oct 1) at 2 AM UTC
+2. **Smart Fetching**: Only fetches anime NOT already in your database
+3. **Cost-Efficient**: ~500 new anime per quarter = minimal embedding costs
+4. **Sources**: Current season + top popular anime from Jikan API
+
+### Setup GitHub Actions
+1. Go to your GitHub repository → Settings → Secrets and variables → Actions
+2. Add secrets:
+   - `DATABASE_URL`: Your Neon PostgreSQL connection string
+   - `GOOGLE_API_KEY`: Your Google API key for embeddings
+
+3. Enable workflows:
+   - Go to Actions tab
+   - Enable workflows if prompted
+
+### Manual Trigger
+You can also run the sync manually:
+- Go to Actions → "Quarterly Anime Sync" → Run workflow
+
+### What Gets Synced
+- Current season anime (Winter/Spring/Summer/Fall)
+- Skips anime already in database (checks by title)
+- Inserts new anime with all metadata (genres, themes, studios)
+- **Automatically generates embeddings** for all 5 fields (description, genres, themes, demographic, rating)
+- **Automatically stores embeddings** in anime_embeddings table
+- 100% end-to-end automated - no manual steps needed!
+
+### Cost Estimation
+- **GitHub Actions**: FREE (2000 minutes/month on free tier)
+- **Jikan API**: FREE (no auth needed)
+- **Google Embeddings**: ~500 anime × 5 fields = 2,500 API calls/quarter
+  - Well within free tier limits
+
 ## 📈 Next Steps
 
-1. **Add more data**: Import reviews if available
+1. **Monitor syncs**: Check Actions tab after each quarterly run
 2. **Optimize queries**: Add materialized views for popular queries
 3. **Caching**: Implement Redis for frequently accessed data
 4. **Monitoring**: Add query performance tracking
@@ -196,3 +234,4 @@ npm run build
 - ✅ **Modern stack** - Industry-standard PostgreSQL
 - ✅ **Cost-effective** - No local GPU needed for embeddings
 - ✅ **Maintainable** - Cleaner normalized schema
+- ✅ **Always up-to-date** - Automatic quarterly updates (100% free)

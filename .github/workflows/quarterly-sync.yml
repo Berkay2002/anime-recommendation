@@ -1,0 +1,40 @@
+name: Quarterly Anime Sync
+
+on:
+  # Run on the 1st day of Jan, Apr, Jul, Oct at 2 AM UTC
+  schedule:
+    - cron: '0 2 1 1,4,7,10 *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  sync-anime:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+      
+      - name: Run quarterly sync
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: |
+          cd backend/scripts
+          python sync_new.py
+      
+      - name: Report completion
+        run: |
+          echo "✅ Quarterly sync completed successfully!"
+          echo "New anime have been added to the database"
