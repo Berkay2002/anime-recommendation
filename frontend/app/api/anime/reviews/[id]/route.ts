@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getReviews } from '../../../../../services/animeService';
 
-export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(
   request: Request,

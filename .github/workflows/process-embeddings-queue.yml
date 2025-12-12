@@ -1,0 +1,65 @@
+name: Process Embeddings Queue
+
+on:
+  # Run daily at 2 AM UTC
+  schedule:
+    - cron: '0 2 * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      batch_size:
+        description: 'Number of anime to process in this run'
+        required: false
+        default: '50'
+        type: string
+      priority:
+        description: 'Priority level to process (low/all)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - low
+
+jobs:
+  process-queue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+      
+      - name: Process embeddings queue
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          BATCH_SIZE: ${{ inputs.batch_size || '50' }}
+          PRIORITY: ${{ inputs.priority || 'all' }}
+        run: |
+          cd backend/scripts
+          python process_jikan_queue.py
+      
+      - name: Report completion
+        if: success()
+        run: |
+          echo "✅ Embeddings queue processing completed successfully!"
+          echo "Processed up to ${{ inputs.batch_size || '50' }} anime from the queue"
+      
+      - name: Report failure
+        if: failure()
+        run: |
+          echo "❌ Embeddings queue processing failed"
+          echo "Please check the logs for details"

@@ -2,7 +2,7 @@
 
 import { getRecommendations } from '../../../../../services/animeService';
 
-export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 interface SimilarAnime {
   anime_id: number;

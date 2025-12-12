@@ -1,28 +1,23 @@
-// PostgreSQL database connection using Neon serverless driver
-import { Pool, neonConfig } from '@neondatabase/serverless';
+// PostgreSQL database connection using Vercel Postgres (works with Neon via DATABASE_URL)
+// This supports both serverless functions and edge runtime
+import { sql as vercelSql } from '@vercel/postgres';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is not set');
-}
+// Export Vercel's sql for tagged template usage (e.g., sql`SELECT * FROM table`)
+export { sql as vercelSql } from '@vercel/postgres';
 
-// Create connection pool
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
-// Export query function that supports parameterized queries
+// Backward-compatible function-based query for existing code
+// Usage: sql(queryString, params)
 export async function sql(queryString: string, params: any[] = []) {
-  const client = await pool.connect();
   try {
-    const result = await client.query(queryString, params);
+    const result = await vercelSql.query(queryString, params);
     return result.rows;
   } catch (error) {
     console.error('PostgreSQL query error:', error);
     console.error('Query:', queryString);
     console.error('Params:', params);
     throw error;
-  } finally {
-    client.release();
   }
 }
 
-// Export for compatibility
+// Default export for compatibility
 export default sql;

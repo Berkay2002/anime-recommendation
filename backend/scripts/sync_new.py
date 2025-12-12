@@ -44,6 +44,7 @@ def fetch_seasonal(year, season, existing):
                 
                 premiered = f"{season.capitalize()} {year}"
                 anime_list.append({
+                    'mal_id': item.get('mal_id'),
                     'title': title,
                     'english_title': item.get('title_english'),
                     'japanese_title': item.get('title_japanese'),
@@ -107,6 +108,7 @@ def fetch_top_anime(existing, target_new=9000):
                         pass
                 
                 anime_list.append({
+                    'mal_id': item.get('mal_id'),
                     'title': title,
                     'english_title': item.get('title_english'),
                     'japanese_title': item.get('title_japanese'),
@@ -161,38 +163,56 @@ def insert_anime(anime_list):
         # Insert/get IDs
         genre_map = {}
         for g in all_genres:
-            cur.execute("INSERT INTO genres (name) VALUES (%s) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id", (g,))
+            cur.execute("INSERT INTO genres (name) VALUES (%s) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING genre_id", (g,))
             genre_map[g] = cur.fetchone()[0]
         
         theme_map = {}
         for t in all_themes:
-            cur.execute("INSERT INTO themes (name) VALUES (%s) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id", (t,))
+            cur.execute("INSERT INTO themes (name) VALUES (%s) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING theme_id", (t,))
             theme_map[t] = cur.fetchone()[0]
         
         studio_map = {}
         for s in all_studios:
-            cur.execute("INSERT INTO studios (name) VALUES (%s) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id", (s,))
+            cur.execute("INSERT INTO studios (name) VALUES (%s) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING studio_id", (s,))
             studio_map[s] = cur.fetchone()[0]
         
         conn.commit()
         print(f"Prepared {len(genre_map)} genres, {len(theme_map)} themes, {len(studio_map)} studios")
         
-        # Get next ID
-        cur.execute("SELECT COALESCE(MAX(anime_id), 0) + 1 FROM anime")
-        next_id = cur.fetchone()[0]
-        
         # Insert anime
         anime_ids = []
+        mal_id_map = {}  # Map anime_id to mal_id for queue
+        
         for anime in anime_list:
+            mal_id = anime.get('mal_id')
+            if not mal_id:
+                continue  # Skip anime without MAL ID
+            
             cur.execute("""
                 INSERT INTO anime (
-                    anime_id, title, english_title, japanese_title,
+                    mal_id, title, english_title, japanese_title,
                     description, image_url, score, popularity, rank,
-                    rating, status, premiered, demographic
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    rating, status, premiered, demographic,
+                    last_jikan_sync, sync_status, created_at, updated_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), 'pending_embeddings', NOW(), NOW())
+                ON CONFLICT (mal_id) DO UPDATE SET
+                    title = EXCLUDED.title,
+                    english_title = EXCLUDED.english_title,
+                    japanese_title = EXCLUDED.japanese_title,
+                    description = EXCLUDED.description,
+                    image_url = EXCLUDED.image_url,
+                    score = EXCLUDED.score,
+                    popularity = EXCLUDED.popularity,
+                    rank = EXCLUDED.rank,
+                    rating = EXCLUDED.rating,
+                    status = EXCLUDED.status,
+                    premiered = EXCLUDED.premiered,
+                    demographic = EXCLUDED.demographic,
+                    last_jikan_sync = NOW(),
+                    updated_at = NOW()
                 RETURNING anime_id
             """, (
-                next_id, anime['title'], anime.get('english_title'),
+                mal_id, anime['title'], anime.get('english_title'),
                 anime.get('japanese_title'), anime.get('description'),
                 anime.get('image_url'), anime.get('score'), anime.get('popularity'),
                 anime.get('rank'), anime.get('rating'), anime.get('status'),
@@ -201,74 +221,35 @@ def insert_anime(anime_list):
             
             anime_id = cur.fetchone()[0]
             anime_ids.append(anime_id)
+            mal_id_map[anime_id] = mal_id
             
             # Relationships
             for g in anime.get('genres', []):
                 if g in genre_map:
-                    cur.execute("INSERT INTO anime_genres (anime_id, genre_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                    cur.execute("INSERT INTO anime_genres (anime_id, genre_id) VALUES (%s, %s) ON CONFLICT (anime_id, genre_id) DO NOTHING",
                               (anime_id, genre_map[g]))
             
             for t in anime.get('themes', []):
                 if t in theme_map:
-                    cur.execute("INSERT INTO anime_themes (anime_id, theme_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                    cur.execute("INSERT INTO anime_themes (anime_id, theme_id) VALUES (%s, %s) ON CONFLICT (anime_id, theme_id) DO NOTHING",
                               (anime_id, theme_map[t]))
             
             for s in anime.get('studios', []):
                 if s in studio_map:
-                    cur.execute("INSERT INTO anime_studios (anime_id, studio_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                    cur.execute("INSERT INTO anime_studios (anime_id, studio_id) VALUES (%s, %s) ON CONFLICT (anime_id, studio_id) DO NOTHING",
                               (anime_id, studio_map[s]))
             
-            next_id += 1
+            # Add to sync queue for embedding generation (low priority for bulk sync)
+            cur.execute("""
+                INSERT INTO jikan_sync_queue (anime_id, mal_id, priority, created_at)
+                VALUES (%s, %s, 'low', NOW())
+                ON CONFLICT (anime_id) DO NOTHING
+            """, (anime_id, mal_id))
         
         conn.commit()
         print(f"Inserted {len(anime_ids)} anime")
-        
-        # Generate embeddings
-        print("\nGenerating embeddings...")
-        cur.execute("""
-            SELECT a.anime_id, a.description,
-                   STRING_AGG(DISTINCT g.name, ', ') as genres,
-                   STRING_AGG(DISTINCT t.name, ', ') as themes,
-                   a.demographic, a.rating
-            FROM anime a
-            LEFT JOIN anime_genres ag ON a.anime_id = ag.anime_id
-            LEFT JOIN genres g ON ag.genre_id = g.id
-            LEFT JOIN anime_themes at ON a.anime_id = at.anime_id
-            LEFT JOIN themes t ON at.theme_id = t.id
-            WHERE a.anime_id = ANY(%s)
-            GROUP BY a.anime_id
-        """, (anime_ids,))
-        
-        rows = cur.fetchall()
-        
-        # Prepare texts
-        desc_list = [prepare_text_for_embedding(r[1]) for r in rows]
-        genre_list = [prepare_text_for_embedding(r[2]) for r in rows]
-        theme_list = [prepare_text_for_embedding(r[3]) for r in rows]
-        demo_list = [prepare_text_for_embedding(r[4]) for r in rows]
-        rating_list = [prepare_text_for_embedding(r[5]) for r in rows]
-        
-        # Get embeddings
-        print("Calling Google API...")
-        desc_emb = get_embeddings_batch(desc_list)
-        genre_emb = get_embeddings_batch(genre_list)
-        theme_emb = get_embeddings_batch(theme_list)
-        demo_emb = get_embeddings_batch(demo_list)
-        rating_emb = get_embeddings_batch(rating_list)
-        
-        # Insert embeddings
-        emb_data = [(rows[i][0], desc_emb[i], genre_emb[i], theme_emb[i], demo_emb[i], rating_emb[i]) 
-                    for i in range(len(rows))]
-        
-        execute_batch(cur, """
-            INSERT INTO anime_embeddings (
-                anime_id, description_embedding, genres_embedding,
-                themes_embedding, demographic_embedding, rating_embedding
-            ) VALUES (%s, %s, %s, %s, %s, %s)
-        """, emb_data)
-        
-        conn.commit()
-        print(f"✅ Embeddings saved for {len(emb_data)} anime")
+        print(f"Added {len(anime_ids)} anime to sync queue for embedding generation")
+        print("Note: Embeddings will be generated by the queue processor (run process_jikan_queue.py or wait for daily GitHub Actions)")
         
         cur.close()
         conn.close()
