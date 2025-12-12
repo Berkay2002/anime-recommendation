@@ -620,6 +620,16 @@ export async function getCurrentSeasonAnimeWithCache(limit: number = 25): Promis
         jikanResults.map(anime => upsertAnimeToDatabase(anime))
       );
       
+      // Queue newly added anime for embedding generation (high priority for currently airing)
+      await Promise.all(
+        stored.map(anime => {
+          if (anime.anime_id && anime.mal_id) {
+            return queueForEmbeddingGeneration(anime.anime_id, anime.mal_id, 'high');
+          }
+          return Promise.resolve();
+        })
+      );
+      
       return deduplicateAnime(stored).slice(0, limit);
     } catch (jikanError) {
       console.error('Jikan API error, falling back to cached data:', jikanError);
@@ -789,6 +799,16 @@ export async function getUpcomingAnimeWithCache(limit: number = 25): Promise<Cac
       // Store and return
       const stored = await Promise.all(
         jikanResults.map(anime => upsertAnimeToDatabase(anime))
+      );
+      
+      // Queue newly added anime for embedding generation (high priority for upcoming)
+      await Promise.all(
+        stored.map(anime => {
+          if (anime.anime_id && anime.mal_id) {
+            return queueForEmbeddingGeneration(anime.anime_id, anime.mal_id, 'high');
+          }
+          return Promise.resolve();
+        })
       );
       
       return deduplicateAnime(stored).slice(0, limit);
