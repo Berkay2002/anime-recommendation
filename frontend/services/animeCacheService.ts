@@ -250,6 +250,14 @@ async function getAnimeByMalIdFromDatabase(malId: number): Promise<CachedAnimeDa
  */
 async function upsertAnimeToDatabase(anime: NormalizedAnimeData): Promise<CachedAnimeData> {
   try {
+    // Debug logging
+    console.log(`[upsertAnimeToDatabase] Processing mal_id: ${anime.mal_id}, title: ${anime.title}`);
+    
+    // Verify anime object doesn't have anime_id (it shouldn't)
+    if ('anime_id' in anime) {
+      console.error(`[upsertAnimeToDatabase] WARNING: anime object has anime_id property!`, anime);
+    }
+    
     // Insert/update main anime record
     const result = await sql`
       INSERT INTO anime (
@@ -288,6 +296,8 @@ async function upsertAnimeToDatabase(anime: NormalizedAnimeData): Promise<Cached
         updated_at = NOW()
       RETURNING anime_id, mal_id, last_jikan_sync, sync_status
     `;
+    
+    console.log(`[upsertAnimeToDatabase] Success! anime_id: ${result.rows[0]?.anime_id}, mal_id: ${result.rows[0]?.mal_id}`);
 
     const insertedAnime = result.rows[0];
 
