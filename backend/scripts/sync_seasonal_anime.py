@@ -291,48 +291,100 @@ def insert_anime_batch(anime_list):
             # Prepare synonyms (title_synonyms joined)
             synonyms = ', '.join(anime.get('title_synonyms', []))
             
+            # Check for duplicate with same title but NULL mal_id
             cur.execute("""
-                INSERT INTO anime (
-                    mal_id, title, english_title, japanese_title, synonyms,
-                    description, image_url, score, popularity, rank, rating,
-                    status, premiered, demographic, 
-                    last_jikan_sync, sync_status, created_at, updated_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), 'pending_embeddings', NOW(), NOW())
-                ON CONFLICT (mal_id) DO UPDATE SET
-                    title = EXCLUDED.title,
-                    english_title = EXCLUDED.english_title,
-                    japanese_title = EXCLUDED.japanese_title,
-                    synonyms = EXCLUDED.synonyms,
-                    description = EXCLUDED.description,
-                    image_url = EXCLUDED.image_url,
-                    score = EXCLUDED.score,
-                    popularity = EXCLUDED.popularity,
-                    rank = EXCLUDED.rank,
-                    rating = EXCLUDED.rating,
-                    status = EXCLUDED.status,
-                    premiered = EXCLUDED.premiered,
-                    demographic = EXCLUDED.demographic,
-                    last_jikan_sync = NOW(),
-                    updated_at = NOW()
-                RETURNING anime_id
-            """, (
-                anime['mal_id'], 
-                anime['title'], 
-                anime.get('title_english'),
-                anime.get('title_japanese'),
-                synonyms or None,
-                anime.get('synopsis'),  # description
-                anime.get('image_url'),
-                anime.get('score'),
-                anime.get('popularity'),
-                anime.get('rank'),
-                anime.get('rating'),
-                anime.get('status'),
-                premiered,
-                anime.get('demographics', [None])[0] if anime.get('demographics') else None  # First demographic
-            ))
+                SELECT anime_id FROM anime 
+                WHERE title = %s AND mal_id IS NULL
+                LIMIT 1
+            """, (anime['title'],))
             
-            result = cur.fetchone()
+            existing = cur.fetchone()
+            
+            if existing:
+                # Update existing entry with NULL mal_id to prevent duplicates
+                anime_id = existing[0]
+                cur.execute("""
+                    UPDATE anime SET
+                        mal_id = %s,
+                        english_title = %s,
+                        japanese_title = %s,
+                        synonyms = %s,
+                        description = %s,
+                        image_url = %s,
+                        score = %s,
+                        popularity = %s,
+                        rank = %s,
+                        rating = %s,
+                        status = %s,
+                        premiered = %s,
+                        demographic = %s,
+                        last_jikan_sync = NOW(),
+                        sync_status = 'pending_embeddings',
+                        updated_at = NOW()
+                    WHERE anime_id = %s
+                    RETURNING anime_id
+                """, (
+                    anime['mal_id'],
+                    anime.get('title_english'),
+                    anime.get('title_japanese'),
+                    synonyms or None,
+                    anime.get('synopsis'),
+                    anime.get('image_url'),
+                    anime.get('score'),
+                    anime.get('popularity'),
+                    anime.get('rank'),
+                    anime.get('rating'),
+                    anime.get('status'),
+                    premiered,
+                    anime.get('demographics', [None])[0] if anime.get('demographics') else None,
+                    anime_id
+                ))
+                result = cur.fetchone()
+            else:
+                # Insert/update anime normally
+                cur.execute("""
+                    INSERT INTO anime (
+                        mal_id, title, english_title, japanese_title, synonyms,
+                        description, image_url, score, popularity, rank, rating,
+                        status, premiered, demographic, 
+                        last_jikan_sync, sync_status, created_at, updated_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), 'pending_embeddings', NOW(), NOW())
+                    ON CONFLICT (mal_id) DO UPDATE SET
+                        title = EXCLUDED.title,
+                        english_title = EXCLUDED.english_title,
+                        japanese_title = EXCLUDED.japanese_title,
+                        synonyms = EXCLUDED.synonyms,
+                        description = EXCLUDED.description,
+                        image_url = EXCLUDED.image_url,
+                        score = EXCLUDED.score,
+                        popularity = EXCLUDED.popularity,
+                        rank = EXCLUDED.rank,
+                        rating = EXCLUDED.rating,
+                        status = EXCLUDED.status,
+                        premiered = EXCLUDED.premiered,
+                        demographic = EXCLUDED.demographic,
+                        last_jikan_sync = NOW(),
+                        updated_at = NOW()
+                    RETURNING anime_id
+                """, (
+                    anime['mal_id'], 
+                    anime['title'], 
+                    anime.get('title_english'),
+                    anime.get('title_japanese'),
+                    synonyms or None,
+                    anime.get('synopsis'),  # description
+                    anime.get('image_url'),
+                    anime.get('score'),
+                    anime.get('popularity'),
+                    anime.get('rank'),
+                    anime.get('rating'),
+                    anime.get('status'),
+                    premiered,
+                    anime.get('demographics', [None])[0] if anime.get('demographics') else None  # First demographic
+                ))
+                
+                result = cur.fetchone()
+            
             if result:
                 anime_id = result[0]
                 anime_ids.append(anime_id)

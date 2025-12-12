@@ -264,44 +264,82 @@ async function upsertAnimeToDatabase(anime: NormalizedAnimeData): Promise<Cached
       console.error(`[upsertAnimeToDatabase] WARNING: anime object has anime_id property!`, anime);
     }
     
-    // Insert/update main anime record
-    const result = await sql`
-      INSERT INTO anime (
-        mal_id, title, english_title, japanese_title, synonyms, 
-        description, image_url, score, popularity, rank, rating, 
-        status, premiered, demographic, producers, 
-        last_jikan_sync, sync_status, created_at, updated_at
-      )
-      VALUES (
-        ${anime.mal_id}, ${anime.title}, ${anime.english_title}, ${anime.japanese_title}, 
-        ${anime.synonyms}, ${anime.description}, ${anime.image_url}, ${anime.score}, 
-        ${anime.popularity}, ${anime.rank}, ${anime.rating}, ${anime.status}, 
-        ${anime.premiered}, ${anime.demographic}, ${anime.producers}, 
-        NOW(), 'pending_embeddings', NOW(), NOW()
-      )
-      ON CONFLICT (mal_id) DO UPDATE SET
-        title = EXCLUDED.title,
-        english_title = EXCLUDED.english_title,
-        japanese_title = EXCLUDED.japanese_title,
-        synonyms = EXCLUDED.synonyms,
-        description = EXCLUDED.description,
-        image_url = EXCLUDED.image_url,
-        score = EXCLUDED.score,
-        popularity = EXCLUDED.popularity,
-        rank = EXCLUDED.rank,
-        rating = EXCLUDED.rating,
-        status = EXCLUDED.status,
-        premiered = EXCLUDED.premiered,
-        demographic = EXCLUDED.demographic,
-        producers = EXCLUDED.producers,
-        last_jikan_sync = NOW(),
-        sync_status = CASE 
-          WHEN anime.sync_status = 'pending_embeddings' THEN 'pending_embeddings'
-          ELSE 'fresh'
-        END,
-        updated_at = NOW()
-      RETURNING anime_id, mal_id, last_jikan_sync, sync_status
+    // Check if an entry with same title but NULL mal_id exists (potential duplicate)
+    // If so, update it with the MAL ID to prevent duplicates
+    const existingCheck = await sql`
+      SELECT anime_id FROM anime 
+      WHERE title = ${anime.title} AND mal_id IS NULL
+      LIMIT 1
     `;
+    
+    let result;
+    
+    if (existingCheck.rows.length > 0 && anime.mal_id) {
+      // Update existing entry with NULL mal_id
+      console.log(`[upsertAnimeToDatabase] Found duplicate with NULL mal_id (anime_id: ${existingCheck.rows[0].anime_id}), updating...`);
+      result = await sql`
+        UPDATE anime SET
+          mal_id = ${anime.mal_id},
+          title = ${anime.title},
+          english_title = ${anime.english_title},
+          japanese_title = ${anime.japanese_title},
+          synonyms = ${anime.synonyms},
+          description = ${anime.description},
+          image_url = ${anime.image_url},
+          score = ${anime.score},
+          popularity = ${anime.popularity},
+          rank = ${anime.rank},
+          rating = ${anime.rating},
+          status = ${anime.status},
+          premiered = ${anime.premiered},
+          demographic = ${anime.demographic},
+          producers = ${anime.producers},
+          last_jikan_sync = NOW(),
+          sync_status = 'pending_embeddings',
+          updated_at = NOW()
+        WHERE anime_id = ${existingCheck.rows[0].anime_id}
+        RETURNING anime_id, mal_id, last_jikan_sync, sync_status
+      `;
+    } else {
+      // Normal insert/update with mal_id conflict resolution
+      result = await sql`
+        INSERT INTO anime (
+          mal_id, title, english_title, japanese_title, synonyms, 
+          description, image_url, score, popularity, rank, rating, 
+          status, premiered, demographic, producers, 
+          last_jikan_sync, sync_status, created_at, updated_at
+        )
+        VALUES (
+          ${anime.mal_id}, ${anime.title}, ${anime.english_title}, ${anime.japanese_title}, 
+          ${anime.synonyms}, ${anime.description}, ${anime.image_url}, ${anime.score}, 
+          ${anime.popularity}, ${anime.rank}, ${anime.rating}, ${anime.status}, 
+          ${anime.premiered}, ${anime.demographic}, ${anime.producers}, 
+          NOW(), 'pending_embeddings', NOW(), NOW()
+        )
+        ON CONFLICT (mal_id) DO UPDATE SET
+          title = EXCLUDED.title,
+          english_title = EXCLUDED.english_title,
+          japanese_title = EXCLUDED.japanese_title,
+          synonyms = EXCLUDED.synonyms,
+          description = EXCLUDED.description,
+          image_url = EXCLUDED.image_url,
+          score = EXCLUDED.score,
+          popularity = EXCLUDED.popularity,
+          rank = EXCLUDED.rank,
+          rating = EXCLUDED.rating,
+          status = EXCLUDED.status,
+          premiered = EXCLUDED.premiered,
+          demographic = EXCLUDED.demographic,
+          producers = EXCLUDED.producers,
+          last_jikan_sync = NOW(),
+          sync_status = CASE 
+            WHEN anime.sync_status = 'pending_embeddings' THEN 'pending_embeddings'
+            ELSE 'fresh'
+          END,
+          updated_at = NOW()
+        RETURNING anime_id, mal_id, last_jikan_sync, sync_status
+      `;
+    }
     
     console.log(`[upsertAnimeToDatabase] Success! anime_id: ${result.rows[0]?.anime_id}, mal_id: ${result.rows[0]?.mal_id}`);
 
