@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAnime } from '../../../services/animeService';
+import { getCurrentSeasonAnimeWithCache, getUpcomingAnimeWithCache } from '../../../services/animeCacheService';
 
 export const runtime = 'nodejs';
 
@@ -33,6 +34,20 @@ export async function GET(request: Request) {
       params.sortBy = 'Popularity';
     } else if (type === 'top-ranked') {
       params.sortBy = 'Rank';
+    } else if (type === 'currently-airing') {
+      const data = await getCurrentSeasonAnimeWithCache(limit);
+      return NextResponse.json(data, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+        },
+      });
+    } else if (type === 'upcoming') {
+      const data = await getUpcomingAnimeWithCache(limit);
+      return NextResponse.json(data, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+        },
+      });
     }
 
     const data = await getAnime(params);

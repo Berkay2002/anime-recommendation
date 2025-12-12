@@ -158,6 +158,42 @@ export async function getJikanAnimeByIds(malIds: number[]): Promise<NormalizedAn
 }
 
 /**
+ * Get currently airing anime (current season)
+ */
+export async function getCurrentSeasonAnime(limit: number = 25): Promise<NormalizedAnimeData[]> {
+  try {
+    const result = await rateLimiter.throttle(async () => {
+      return await jikanClient.seasons.getSeasonNow({
+        limit,
+      });
+    });
+
+    return result.data.map((anime: any) => normalizeJikanData(anime));
+  } catch (error) {
+    console.error('Error fetching current season anime:', error);
+    throw new Error('Failed to fetch current season anime');
+  }
+}
+
+/**
+ * Get upcoming anime (next season)
+ */
+export async function getUpcomingAnime(limit: number = 25): Promise<NormalizedAnimeData[]> {
+  try {
+    const result = await rateLimiter.throttle(async () => {
+      return await jikanClient.seasons.getSeasonUpcoming({
+        limit,
+      });
+    });
+
+    return result.data.map((anime: any) => normalizeJikanData(anime));
+  } catch (error) {
+    console.error('Error fetching upcoming anime:', error);
+    throw new Error('Failed to fetch upcoming anime');
+  }
+}
+
+/**
  * Convert Jikan API response to our normalized database schema
  */
 function normalizeJikanData(jikanAnime: any): NormalizedAnimeData {

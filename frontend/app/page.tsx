@@ -3,9 +3,11 @@
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 
+import CurrentlyAiringSection from "@/components/CurrentlyAiringSection"
 import RecommendedSection from "@/components/RecommendedSection"
 import TopRankedSection from "@/components/TopRankedSection"
 import TrendingSection from "@/components/TrendingSection"
+import UpcomingSection from "@/components/UpcomingSection"
 import YourChoiceSection from "@/components/YourChoiceSection"
 import { Button } from "@/components/ui/button"
 
@@ -100,14 +102,28 @@ const HomePage = () => {
         />
       </section>
 
-      <section className="order-4 hidden md:block">
+      <section className="order-4 md:order-4">
+        <CurrentlyAiringSection
+          onSelectAnime={handleSelectAnime}
+          selectedAnimeIdSet={selectedAnimeIdSet}
+        />
+      </section>
+
+      <section className="order-5 md:order-5">
+        <UpcomingSection
+          onSelectAnime={handleSelectAnime}
+          selectedAnimeIdSet={selectedAnimeIdSet}
+        />
+      </section>
+
+      <section className="order-6 hidden md:block">
         <TopRankedSection
           onSelectAnime={handleSelectAnime}
           selectedAnimeIdSet={selectedAnimeIdSet}
         />
       </section>
 
-      <div className="order-4 md:hidden">
+      <div className="order-6 md:hidden">
         <Button asChild variant="outline" className="w-full">
           <Link href="/anime?sortBy=Rank">Browse top ranked picks</Link>
         </Button>

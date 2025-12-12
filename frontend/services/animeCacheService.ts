@@ -2,6 +2,8 @@ import { sql } from '@vercel/postgres';
 import {
   searchJikanAnime,
   getJikanAnimeById,
+  getCurrentSeasonAnime,
+  getUpcomingAnime,
   isDataStale,
   NormalizedAnimeData,
 } from './jikanService';
@@ -254,14 +256,14 @@ async function upsertAnimeToDatabase(anime: NormalizedAnimeData): Promise<Cached
         mal_id, title, english_title, japanese_title, synonyms, 
         description, image_url, score, popularity, rank, rating, 
         status, premiered, demographic, producers, 
-        last_jikan_sync, sync_status, updated_at
+        last_jikan_sync, sync_status, created_at, updated_at
       )
       VALUES (
         ${anime.mal_id}, ${anime.title}, ${anime.english_title}, ${anime.japanese_title}, 
         ${anime.synonyms}, ${anime.description}, ${anime.image_url}, ${anime.score}, 
         ${anime.popularity}, ${anime.rank}, ${anime.rating}, ${anime.status}, 
         ${anime.premiered}, ${anime.demographic}, ${anime.producers}, 
-        NOW(), 'pending_embeddings', NOW()
+        NOW(), 'pending_embeddings', NOW(), NOW()
       )
       ON CONFLICT (mal_id) DO UPDATE SET
         title = EXCLUDED.title,
@@ -327,10 +329,10 @@ async function upsertGenresAndRelations(animeId: number, genres: string[]): Prom
         INSERT INTO genres (name)
         VALUES (${genreName})
         ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-        RETURNING genre_id
+        RETURNING id
       `;
       
-      const genreId = genreResult.rows[0].genre_id;
+      const genreId = genreResult.rows[0].id;
 
       // Insert anime-genre relation
       await sql`
@@ -355,10 +357,10 @@ async function upsertStudiosAndRelations(animeId: number, studios: string[]): Pr
         INSERT INTO studios (name)
         VALUES (${studioName})
         ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-        RETURNING studio_id
+        RETURNING id
       `;
       
-      const studioId = studioResult.rows[0].studio_id;
+      const studioId = studioResult.rows[0].id;
 
       // Insert anime-studio relation
       await sql`
@@ -383,10 +385,10 @@ async function upsertThemesAndRelations(animeId: number, themes: string[]): Prom
         INSERT INTO themes (name)
         VALUES (${themeName})
         ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-        RETURNING theme_id
+        RETURNING id
       `;
       
-      const themeId = themeResult.rows[0].theme_id;
+      const themeId = themeResult.rows[0].id;
 
       // Insert anime-theme relation
       await sql`
@@ -427,7 +429,7 @@ async function mergeAndStoreResults(
     }
   }
 
-  return merged;
+  return deduplicateAnime(merged);
 }
 
 /**
@@ -507,5 +509,362 @@ export async function updateAnimeSyncStatus(
     `;
   } catch (error) {
     console.error(`Error updating sync status for anime ${animeId}:`, error);
+  }
+}
+
+/**
+ * Deduplicate anime array by anime_id
+ */
+function deduplicateAnime(anime: CachedAnimeData[]): CachedAnimeData[] {
+  const seen = new Set<number>();
+  return anime.filter(item => {
+    if (seen.has(item.anime_id!)) {
+      console.warn(`Duplicate anime_id ${item.anime_id} detected and removed`);
+      return false;
+    }
+    seen.add(item.anime_id!);
+    return true;
+  });
+}
+
+/**
+ * Get currently airing anime with intelligent caching
+ */
+export async function getCurrentSeasonAnimeWithCache(limit: number = 25): Promise<CachedAnimeData[]> {
+  try {
+    // Check database first for anime marked as currently airing
+    const dbResults = await sql`
+      SELECT 
+        a.anime_id,
+        a.mal_id,
+        a.title,
+        a.english_title,
+        a.japanese_title,
+        a.synonyms,
+        a.description,
+        a.image_url,
+        a.score,
+        a.popularity,
+        a.rank,
+        a.rating,
+        a.status,
+        a.premiered,
+        a.demographic,
+        a.producers,
+        a.last_jikan_sync,
+        a.sync_status,
+        ARRAY_AGG(DISTINCT g.name) FILTER (WHERE g.name IS NOT NULL) as genres,
+        ARRAY_AGG(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL) as studios,
+        ARRAY_AGG(DISTINCT t.name) FILTER (WHERE t.name IS NOT NULL) as themes
+      FROM anime a
+      LEFT JOIN anime_genres ag ON a.anime_id = ag.anime_id
+      LEFT JOIN genres g ON ag.genre_id = g.id
+      LEFT JOIN anime_studios ast ON a.anime_id = ast.anime_id
+      LEFT JOIN studios s ON ast.studio_id = s.id
+      LEFT JOIN anime_themes at ON a.anime_id = at.anime_id
+      LEFT JOIN themes t ON at.theme_id = t.id
+      WHERE a.status = 'Currently Airing'
+        AND a.last_jikan_sync > NOW() - INTERVAL '1 day'
+      GROUP BY a.anime_id
+      ORDER BY 
+        CASE WHEN a.popularity IS NOT NULL THEN 0 ELSE 1 END,
+        a.popularity ASC,
+        a.score DESC NULLS LAST
+      LIMIT ${limit}
+    `;
+
+    const cachedData = deduplicateAnime(dbResults.rows.map(row => ({
+      anime_id: row.anime_id,
+      mal_id: row.mal_id,
+      title: row.title,
+      english_title: row.english_title,
+      japanese_title: row.japanese_title,
+      synonyms: row.synonyms,
+      description: row.description,
+      image_url: row.image_url,
+      score: row.score ? parseFloat(row.score) : null,
+      popularity: row.popularity,
+      rank: row.rank,
+      rating: row.rating,
+      status: row.status,
+      premiered: row.premiered,
+      demographic: row.demographic,
+      producers: row.producers,
+      last_jikan_sync: row.last_jikan_sync ? new Date(row.last_jikan_sync) : null,
+      sync_status: row.sync_status || 'fresh',
+      genres: row.genres || [],
+      studios: row.studios || [],
+      themes: row.themes || [],
+    })));
+
+    if (cachedData.length >= limit) {
+      return cachedData;
+    }
+
+    // Try to fetch fresh data from Jikan
+    try {
+      const jikanResults = await getCurrentSeasonAnime(limit);
+      
+      // Store and return
+      const stored = await Promise.all(
+        jikanResults.map(anime => upsertAnimeToDatabase(anime))
+      );
+      
+      return deduplicateAnime(stored).slice(0, limit);
+    } catch (jikanError) {
+      console.error('Jikan API error, falling back to cached data:', jikanError);
+      
+      // If we have some cached data, return it
+      if (cachedData.length > 0) {
+        return cachedData;
+      }
+      
+      // Try to get older cached data as last resort
+      try {
+        const olderResults = await sql`
+          SELECT 
+            a.anime_id,
+            a.mal_id,
+            a.title,
+            a.english_title,
+            a.japanese_title,
+            a.synonyms,
+            a.description,
+            a.image_url,
+            a.score,
+            a.popularity,
+            a.rank,
+            a.rating,
+            a.status,
+            a.premiered,
+            a.demographic,
+            a.producers,
+            a.last_jikan_sync,
+            a.sync_status,
+            ARRAY_AGG(DISTINCT g.name) FILTER (WHERE g.name IS NOT NULL) as genres,
+            ARRAY_AGG(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL) as studios,
+            ARRAY_AGG(DISTINCT t.name) FILTER (WHERE t.name IS NOT NULL) as themes
+          FROM anime a
+          LEFT JOIN anime_genres ag ON a.anime_id = ag.anime_id
+          LEFT JOIN genres g ON ag.genre_id = g.id
+          LEFT JOIN anime_studios ast ON a.anime_id = ast.anime_id
+          LEFT JOIN studios s ON ast.studio_id = s.id
+          LEFT JOIN anime_themes at ON a.anime_id = at.anime_id
+          LEFT JOIN themes t ON at.theme_id = t.id
+          WHERE a.status = 'Currently Airing'
+          GROUP BY a.anime_id
+          ORDER BY 
+            CASE WHEN a.popularity IS NOT NULL THEN 0 ELSE 1 END,
+            a.popularity ASC,
+            a.score DESC NULLS LAST
+          LIMIT ${limit}
+        `;
+        
+        if (olderResults.rows.length > 0) {
+          return deduplicateAnime(olderResults.rows.map(row => ({
+            anime_id: row.anime_id,
+            mal_id: row.mal_id,
+            title: row.title,
+            english_title: row.english_title,
+            japanese_title: row.japanese_title,
+            synonyms: row.synonyms,
+            description: row.description,
+            image_url: row.image_url,
+            score: row.score ? parseFloat(row.score) : null,
+            popularity: row.popularity,
+            rank: row.rank,
+            rating: row.rating,
+            status: row.status,
+            premiered: row.premiered,
+            demographic: row.demographic,
+            producers: row.producers,
+            last_jikan_sync: row.last_jikan_sync ? new Date(row.last_jikan_sync) : null,
+            sync_status: row.sync_status || 'stale',
+            genres: row.genres || [],
+            studios: row.studios || [],
+            themes: row.themes || [],
+          })));
+        }
+      } catch (dbError) {
+        console.error('Failed to fetch older cached data:', dbError);
+      }
+      
+      // If no cached data at all, throw the Jikan error
+      throw jikanError;
+    }
+  } catch (error) {
+    console.error('Error in getCurrentSeasonAnimeWithCache:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get upcoming anime with intelligent caching
+ */
+export async function getUpcomingAnimeWithCache(limit: number = 25): Promise<CachedAnimeData[]> {
+  try {
+    // Check database first for anime marked as not yet aired
+    const dbResults = await sql`
+      SELECT 
+        a.anime_id,
+        a.mal_id,
+        a.title,
+        a.english_title,
+        a.japanese_title,
+        a.synonyms,
+        a.description,
+        a.image_url,
+        a.score,
+        a.popularity,
+        a.rank,
+        a.rating,
+        a.status,
+        a.premiered,
+        a.demographic,
+        a.producers,
+        a.last_jikan_sync,
+        a.sync_status,
+        ARRAY_AGG(DISTINCT g.name) FILTER (WHERE g.name IS NOT NULL) as genres,
+        ARRAY_AGG(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL) as studios,
+        ARRAY_AGG(DISTINCT t.name) FILTER (WHERE t.name IS NOT NULL) as themes
+      FROM anime a
+      LEFT JOIN anime_genres ag ON a.anime_id = ag.anime_id
+      LEFT JOIN genres g ON ag.genre_id = g.id
+      LEFT JOIN anime_studios ast ON a.anime_id = ast.anime_id
+      LEFT JOIN studios s ON ast.studio_id = s.id
+      LEFT JOIN anime_themes at ON a.anime_id = at.anime_id
+      LEFT JOIN themes t ON at.theme_id = t.id
+      WHERE a.status = 'Not yet aired'
+        AND a.last_jikan_sync > NOW() - INTERVAL '1 day'
+      GROUP BY a.anime_id
+      ORDER BY 
+        CASE WHEN a.popularity IS NOT NULL THEN 0 ELSE 1 END,
+        a.popularity ASC,
+        a.score DESC NULLS LAST
+      LIMIT ${limit}
+    `;
+
+    const cachedData = deduplicateAnime(dbResults.rows.map(row => ({
+      anime_id: row.anime_id,
+      mal_id: row.mal_id,
+      title: row.title,
+      english_title: row.english_title,
+      japanese_title: row.japanese_title,
+      synonyms: row.synonyms,
+      description: row.description,
+      image_url: row.image_url,
+      score: row.score ? parseFloat(row.score) : null,
+      popularity: row.popularity,
+      rank: row.rank,
+      rating: row.rating,
+      status: row.status,
+      premiered: row.premiered,
+      demographic: row.demographic,
+      producers: row.producers,
+      last_jikan_sync: row.last_jikan_sync ? new Date(row.last_jikan_sync) : null,
+      sync_status: row.sync_status || 'fresh',
+      genres: row.genres || [],
+      studios: row.studios || [],
+      themes: row.themes || [],
+    })));
+
+    if (cachedData.length >= limit) {
+      return cachedData;
+    }
+
+    // Try to fetch fresh data from Jikan
+    try {
+      const jikanResults = await getUpcomingAnime(limit);
+      
+      // Store and return
+      const stored = await Promise.all(
+        jikanResults.map(anime => upsertAnimeToDatabase(anime))
+      );
+      
+      return deduplicateAnime(stored).slice(0, limit);
+    } catch (jikanError) {
+      console.error('Jikan API error, falling back to cached data:', jikanError);
+      
+      // If we have some cached data, return it
+      if (cachedData.length > 0) {
+        return cachedData;
+      }
+      
+      // Try to get older cached data as last resort
+      try {
+        const olderResults = await sql`
+          SELECT 
+            a.anime_id,
+            a.mal_id,
+            a.title,
+            a.english_title,
+            a.japanese_title,
+            a.synonyms,
+            a.description,
+            a.image_url,
+            a.score,
+            a.popularity,
+            a.rank,
+            a.rating,
+            a.status,
+            a.premiered,
+            a.demographic,
+            a.producers,
+            a.last_jikan_sync,
+            a.sync_status,
+            ARRAY_AGG(DISTINCT g.name) FILTER (WHERE g.name IS NOT NULL) as genres,
+            ARRAY_AGG(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL) as studios,
+            ARRAY_AGG(DISTINCT t.name) FILTER (WHERE t.name IS NOT NULL) as themes
+          FROM anime a
+          LEFT JOIN anime_genres ag ON a.anime_id = ag.anime_id
+          LEFT JOIN genres g ON ag.genre_id = g.id
+          LEFT JOIN anime_studios ast ON a.anime_id = ast.anime_id
+          LEFT JOIN studios s ON ast.studio_id = s.id
+          LEFT JOIN anime_themes at ON a.anime_id = at.anime_id
+          LEFT JOIN themes t ON at.theme_id = t.id
+          WHERE a.status = 'Not yet aired'
+          GROUP BY a.anime_id
+          ORDER BY 
+            CASE WHEN a.popularity IS NOT NULL THEN 0 ELSE 1 END,
+            a.popularity ASC,
+            a.score DESC NULLS LAST
+          LIMIT ${limit}
+        `;
+        
+        if (olderResults.rows.length > 0) {
+          return deduplicateAnime(olderResults.rows.map(row => ({
+            anime_id: row.anime_id,
+            mal_id: row.mal_id,
+            title: row.title,
+            english_title: row.english_title,
+            japanese_title: row.japanese_title,
+            synonyms: row.synonyms,
+            description: row.description,
+            image_url: row.image_url,
+            score: row.score ? parseFloat(row.score) : null,
+            popularity: row.popularity,
+            rank: row.rank,
+            rating: row.rating,
+            status: row.status,
+            premiered: row.premiered,
+            demographic: row.demographic,
+            producers: row.producers,
+            last_jikan_sync: row.last_jikan_sync ? new Date(row.last_jikan_sync) : null,
+            sync_status: row.sync_status || 'stale',
+            genres: row.genres || [],
+            studios: row.studios || [],
+            themes: row.themes || [],
+          })));
+        }
+      } catch (dbError) {
+        console.error('Failed to fetch older cached data:', dbError);
+      }
+      
+      // If no cached data at all, throw the Jikan error
+      throw jikanError;
+    }
+  } catch (error) {
+    console.error('Error in getUpcomingAnimeWithCache:', error);
+    throw error;
   }
 }
