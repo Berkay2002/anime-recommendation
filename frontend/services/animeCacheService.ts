@@ -137,7 +137,10 @@ async function searchAnimeInDatabase(query: string, limit: number): Promise<Cach
         OR a.english_title ILIKE ${`%${query}%`}
         OR a.japanese_title ILIKE ${`%${query}%`}
         OR a.synonyms ILIKE ${`%${query}%`}
-      GROUP BY a.anime_id
+      GROUP BY a.anime_id, a.mal_id, a.title, a.english_title, a.japanese_title, 
+        a.synonyms, a.description, a.image_url, a.score, a.popularity, a.rank, 
+        a.rating, a.status, a.premiered, a.demographic, a.producers, 
+        a.last_jikan_sync, a.sync_status
       ORDER BY 
         CASE WHEN a.popularity IS NOT NULL THEN 0 ELSE 1 END,
         a.popularity ASC,
@@ -210,7 +213,10 @@ async function getAnimeByMalIdFromDatabase(malId: number): Promise<CachedAnimeDa
       LEFT JOIN anime_themes at ON a.anime_id = at.anime_id
       LEFT JOIN themes t ON at.theme_id = t.id
       WHERE a.mal_id = ${malId}
-      GROUP BY a.anime_id
+      GROUP BY a.anime_id, a.mal_id, a.title, a.english_title, a.japanese_title, 
+        a.synonyms, a.description, a.image_url, a.score, a.popularity, a.rank, 
+        a.rating, a.status, a.premiered, a.demographic, a.producers, 
+        a.last_jikan_sync, a.sync_status
     `;
 
     if (result.rows.length === 0) return null;
@@ -575,7 +581,10 @@ export async function getCurrentSeasonAnimeWithCache(limit: number = 25): Promis
       LEFT JOIN themes t ON at.theme_id = t.id
       WHERE a.status = 'Currently Airing'
         AND a.last_jikan_sync > NOW() - INTERVAL '1 day'
-      GROUP BY a.anime_id
+      GROUP BY a.anime_id, a.mal_id, a.title, a.english_title, a.japanese_title, 
+        a.synonyms, a.description, a.image_url, a.score, a.popularity, a.rank, 
+        a.rating, a.status, a.premiered, a.demographic, a.producers, 
+        a.last_jikan_sync, a.sync_status
       ORDER BY 
         CASE WHEN a.popularity IS NOT NULL THEN 0 ELSE 1 END,
         a.popularity ASC,
@@ -672,7 +681,10 @@ export async function getCurrentSeasonAnimeWithCache(limit: number = 25): Promis
           LEFT JOIN anime_themes at ON a.anime_id = at.anime_id
           LEFT JOIN themes t ON at.theme_id = t.id
           WHERE a.status = 'Currently Airing'
-          GROUP BY a.anime_id
+          GROUP BY a.anime_id, a.mal_id, a.title, a.english_title, a.japanese_title, 
+            a.synonyms, a.description, a.image_url, a.score, a.popularity, a.rank, 
+            a.rating, a.status, a.premiered, a.demographic, a.producers, 
+            a.last_jikan_sync, a.sync_status
           ORDER BY 
             CASE WHEN a.popularity IS NOT NULL THEN 0 ELSE 1 END,
             a.popularity ASC,
@@ -756,7 +768,10 @@ export async function getUpcomingAnimeWithCache(limit: number = 25): Promise<Cac
       LEFT JOIN themes t ON at.theme_id = t.id
       WHERE a.status = 'Not yet aired'
         AND a.last_jikan_sync > NOW() - INTERVAL '1 day'
-      GROUP BY a.anime_id
+      GROUP BY a.anime_id, a.mal_id, a.title, a.english_title, a.japanese_title, 
+        a.synonyms, a.description, a.image_url, a.score, a.popularity, a.rank, 
+        a.rating, a.status, a.premiered, a.demographic, a.producers, 
+        a.last_jikan_sync, a.sync_status
       ORDER BY 
         CASE WHEN a.popularity IS NOT NULL THEN 0 ELSE 1 END,
         a.popularity ASC,
@@ -853,7 +868,10 @@ export async function getUpcomingAnimeWithCache(limit: number = 25): Promise<Cac
           LEFT JOIN anime_themes at ON a.anime_id = at.anime_id
           LEFT JOIN themes t ON at.theme_id = t.id
           WHERE a.status = 'Not yet aired'
-          GROUP BY a.anime_id
+          GROUP BY a.anime_id, a.mal_id, a.title, a.english_title, a.japanese_title, 
+            a.synonyms, a.description, a.image_url, a.score, a.popularity, a.rank, 
+            a.rating, a.status, a.premiered, a.demographic, a.producers, 
+            a.last_jikan_sync, a.sync_status
           ORDER BY 
             CASE WHEN a.popularity IS NOT NULL THEN 0 ELSE 1 END,
             a.popularity ASC,

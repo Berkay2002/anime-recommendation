@@ -78,7 +78,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       try {
         // Fetch anime data
         const animeResult = await sql`
-          SELECT 
+          SELECT
             a.anime_id,
             a.description,
             a.demographic,
@@ -91,7 +91,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           LEFT JOIN anime_themes at ON a.anime_id = at.anime_id
           LEFT JOIN themes t ON at.theme_id = t.id
           WHERE a.anime_id = ${anime_id}
-          GROUP BY a.anime_id
+          GROUP BY a.anime_id, a.description, a.demographic, a.rating
         `;
 
         if (animeResult.rows.length === 0) {
