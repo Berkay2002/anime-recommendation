@@ -115,7 +115,7 @@ def fetch_anime_data(conn, anime_ids: List[int]) -> List[dict]:
         LEFT JOIN anime_themes at ON a.anime_id = at.anime_id
         LEFT JOIN themes t ON at.theme_id = t.id
         WHERE a.anime_id = ANY(%s)
-        GROUP BY a.anime_id
+        GROUP BY a.anime_id, a.description, a.demographic, a.rating
         ORDER BY a.anime_id
     """
     
