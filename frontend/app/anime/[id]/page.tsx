@@ -145,6 +145,10 @@ export default function AnimeDetailPage() {
         const transformedRecs = data.similar_anime?.map((rec: any) => ({
           anime_id: rec.anime_id,
           title: rec.title,
+          image_url: rec.image_url,
+          score: rec.score,
+          popularity: rec.popularity,
+          genres: rec.genres,
           similarity: rec.similarity
         })) || []
         

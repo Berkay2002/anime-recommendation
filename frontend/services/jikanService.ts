@@ -5,6 +5,7 @@ import axios from 'axios';
 // Create axios instance with caching
 const axiosInstance = setupCache(
   axios.create({
+    baseURL: 'https://api.jikan.moe/v4',
     timeout: 10000,
   }),
   {

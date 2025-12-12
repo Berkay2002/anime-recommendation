@@ -45,6 +45,31 @@ interface Review {
   created_at: string;
 }
 
+// Helper function to parse pgvector to array
+function parseVector(vector: any): number[] | undefined {
+  if (!vector) return undefined;
+  
+  // If it's already an array, return it
+  if (Array.isArray(vector)) return vector;
+  
+  // If it's a string like "[1.0,2.0,...]", parse it
+  if (typeof vector === 'string') {
+    try {
+      const parsed = JSON.parse(vector);
+      return Array.isArray(parsed) ? parsed : undefined;
+    } catch {
+      // Try parsing without JSON if it's a pgvector format
+      const match = vector.match(/^\[(.*)\]$/);
+      if (match) {
+        return match[1].split(',').map(v => parseFloat(v.trim()));
+      }
+      return undefined;
+    }
+  }
+  
+  return undefined;
+}
+
 // --- DATA FORMATTING HELPER ---
 function formatAnime(anime: any): Anime {
   return {
@@ -66,17 +91,17 @@ function formatAnime(anime: any): Anime {
     studios: anime.studios || [],
     themes: anime.themes || [],
     // Include embeddings if present (with backward compatibility)
-    description_embedding: anime.description_embedding,
-    genres_embedding: anime.genres_embedding,
-    demographic_embedding: anime.demographic_embedding,
-    rating_embedding: anime.rating_embedding,
-    themes_embedding: anime.themes_embedding,
+    description_embedding: parseVector(anime.description_embedding),
+    genres_embedding: parseVector(anime.genres_embedding),
+    demographic_embedding: parseVector(anime.demographic_embedding),
+    rating_embedding: parseVector(anime.rating_embedding),
+    themes_embedding: parseVector(anime.themes_embedding),
     // Legacy field names for backward compatibility with frontend hooks
-    bert_description: anime.description_embedding,
-    bert_genres: anime.genres_embedding,
-    bert_demographic: anime.demographic_embedding,
-    bert_rating: anime.rating_embedding,
-    bert_themes: anime.themes_embedding,
+    bert_description: parseVector(anime.description_embedding),
+    bert_genres: parseVector(anime.genres_embedding),
+    bert_demographic: parseVector(anime.demographic_embedding),
+    bert_rating: parseVector(anime.rating_embedding),
+    bert_themes: parseVector(anime.themes_embedding),
   };
 }
 
@@ -133,13 +158,13 @@ export const getAnime = cache(async (params: GetAnimeParams = {}) => {
   };
   const orderBy = sortMap[sortBy] || 'a.popularity ASC';
 
-  // Build SELECT clause
+  // Build SELECT clause - cast vectors to text arrays for proper JSON serialization
   const embeddingFields = withEmbeddings ? `, 
-    ae.description_embedding,
-    ae.genres_embedding,
-    ae.demographic_embedding,
-    ae.rating_embedding,
-    ae.themes_embedding` : '';
+    ae.description_embedding::text as description_embedding,
+    ae.genres_embedding::text as genres_embedding,
+    ae.demographic_embedding::text as demographic_embedding,
+    ae.rating_embedding::text as rating_embedding,
+    ae.themes_embedding::text as themes_embedding` : '';
 
   const embeddingJoin = withEmbeddings ? 
     'LEFT JOIN anime_embeddings ae ON a.anime_id = ae.anime_id' : '';
@@ -183,7 +208,7 @@ export const getAnime = cache(async (params: GetAnimeParams = {}) => {
     LEFT JOIN themes t ON at.theme_id = t.id
     ${embeddingJoin}
     ${whereClause}
-    GROUP BY a.anime_id ${withEmbeddings ? ', ae.description_embedding, ae.genres_embedding, ae.demographic_embedding, ae.rating_embedding, ae.themes_embedding' : ''}
+    GROUP BY a.anime_id ${withEmbeddings ? ', ae.description_embedding, ae.genres_embedding, ae.demographic_embedding, ae.rating_embedding, ae.themes_embedding, ae.anime_id' : ''}
     ORDER BY ${orderBy}
     LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
   `;

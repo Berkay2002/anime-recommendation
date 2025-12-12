@@ -56,6 +56,15 @@ export function useRecommendations({
           throw new Error("No anime data received from API")
         }
 
+        console.log('[useRecommendations] Fetched anime count:', data.anime.length)
+        console.log('[useRecommendations] First anime sample:', {
+          anime_id: data.anime[0]?.anime_id,
+          title: data.anime[0]?.title,
+          has_bert_description: !!data.anime[0]?.bert_description,
+          bert_description_type: typeof data.anime[0]?.bert_description,
+          bert_description_length: data.anime[0]?.bert_description?.length
+        })
+
         if (isMounted) {
           setAllAnime(data.anime)
           setError(null)

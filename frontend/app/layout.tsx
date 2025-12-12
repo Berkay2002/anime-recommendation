@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
+import { ConsoleFilter } from "@/components/ConsoleFilter"
 import Navbar from "../components/Navbar"
 import "../styles/globals.css"
 
@@ -12,6 +13,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>{/* Meta tags and favicons can go here */}</head>
       <body className="bg-background text-foreground">
+        <ConsoleFilter />
         <ThemeProvider>
           <Suspense fallback={null}>
             <Navbar />

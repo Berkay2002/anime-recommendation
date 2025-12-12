@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import RecommendedSection from "@/components/RecommendedSection"
 import TopRankedSection from "@/components/TopRankedSection"
@@ -17,27 +17,28 @@ interface Anime {
 }
 
 const HomePage = () => {
-  const [selectedAnime, setSelectedAnime] = useState<Anime[]>(() => {
-    if (typeof window !== "undefined") {
-      const savedChoices = localStorage.getItem("userChoices")
-      if (savedChoices) {
-        try {
-          return JSON.parse(savedChoices)
-        } catch (parseError) {
-          console.error(
-            "Failed to parse saved choices from localStorage:",
-            parseError
-          )
-          localStorage.removeItem("userChoices")
-        }
+  const [selectedAnime, setSelectedAnime] = useState<Anime[]>([])
+  const [selectedAnimeIds, setSelectedAnimeIds] = useState<number[]>([])
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  // Load from localStorage only on client-side after hydration
+  useEffect(() => {
+    const savedChoices = localStorage.getItem("userChoices")
+    if (savedChoices) {
+      try {
+        const parsed = JSON.parse(savedChoices)
+        setSelectedAnime(parsed)
+        setSelectedAnimeIds(parsed.map((anime: Anime) => anime.anime_id))
+      } catch (parseError) {
+        console.error(
+          "Failed to parse saved choices from localStorage:",
+          parseError
+        )
+        localStorage.removeItem("userChoices")
       }
     }
-    return []
-  })
-
-  const [selectedAnimeIds, setSelectedAnimeIds] = useState<number[]>(() =>
-    selectedAnime.map((anime) => anime.anime_id)
-  )
+    setIsHydrated(true)
+  }, [])
 
   const selectedAnimeIdSet = useMemo(
     () => new Set(selectedAnimeIds),
