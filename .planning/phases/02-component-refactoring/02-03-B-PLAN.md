@@ -1,26 +1,25 @@
 ---
 phase: 02-component-refactoring
-plan: 03
+plan: 03-B
 type: execute
 wave: 2
-depends_on: ["02-01", "02-02"]
+depends_on: ["02-03-A"]
 files_modified:
-  - frontend/components/SearchBar.tsx
-  - frontend/components/Navbar.tsx
   - frontend/components/SectionHeader.tsx
   - frontend/components/DataLoadingStates.tsx
-  - frontend/hooks/useKeyboardShortcut.ts
-  - frontend/hooks/useClickOutside.ts
+  - frontend/components/Navbar.tsx
+  - frontend/app/anime/[id]/page.tsx
+  - frontend/app/anime/page.tsx
 autonomous: false
 user_setup: []
 
 must_haves:
   truths:
-    - "SearchBar component is simplified and uses extracted hooks"
-    - "Navbar component is simplified and uses extracted components"
-    - "Reusable components are created (SectionHeader, DataLoadingStates)"
-    - "Reusable hooks are created (useKeyboardShortcut, useClickOutside)"
-    - "Code duplication is reduced"
+    - "SectionHeader component provides consistent section headers across the app"
+    - "DataLoadingStates component provides reusable loading/error/empty state components"
+    - "Navbar uses SectionHeader for mobile sheet header"
+    - "Anime detail and browse pages use SectionHeader and DataLoadingStates"
+    - "Code duplication is reduced by at least 30%"
     - "All existing functionality works correctly"
   artifacts:
     - path: "frontend/components/SectionHeader.tsx"
@@ -31,29 +30,10 @@ must_haves:
       provides: "Reusable loading/error/empty state components"
       min_lines: 80
       max_lines: 150
-    - path: "frontend/hooks/useKeyboardShortcut.ts"
-      provides: "Reusable keyboard shortcut hook"
-      min_lines: 40
-      max_lines: 80
-    - path: "frontend/hooks/useClickOutside.ts"
-      provides: "Reusable click outside detection hook"
-      min_lines: 30
-      max_lines: 60
-    - path: "frontend/components/SearchBar.tsx"
-      provides: "Simplified search bar using extracted hooks"
-      max_lines: 180
     - path: "frontend/components/Navbar.tsx"
       provides: "Simplified navbar using extracted components"
       max_lines: 150
   key_links:
-    - from: "frontend/components/SearchBar.tsx"
-      to: "frontend/hooks/useKeyboardShortcut.ts"
-      via: "Hook import for Cmd+K shortcut"
-      pattern: "import useKeyboardShortcut|useKeyboardShortcut\\("
-    - from: "frontend/components/SearchBar.tsx"
-      to: "frontend/hooks/useClickOutside.ts"
-      via: "Hook import for click outside detection"
-      pattern: "import useClickOutside|useClickOutside\\("
     - from: "frontend/components/Navbar.tsx"
       to: "frontend/components/SectionHeader.tsx"
       via: "Component import for mobile sheet header"
@@ -62,13 +42,21 @@ must_haves:
       to: "frontend/components/SectionHeader.tsx"
       via: "Component import for section headers"
       pattern: "import SectionHeader|<SectionHeader"
+    - from: "frontend/app/anime/[id]/page.tsx"
+      to: "frontend/components/DataLoadingStates.tsx"
+      via: "Component import for loading/error/empty states"
+      pattern: "import DataLoadingStates|from.*DataLoadingStates"
+    - from: "frontend/app/anime/page.tsx"
+      to: "frontend/components/DataLoadingStates.tsx"
+      via: "Component import for loading/error/empty states"
+      pattern: "import DataLoadingStates|from.*DataLoadingStates"
 ---
 
 <objective>
-Extract reusable patterns from SearchBar and Navbar components, and create shared components/hooks to reduce code duplication.
+Create reusable components (SectionHeader, DataLoadingStates) and update existing components to use them.
 
-Purpose: Improve code reusability across the application and reduce duplication of common patterns.
-Output: Reusable hooks (useKeyboardShortcut, useClickOutside) and components (SectionHeader, DataLoadingStates) with simplified SearchBar and Navbar.
+Purpose: Reduce code duplication across the application and establish consistent patterns for common UI elements.
+Output: Two reusable component sets with updated Navbar and pages using them.
 </objective>
 
 <execution_context>
@@ -81,162 +69,14 @@ Output: Reusable hooks (useKeyboardShortcut, useClickOutside) and components (Se
 @.planning/ROADMAP.md
 @.planning/STATE.md
 @.planning/phases/02-component-refactoring/02-CONTEXT.md
-@.planning/phases/02-component-refactoring/02-01-SUMMARY.md
-@.planning/phases/02-component-refactoring/02-02-SUMMARY.md
+@.planning/phases/02-component-refactoring/02-03-A-SUMMARY.md
 
-@frontend/components/SearchBar.tsx
 @frontend/components/Navbar.tsx
 @frontend/app/anime/[id]/page.tsx
 @frontend/app/anime/page.tsx
 </context>
 
 <tasks>
-
-<task type="auto">
-  <name>Extract useKeyboardShortcut hook</name>
-  <files>
-    frontend/hooks/useKeyboardShortcut.ts
-    frontend/components/SearchBar.tsx
-  </files>
-  <action>
-    Create a new hook `useKeyboardShortcut.ts` that encapsulates keyboard shortcut logic.
-
-    The hook should:
-    - Accept parameters:
-      - keys: string - the key to listen for (e.g., "k")
-      - handler: () => void - callback function to execute
-      - options: { ctrlOrCmd?: boolean, alt?: boolean, shift?: boolean, preventDefault?: boolean }
-    - Set up event listener for keyboard events
-    - Check if the pressed key matches the shortcut
-    - Check if target element is editable (skip if input/textarea/contentEditable)
-    - Clean up event listener on unmount
-
-    Hook signature:
-    ```typescript
-    interface UseKeyboardShortcutOptions {
-      ctrlOrCmd?: boolean
-      alt?: boolean
-      shift?: boolean
-      preventDefault?: boolean
-    }
-
-    function useKeyboardShortcut(
-      keys: string,
-      handler: () => void,
-      options?: UseKeyboardShortcutOptions
-    ): void
-    ```
-
-    Extract the keyboard shortcut logic from SearchBar (lines 54-80).
-
-    In SearchBar, replace the useEffect with:
-    ```typescript
-    useKeyboardShortcut('k', focusInput, {
-      ctrlOrCmd: true,
-      preventDefault: true
-    })
-    ```
-
-    This hook is reusable for any keyboard shortcuts throughout the app.
-  </action>
-  <verify>
-    - Hook file exists at frontend/hooks/useKeyboardShortcut.ts
-    - SearchBar imports and uses useKeyboardShortcut
-    - Cmd+K / Ctrl+K shortcut still works to focus search
-    - Shortcut doesn't trigger when typing in input fields
-    - TypeScript compiles without errors
-  </verify>
-  <done>
-    useKeyboardShortcut hook is extracted and SearchBar uses it for Cmd+K shortcut.
-  </done>
-</task>
-
-<task type="auto">
-  <name>Extract useClickOutside hook</name>
-  <files>
-    frontend/hooks/useClickOutside.ts
-    frontend/components/SearchBar.tsx
-  </files>
-  <action>
-    Create a new hook `useClickOutside.ts` that encapsulates click outside detection logic.
-
-    The hook should:
-    - Accept parameters:
-      - ref: RefObject<HTMLElement> - reference to the container element
-      - handler: () => void - callback when click outside is detected
-      - enabled: boolean - optional flag to enable/disable detection
-    - Set up event listeners for mousedown and touchstart
-    - Check if click target is outside the referenced element
-    - Clean up event listeners on unmount
-
-    Hook signature:
-    ```typescript
-    function useClickOutside(
-      ref: RefObject<HTMLElement>,
-      handler: () => void,
-      enabled?: boolean
-    ): void
-    ```
-
-    Extract the click outside logic from SearchBar (lines 82-97).
-
-    In SearchBar, replace the useEffect with:
-    ```typescript
-    useClickOutside(containerRef, () => setIsOpen(false), isOpen)
-    ```
-
-    This hook is reusable for any dropdown/popover that needs to close on outside click.
-  </action>
-  <verify>
-    - Hook file exists at frontend/hooks/useClickOutside.ts
-    - SearchBar imports and uses useClickOutside
-    - Search dropdown closes when clicking outside
-    - Dropdown stays open when clicking inside
-    - TypeScript compiles without errors
-  </verify>
-  <done>
-    useClickOutside hook is extracted and SearchBar uses it for closing dropdown on outside click.
-  </done>
-</task>
-
-<task type="auto">
-  <name>Simplify SearchBar component</name>
-  <files>
-    frontend/components/SearchBar.tsx
-  </files>
-  <action>
-    Simplify the SearchBar component by using the extracted hooks and cleaning up redundant code.
-
-    After extracting the hooks, the SearchBar should:
-    1. Import useKeyboardShortcut and useClickOutside from hooks
-    2. Remove the manual keyboard shortcut useEffect (lines 54-80)
-    3. Remove the manual click outside useEffect (lines 82-97)
-    4. Use the extracted hooks instead
-    5. Keep the search logic (query state, results, API call)
-    6. Keep the JSX rendering (Command input, results dropdown)
-
-    The component should be significantly shorter and easier to read.
-    Focus should be on search functionality, not generic event handling.
-
-    Target: Reduce from 236 lines to under 180 lines.
-  </action>
-  <verify>
-    - SearchBar uses useKeyboardShortcut for Cmd+K
-    - SearchBar uses useClickOutside for dropdown closing
-    - All search functionality still works:
-      - Typing queries works
-      - Results display
-      - Clicking result navigates to anime page
-      - Cmd+K focuses search
-      - Clicking outside closes dropdown
-    - Component is under 180 lines (wc -l frontend/components/SearchBar.tsx)
-    - TypeScript compiles without errors
-    - No console errors or warnings
-  </verify>
-  <done>
-    SearchBar is simplified to under 180 lines using extracted hooks.
-  </done>
-</task>
 
 <task type="auto">
   <name>Create SectionHeader reusable component</name>
@@ -406,7 +246,7 @@ Output: Reusable hooks (useKeyboardShortcut, useClickOutside) and components (Se
 <task type="checkpoint:human-verify">
   <what-built>
     Complete component composition and pattern extraction:
-    - Extracted 2 reusable hooks (useKeyboardShortcut, useClickOutside)
+    - Extracted 2 reusable hooks (useKeyboardShortcut, useClickOutside) from plan 02-03-A
     - Created 2 reusable component sets (SectionHeader, DataLoadingStates)
     - Simplified SearchBar from 236 to ~180 lines using hooks
     - Simplified Navbar from 180 to ~150 lines using SectionHeader
@@ -449,7 +289,7 @@ Output: Reusable hooks (useKeyboardShortcut, useClickOutside) and components (Se
 
 After completing all tasks, verify:
 
-1. **Hook Extraction**: useKeyboardShortcut and useClickOutside hooks created and used
+1. **Hook Extraction**: useKeyboardShortcut and useClickOutside hooks created and used (from 02-03-A)
 2. **Component Creation**: SectionHeader and DataLoadingStates components created
 3. **Code Reduction**: SearchBar and Navbar are simplified
 4. **Duplication Reduction**: Section headers and loading states are consistent across app
@@ -490,5 +330,5 @@ All existing functionality preserved, zero breaking changes, code is more mainta
 </success_criteria>
 
 <output>
-After completion, create `.planning/phases/02-component-refactoring/02-03-SUMMARY.md`
+After completion, create `.planning/phases/02-component-refactoring/02-03-B-SUMMARY.md`
 </output>

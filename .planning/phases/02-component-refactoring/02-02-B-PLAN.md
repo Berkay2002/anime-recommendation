@@ -1,35 +1,24 @@
 ---
 phase: 02-component-refactoring
-plan: 02
+plan: 02-B
 type: execute
 wave: 1
-depends_on: []
+depends_on: ["02-02-A"]
 files_modified:
   - frontend/app/anime/page.tsx
-  - frontend/components/AnimeBrowseFilters.tsx
-  - frontend/components/AnimeBrowsePagination.tsx
-  - frontend/components/AnimeBrowseHeader.tsx
   - frontend/components/AnimeBrowseGrid.tsx
+  - frontend/components/AnimeBrowsePagination.tsx
 autonomous: false
 user_setup: []
 
 must_haves:
   truths:
-    - "Anime browse page displays correctly with filtering and pagination"
-    - "Component files are created and imported properly"
-    - "Filter controls work (genre selection, sort by)"
-    - "Pagination controls work (page navigation)"
-    - "Anime grid displays cards correctly"
-    - "Mobile and desktop layouts both work"
+    - "AnimeBrowseGrid component displays anime grid with loading/error/empty/success states"
+    - "AnimeBrowsePagination component provides pagination controls with numbered pages"
+    - "Main page orchestrates all 4 components cleanly"
+    - "Page is under 150 lines"
+    - "No console errors or TypeScript errors"
   artifacts:
-    - path: "frontend/components/AnimeBrowseHeader.tsx"
-      provides: "Page header with title, description, and filter controls"
-      min_lines: 80
-      max_lines: 150
-    - path: "frontend/components/AnimeBrowseFilters.tsx"
-      provides: "Genre filter popover/sheet and sort select"
-      min_lines: 100
-      max_lines: 180
     - path: "frontend/components/AnimeBrowseGrid.tsx"
       provides: "Anime grid with loading, error, empty, and data states"
       min_lines: 80
@@ -39,17 +28,9 @@ must_haves:
       min_lines: 50
       max_lines: 100
     - path: "frontend/app/anime/page.tsx"
-      provides: "Main page orchestrating data fetching and component composition"
+      provides: "Main page orchestrating all components (target ~150 lines)"
       max_lines: 150
   key_links:
-    - from: "frontend/app/anime/page.tsx"
-      to: "frontend/components/AnimeBrowseHeader.tsx"
-      via: "Component import and prop passing (loading state, filter controls)"
-      pattern: "import AnimeBrowseHeader|<AnimeBrowseHeader"
-    - from: "frontend/app/anime/page.tsx"
-      to: "frontend/components/AnimeBrowseFilters.tsx"
-      via: "Component import and prop passing (genre options, sort options, state handlers)"
-      pattern: "import AnimeBrowseFilters|<AnimeBrowseFilters"
     - from: "frontend/app/anime/page.tsx"
       to: "frontend/components/AnimeBrowseGrid.tsx"
       via: "Component import and prop passing (anime list, loading, error states)"
@@ -61,10 +42,10 @@ must_haves:
 ---
 
 <objective>
-Break down the 530-line anime browse page into focused sub-components for better maintainability and testability.
+Extract the final two sub-components from the anime browse page: Grid and Pagination, completing the refactoring.
 
-Purpose: Separate concerns (header, filters, grid, pagination) and make the codebase easier to navigate and modify.
-Output: A main page component (max 150 lines) that orchestrates 4 focused sub-components.
+Purpose: Complete breaking down the 530-line page into focused, manageable pieces.
+Output: Two additional extracted components (Grid, Pagination) with main page at ~150 lines.
 </objective>
 
 <execution_context>
@@ -77,113 +58,12 @@ Output: A main page component (max 150 lines) that orchestrates 4 focused sub-co
 @.planning/ROADMAP.md
 @.planning/STATE.md
 @.planning/phases/02-component-refactoring/02-CONTEXT.md
+@.planning/phases/02-component-refactoring/02-02-A-SUMMARY.md
 
 @frontend/app/anime/page.tsx
 </context>
 
 <tasks>
-
-<task type="auto">
-  <name>Extract AnimeBrowseHeader component</name>
-  <files>
-    frontend/components/AnimeBrowseHeader.tsx
-    frontend/app/anime/page.tsx
-  </files>
-  <action>
-    Create a new component `AnimeBrowseHeader.tsx` that contains the page header section.
-
-    The component should:
-    - Accept props: loading (boolean), isInitialLoad (boolean)
-    - Render page title "Explore Anime" and description
-    - Show skeleton placeholders when loading
-    - Use the same responsive layout (flex-col on mobile, lg:flex-row on desktop)
-
-    Props interface:
-    ```typescript
-    interface AnimeBrowseHeaderProps {
-      loading: boolean
-      isInitialLoad: boolean
-    }
-    ```
-
-    Extract lines ~180-196 (the header div with title and description).
-
-    The filter controls (sort select and genre popover) should NOT be included in this component - they will be extracted separately as AnimeBrowseFilters.
-
-    Keep the Skeleton components for the loading state within this component.
-
-    Replace in main page with: `<AnimeBrowseHeader loading={loading} isInitialLoad={isInitialLoad} />`
-  </action>
-  <verify>
-    - Component file exists at frontend/components/AnimeBrowseHeader.tsx
-    - Main page imports and uses AnimeBrowseHeader
-    - TypeScript compiles without errors
-    - Header displays correctly with title and description
-    - Loading state shows skeleton placeholders
-  </verify>
-  <done>
-    AnimeBrowseHeader component is extracted and displays the page header with loading state.
-  </done>
-</task>
-
-<task type="auto">
-  <name>Extract AnimeBrowseFilters component</name>
-  <files>
-    frontend/components/AnimeBrowseFilters.tsx
-    frontend/app/anime/page.tsx
-  </files>
-  <action>
-    Create a new component `AnimeBrowseFilters.tsx` that contains all filter controls.
-
-    The component should:
-    - Accept props:
-      - sortBy: SortOption (current sort value)
-      - onSortChange: (value: SortOption) => void
-      - selectedGenres: GenreOption[]
-      - onGenreToggle: (genre: GenreOption) => void
-      - onGenreRemove: (genre: GenreOption) => void
-      - onClearGenres: () => void
-      - loading: boolean
-      - isInitialLoad: boolean
-    - Render desktop filters (Sort Select + Genre Popover) on md screens and up
-    - Render mobile filter Sheet on small screens with the full filter UI
-    - Handle both desktop and mobile layouts
-
-    Props interface:
-    ```typescript
-    interface AnimeBrowseFiltersProps {
-      sortBy: SortOption
-      onSortChange: (value: SortOption) => void
-      selectedGenres: GenreOption[]
-      onGenreToggle: (genre: GenreOption) => void
-      onGenreRemove: (genre: GenreOption) => void
-      onClearGenres: () => void
-      loading: boolean
-      isInitialLoad: boolean
-    }
-    ```
-
-    Extract lines ~197-384 (the entire filter controls section including desktop popover and mobile sheet).
-
-    Keep the genreOptions and sortOptions arrays in this component file since they're specific to filtering.
-
-    Include the genrePopoverOpen and filterSheetOpen state management in this component since it's internal UI state.
-
-    Replace the filter controls div in main page with: `<AnimeBrowseFilters sortBy={sortBy} onSortChange={setSortBy} selectedGenres={selectedGenres} onGenreToggle={toggleGenre} onGenreRemove={removeGenre} onClearGenres={() => setSelectedGenres([])} loading={loading} isInitialLoad={isInitialLoad} />`
-  </action>
-  <verify>
-    - Component file exists at frontend/components/AnimeBrowseFilters.tsx
-    - Main page imports and uses AnimeBrowseFilters
-    - Desktop filters display correctly (Sort Select + Genre Popover)
-    - Mobile filter Sheet opens and displays controls
-    - Genre selection works in both desktop and mobile
-    - Sort dropdown works correctly
-    - TypeScript compiles without errors
-  </verify>
-  <done>
-    AnimeBrowseFilters component is extracted with full desktop and mobile filter functionality.
-  </done>
-</task>
 
 <task type="auto">
   <name>Extract AnimeBrowseGrid component</name>
@@ -302,19 +182,16 @@ Output: A main page component (max 150 lines) that orchestrates 4 focused sub-co
     2. Manage state:
        - animeList, loading, isInitialLoad, error
        - selectedGenres, currentPage, totalPages, sortBy
-       - genrePopoverOpen, filterSheetOpen (if not moved to filters)
     3. Define handlers:
        - handlePageChange (if not in pagination component)
        - toggleGenre, removeGenre (if not in filters component)
     4. Define constants:
        - genreOptions, sortOptions (if not in filters component)
-       - skeletonPlaceholders (if not in grid component)
     5. useEffect for fetching anime data
     6. Render:
        - Container div with gap
        - AnimeBrowseHeader
-       - Desktop filters section (flex-row with Sort Select + Genre Popover)
-       - Mobile filter Sheet
+       - AnimeBrowseFilters
        - Selected genre badges (if not in filters)
        - AnimeBrowseGrid
        - AnimeBrowsePagination
@@ -404,7 +281,7 @@ After completing all tasks, verify:
 </verification>
 
 <success_criteria>
-Anime browse page refactored into 4 focused components:
+Anime browse page refactoring complete:
 - Main page orchestrates data fetching and component composition (~150 lines)
 - AnimeBrowseHeader: Page title, description, and loading state
 - AnimeBrowseFilters: Genre filter and sort controls (desktop popover + mobile sheet)
@@ -415,5 +292,5 @@ All existing functionality preserved, zero breaking changes, code is more mainta
 </success_criteria>
 
 <output>
-After completion, create `.planning/phases/02-component-refactoring/02-02-SUMMARY.md`
+After completion, create `.planning/phases/02-component-refactoring/02-02-B-SUMMARY.md`
 </output>

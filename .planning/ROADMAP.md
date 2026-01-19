@@ -12,7 +12,7 @@ Incremental cleanup approach: Services → Components → API Routes
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
 | 1 | Logging Cleanup | Remove excessive console logging and add structured logging | LOG-01, LOG-02, LOG-03 | 3 |
-| 2 | Component Refactoring | Break down large components for maintainability | COMP-01, COMP-02, COMP-03 | 3 |
+| 2 | Component Refactoring | Break down large components for maintainability | COMP-01, COMP-03 | 2 |
 | 3 | Error Handling | Implement error boundaries and recovery mechanisms | ERR-01, ERR-02, ERR-03, ERR-04 | 4 |
 | 4 | Loading States | Add skeleton loaders and progress indicators | LOAD-01, LOAD-02, LOAD-03, LOAD-04 | 4 |
 | 5 | API Optimization | Optimize API calls for better performance | PERF-01, PERF-02, PERF-03, PERF-04 | 4 |
@@ -26,7 +26,6 @@ Incremental cleanup approach: Services → Components → API Routes
 
 **Status:** Complete (2025-01-19)
 **Plans:** 3/3 executed
-**Verification:** Passed (5/5 must-haves)
 
 **Requirements:**
 - LOG-01: Remove or replace all console.log statements in production code with proper logging ✅
@@ -55,29 +54,32 @@ Incremental cleanup approach: Services → Components → API Routes
 **Goal:** Break down large components for better maintainability and reusability
 
 **Status:** In Planning (2025-01-19)
-**Plans:** 3 plans in 2 waves
+**Plans:** 6 plans in 2 waves
 
 **Requirements:**
 - COMP-01: Break down anime detail page (748 lines) into smaller focused components
-- COMP-02: Extract reusable sub-components from sidebar component (726 lines)
 - COMP-03: Implement component composition patterns to reduce code duplication
 
 **Dependencies:** Phase 1 (logging cleanup makes debugging easier)
 
 **Success Criteria:**
 1. Anime detail page is broken into logical sub-components (max 200 lines each)
-2. Sidebar component extracted into reusable pieces
-3. No component exceeds 200 lines of code
+2. Anime browse page is broken into logical sub-components (max 150 lines each)
+3. No application component exceeds 200 lines of code
 4. Components have clear, single responsibilities
 5. Code duplication reduced by at least 30%
 6. All existing functionality preserved
 
 **Plans:**
-- [ ] 02-01-PLAN.md — Refactor anime detail page (749 lines → ~200 lines with 5 sub-components)
-- [ ] 02-02-PLAN.md — Refactor anime browse page (530 lines → ~150 lines with 4 sub-components)
-- [ ] 02-03-PLAN.md — Extract reusable patterns and component composition (hooks, shared components)
+- [ ] 02-01-A-PLAN.md — Refactor anime detail page: Header, Stats, Skeleton components
+- [ ] 02-01-B-PLAN.md — Refactor anime detail page: ExtraDetails, Reviews components
+- [ ] 02-02-A-PLAN.md — Refactor anime browse page: Header, Filters components
+- [ ] 02-02-B-PLAN.md — Refactor anime browse page: Grid, Pagination components
+- [ ] 02-03-A-PLAN.md — Extract reusable hooks (useKeyboardShortcut, useClickOutside)
+- [ ] 02-03-B-PLAN.md — Create reusable components (SectionHeader, DataLoadingStates)
 
 **Notes:**
+- COMP-02 (sidebar component) excluded: frontend/components/ui/sidebar.tsx is a shadcn/ui library component (726 lines), not custom application code
 - Use React hooks for shared logic
 - Create presentational/container component separation where appropriate
 - Maintain existing TypeScript interfaces

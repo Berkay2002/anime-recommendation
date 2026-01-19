@@ -14,8 +14,9 @@
 ### Code Quality - Component Structure
 
 - [ ] **COMP-01**: Break down anime detail page (748 lines) into smaller focused components
-- [ ] **COMP-02**: Extract reusable sub-components from sidebar component (726 lines)
 - [ ] **COMP-03**: Implement component composition patterns to reduce code duplication
+
+**Note:** COMP-02 (sidebar component refactoring) excluded - frontend/components/ui/sidebar.tsx is a shadcn/ui library component (726 lines), not custom application code. Library components are maintained separately and should not be modified.
 
 ### Reliability - Error Handling
 
@@ -40,17 +41,17 @@
 
 ### Performance - Error Recovery
 
-- [ ] **REC-01]: Gracefully handle and recover from API failures
+- [ ] **REC-01**: Gracefully handle and recover from API failures
 - [ ] **REC-02**: Implement offline detection and notification
 - [ ] **REC-03**: Cache critical data for offline access
-- [ ] **REC-04]: Provide retry options for failed operations
+- [ ] **REC-04**: Provide retry options for failed operations
 
 ## v2 Requirements
 
 ### Testing
 
 - **TEST-01**: Add unit tests for service layer functions
-- **TEST-02]: Add integration tests for API routes
+- **TEST-02**: Add integration tests for API routes
 - **TEST-03**: Add component tests with React Testing Library
 - **TEST-04**: Implement visual regression testing
 - **TEST-05**: Add performance benchmarks
@@ -60,7 +61,7 @@
 - **DOC-01**: Add JSDoc comments to all service functions
 - **DOC-02**: Create component documentation with usage examples
 - **DOC-03**: Document API endpoints with OpenAPI/Swagger
-- **DOC-04]: Write architecture decision records (ADRs)
+- **DOC-04**: Write architecture decision records (ADRs)
 
 ## Out of Scope
 
@@ -71,6 +72,7 @@
 | Authentication changes | Clerk integration is stable and working |
 | Visual redesign | Keeping UI intact during cleanup |
 | Dependency updates | Unless required for security or features |
+| UI library component refactoring | shadcn/ui components are maintained separately (e.g., sidebar.tsx at 726 lines) |
 
 ## Traceability
 
@@ -80,7 +82,6 @@
 | LOG-02 | Phase 1 | Complete |
 | LOG-03 | Phase 1 | Complete |
 | COMP-01 | Phase 2 | Pending |
-| COMP-02 | Phase 2 | Pending |
 | COMP-03 | Phase 2 | Pending |
 | ERR-01 | Phase 3 | Pending |
 | ERR-02 | Phase 3 | Pending |
@@ -100,10 +101,10 @@
 | REC-04 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 22 total
-- Mapped to phases: 22
+- v1 requirements: 21 total (COMP-02 excluded as library component)
+- Mapped to phases: 21
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2025-01-19*
-*Last updated: 2025-01-19 after initial definition*
+*Last updated: 2025-01-19 (clarified COMP-02 exclusion)*
