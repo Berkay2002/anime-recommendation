@@ -123,35 +123,35 @@ interface GetAnimeParams {
 
 export const getAnime = cache(async (params: GetAnimeParams = {}) => {
   try {
-    const {
-      sortBy = 'popularity',
-      limit = 30,
-      page = 1,
-      filter = {},
-      withEmbeddings = false,
-    } = params;
+      const {
+        sortBy = 'popularity',
+        limit = 30,
+        page = 1,
+        filter = {},
+        withEmbeddings = false,
+      } = params;
 
-    const offset = (page - 1) * limit;
+      const offset = (page - 1) * limit;
 
-  // Build WHERE clause for genre filtering
-  let whereClause = 'WHERE a.popularity IS NOT NULL AND a.rank IS NOT NULL AND a.score IS NOT NULL';
-  const queryParams: any[] = [];
-  let paramIndex = 1;
+    // Build WHERE clause for genre filtering
+    let whereClause = 'WHERE a.popularity IS NOT NULL AND a.rank IS NOT NULL AND a.score IS NOT NULL';
+    const queryParams: any[] = [];
+    let paramIndex = 1;
 
-  if (filter.genres && filter.genres.length > 0) {
-    const genreConditions = filter.genres.map((genre) => {
-      queryParams.push(genre);
-      return `g.name ILIKE $${paramIndex++}`;
-    }).join(' OR ');
-    
-    whereClause += ` AND a.anime_id IN (
-      SELECT ag.anime_id FROM anime_genres ag
-      JOIN genres g ON ag.genre_id = g.id
-      WHERE ${genreConditions}
-      GROUP BY ag.anime_id
-      HAVING COUNT(DISTINCT g.id) = ${filter.genres.length}
-    )`;
-  }
+    if (filter.genres && filter.genres.length > 0) {
+      const genreConditions = filter.genres.map((genre) => {
+        queryParams.push(genre);
+        return `g.name ILIKE $${paramIndex++}`;
+      }).join(' OR ');
+      
+      whereClause += ` AND a.anime_id IN (
+        SELECT ag.anime_id FROM anime_genres ag
+        JOIN genres g ON ag.genre_id = g.id
+        WHERE ${genreConditions}
+        GROUP BY ag.anime_id
+        HAVING COUNT(DISTINCT g.id) = ${filter.genres.length}
+      )`;
+    }
 
   // Determine sort column and direction
   const sortMap: Record<string, string> = {
