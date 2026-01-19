@@ -1,6 +1,8 @@
 // IndexedDB cache for anime embeddings
 // This provides fast, offline-capable storage for anime data
 
+import { clientLogger } from './client-logger'
+
 const DB_NAME = 'AnimeRecommendationDB';
 const STORE_NAME = 'animeEmbeddings';
 const DB_VERSION = 1;
@@ -114,7 +116,7 @@ export async function isCacheValid(): Promise<boolean> {
 
     return !isExpired && metadata.count > 0;
   } catch (error) {
-    console.error('Error checking cache validity:', error);
+    clientLogger.error('Error checking cache validity:', error);
     return false;
   }
 }
@@ -134,7 +136,7 @@ export async function getCachedAnime(): Promise<AnimeWithEmbeddings[]> {
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error('Error getting cached anime:', error);
+    clientLogger.error('Error getting cached anime:', error);
     return [];
   }
 }
@@ -146,7 +148,7 @@ export async function cacheAnime(animeList: AnimeWithEmbeddings[]): Promise<void
   try {
     // Validate that animeList is an array
     if (!Array.isArray(animeList)) {
-      console.error('cacheAnime received non-array data:', typeof animeList);
+      clientLogger.error('cacheAnime received non-array data:', typeof animeList);
       throw new Error('animeList must be an array');
     }
 
@@ -181,9 +183,9 @@ export async function cacheAnime(animeList: AnimeWithEmbeddings[]): Promise<void
       count: animeList.length,
     });
 
-    console.log(`Cached ${animeList.length} anime with embeddings`);
+    clientLogger.debug(`Cached ${animeList.length} anime with embeddings`);
   } catch (error) {
-    console.error('Error caching anime:', error);
+    clientLogger.error('Error caching anime:', error);
     throw error;
   }
 }
@@ -209,9 +211,9 @@ export async function clearCache(): Promise<void> {
       }),
     ]);
 
-    console.log('Cache cleared');
+    clientLogger.debug('Cache cleared');
   } catch (error) {
-    console.error('Error clearing cache:', error);
+    clientLogger.error('Error clearing cache:', error);
   }
 }
 
@@ -224,7 +226,7 @@ export async function fetchAnimeWithCache(limit: number = DEFAULT_ANIME_LIMIT): 
     const cacheValid = await isCacheValid();
 
     if (cacheValid) {
-      console.log('Loading anime from IndexedDB cache');
+      clientLogger.debug('Loading anime from IndexedDB cache');
       const cachedData = await getCachedAnime();
       if (cachedData.length > 0) {
         return cachedData;
@@ -232,7 +234,7 @@ export async function fetchAnimeWithCache(limit: number = DEFAULT_ANIME_LIMIT): 
     }
 
     // Cache miss or expired - fetch from API
-    console.log('Cache miss - fetching anime from API');
+    clientLogger.debug('Cache miss - fetching anime from API');
     const response = await fetch(`/api/anime?withEmbeddings=true&limit=${limit}`);
 
     if (!response.ok) {
@@ -247,17 +249,17 @@ export async function fetchAnimeWithCache(limit: number = DEFAULT_ANIME_LIMIT): 
 
     // Cache the data in the background (don't await)
     cacheAnime(animeList).catch(err =>
-      console.error('Failed to cache anime data:', err)
+      clientLogger.error('Failed to cache anime data:', err)
     );
 
     return animeList;
   } catch (error) {
-    console.error('Error in fetchAnimeWithCache:', error);
+    clientLogger.error('Error in fetchAnimeWithCache:', error);
 
     // Try to return cached data even if expired as fallback
     const cachedData = await getCachedAnime();
     if (cachedData.length > 0) {
-      console.log('Returning stale cache data due to fetch error');
+      clientLogger.debug('Returning stale cache data due to fetch error');
       return cachedData;
     }
 

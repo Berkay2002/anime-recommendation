@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { clientLogger } from "@/lib/client-logger"
 
 interface Anime {
   anime_id: number
@@ -56,8 +57,8 @@ export function useRecommendations({
           throw new Error("No anime data received from API")
         }
 
-        console.log('[useRecommendations] Fetched anime count:', data.anime.length)
-        console.log('[useRecommendations] First anime sample:', {
+        clientLogger.debug('[useRecommendations] Fetched anime count:', data.anime.length)
+        clientLogger.debug('[useRecommendations] First anime sample:', {
           anime_id: data.anime[0]?.anime_id,
           title: data.anime[0]?.title,
           has_bert_description: !!data.anime[0]?.bert_description,
@@ -75,7 +76,7 @@ export function useRecommendations({
           return
         }
 
-        console.error("Failed to fetch anime features:", err)
+        clientLogger.error("Failed to fetch anime features:", err)
         if (isMounted) {
           if (err instanceof Error) {
             setError(err.message)
@@ -155,7 +156,7 @@ export function useRecommendations({
     }
 
     worker.onerror = (workerError) => {
-      console.error("Recommendation worker error:", workerError)
+      clientLogger.error("Recommendation worker error:", workerError)
       setError("Failed to generate recommendations")
       setRecommendedAnime([])
       setIsLoading(false)

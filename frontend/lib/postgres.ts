@@ -1,6 +1,7 @@
 // PostgreSQL database connection using Vercel Postgres (works with Neon via DATABASE_URL)
 // This supports both serverless functions and edge runtime
 import { sql as vercelSql } from '@vercel/postgres';
+import logger from './logger';
 
 // Export Vercel's sql for tagged template usage (e.g., sql`SELECT * FROM table`)
 export { sql as vercelSql } from '@vercel/postgres';
@@ -12,9 +13,7 @@ export async function sql(queryString: string, params: any[] = []) {
     const result = await vercelSql.query(queryString, params);
     return result.rows;
   } catch (error) {
-    console.error('PostgreSQL query error:', error);
-    console.error('Query:', queryString);
-    console.error('Params:', params);
+    logger.error({ error, query: queryString, params }, 'PostgreSQL query error');
     throw error;
   }
 }
