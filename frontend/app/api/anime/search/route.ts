@@ -12,8 +12,6 @@ export async function GET(request: Request): Promise<NextResponse> {
   try {
     log.debug({ query, limit: searchParams.get('limit') }, 'Searching for anime')
 
-    const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q') || '';
     const limitParam = searchParams.get('limit');
     const limit = limitParam !== null ? parseInt(limitParam, 10) : 10;
 

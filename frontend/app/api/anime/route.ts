@@ -23,7 +23,6 @@ export async function GET(request: Request) {
   try {
     log.debug({ queryParams: Object.fromEntries(searchParams) }, 'Fetching anime data')
 
-    const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const sortBy = searchParams.get('sortBy') || 'Popularity';
     const limit = parseInt(searchParams.get('limit') || '30', 10);

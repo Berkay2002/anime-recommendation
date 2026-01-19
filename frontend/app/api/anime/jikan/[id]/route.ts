@@ -130,11 +130,11 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
-  try {
-    const { id } = await params
-    const numericId = Number(id)
-    const log = logger.child({ route: '/api/anime/jikan/[id]', method: 'GET', animeId: id })
+  const { id } = await params
+  const numericId = Number(id)
+  const log = logger.child({ route: '/api/anime/jikan/[id]', method: 'GET', animeId: id })
 
+  try {
     log.debug({ animeId: id }, 'Fetching Jikan anime details')
 
     if (Number.isNaN(numericId)) {
