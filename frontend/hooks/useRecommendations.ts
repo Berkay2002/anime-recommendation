@@ -100,7 +100,9 @@ export function useRecommendations({
       isMounted = false
       controller.abort()
     }
-  }, [setIsLoading])
+    // setIsLoading is stable (wrapped in useCallback) and not needed in deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!selectedAnimeIds.length) {
@@ -171,7 +173,9 @@ export function useRecommendations({
     return () => {
       newWorker.terminate()
     }
-  }, [selectedAnimeIds, allAnime, setIsLoading])
+    // setIsLoading is stable (wrapped in useCallback) and not needed in deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAnimeIds, allAnime])
 
   const cancelRecommendations = () => {
     if (worker) {
