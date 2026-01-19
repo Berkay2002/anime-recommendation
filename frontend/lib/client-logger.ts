@@ -29,6 +29,12 @@ export const clientLogger = {
   },
 
   error: (...args: unknown[]) => {
+    if (isDevelopment) {
+      // Avoid Next.js dev overlay for handled errors.
+      console.warn('[ERROR]', ...args)
+      return
+    }
+
     console.error('[ERROR]', ...args)
   },
 }

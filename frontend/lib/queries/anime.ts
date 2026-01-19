@@ -118,6 +118,9 @@ async function fetchAnimeSearch(query: string): Promise<Anime[]> {
     throw new Error(`Failed to search anime: ${response.status}`)
   }
   const data = await response.json()
+  if (Array.isArray(data)) {
+    return data
+  }
   return data.anime || []
 }
 

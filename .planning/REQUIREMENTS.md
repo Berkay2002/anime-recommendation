@@ -39,13 +39,6 @@
 - [x] **PERF-03**: Add caching layer to reduce redundant API calls
 - [x] **PERF-04**: Optimize database queries to reduce latency
 
-### Performance - Error Recovery
-
-- [ ] **REC-01**: Gracefully handle and recover from API failures
-- [ ] **REC-02**: Implement offline detection and notification
-- [ ] **REC-03**: Cache critical data for offline access
-- [ ] **REC-04**: Provide retry options for failed operations
-
 ## v2 Requirements
 
 ### Testing
@@ -95,10 +88,6 @@
 | PERF-02 | Phase 5 | Complete |
 | PERF-03 | Phase 5 | Complete |
 | PERF-04 | Phase 5 | Complete |
-| REC-01 | Phase 6 | Pending |
-| REC-02 | Phase 6 | Pending |
-| REC-03 | Phase 6 | Pending |
-| REC-04 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 21 total (COMP-02 excluded as library component)

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useMemo } from "react"
 
 import CurrentlyAiringSection from "@/components/CurrentlyAiringSection"
 import HeroSection from "@/components/HeroSection"
@@ -11,7 +11,7 @@ import TrendingSection from "@/components/TrendingSection"
 import UpcomingSection from "@/components/UpcomingSection"
 import YourChoiceSection from "@/components/YourChoiceSection"
 import { Button } from "@/components/ui/button"
-import { clientLogger } from "@/lib/client-logger"
+import { useLocalStorage } from "@/hooks/useLocalStorage"
 
 interface Anime {
   anime_id: number
@@ -21,26 +21,10 @@ interface Anime {
 }
 
 const HomePage = () => {
-  const [selectedAnime, setSelectedAnime] = useState<Anime[]>(() => {
-    if (typeof window === "undefined") return []
-    const savedChoices = localStorage.getItem("userChoices")
-    if (!savedChoices) return []
-    try {
-      return JSON.parse(savedChoices) as Anime[]
-    } catch (parseError) {
-      clientLogger.error(
-        "Failed to parse saved choices from localStorage:",
-        parseError
-      )
-      localStorage.removeItem("userChoices")
-      return []
-    }
-  })
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    localStorage.setItem("userChoices", JSON.stringify(selectedAnime))
-  }, [selectedAnime])
+  const [selectedAnime, setSelectedAnime] = useLocalStorage<Anime[]>(
+    "userChoices",
+    []
+  )
 
   const selectedAnimeIds = useMemo(
     () => selectedAnime.map((anime) => anime.anime_id),

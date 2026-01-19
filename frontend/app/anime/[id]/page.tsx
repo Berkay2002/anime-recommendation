@@ -249,13 +249,18 @@ export default function AnimeDetailPage() {
         )}
       </section>
 
-      <AnimeDetailExtraDetails
-        details={details}
-        detailsLoading={detailsLoading}
-        detailsError={detailsError}
-      />
+      <div className="flex flex-col gap-10 sm:gap-12">
+        <AnimeDetailExtraDetails
+          details={details}
+          detailsLoading={detailsLoading}
+          detailsError={detailsError}
+        />
 
-      <AnimeDetailReviews reviews={reviewsFromQuery.map(r => r.review_text)} isLoading={isLoadingFromQuery} />
+        <AnimeDetailReviews
+          reviews={reviewsFromQuery.map(r => r.review_text)}
+          isLoading={isLoadingFromQuery}
+        />
+      </div>
     </div>
   )
 }
