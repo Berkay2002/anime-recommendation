@@ -100,7 +100,7 @@ export function useRecommendations({
       isMounted = false
       controller.abort()
     }
-  }, [])
+  }, [setIsLoading])
 
   useEffect(() => {
     if (!selectedAnimeIds.length) {
@@ -171,7 +171,7 @@ export function useRecommendations({
     return () => {
       newWorker.terminate()
     }
-  }, [selectedAnimeIds, allAnime])
+  }, [selectedAnimeIds, allAnime, setIsLoading])
 
   const cancelRecommendations = () => {
     if (worker) {

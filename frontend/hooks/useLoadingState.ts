@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 
 /**
  * Custom hook for managing loading state with delay to prevent flicker
@@ -37,5 +37,10 @@ export function useLoadingState(initialDelay = 150) {
     };
   }, [isLoading, initialDelay]);
 
-  return { isLoading: showLoading, setIsLoading };
+  // Wrap setIsLoading in useCallback to ensure stability for React Hook dependencies
+  const stableSetIsLoading = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
+    setIsLoading(value);
+  }, []);
+
+  return { isLoading: showLoading, setIsLoading: stableSetIsLoading };
 }
