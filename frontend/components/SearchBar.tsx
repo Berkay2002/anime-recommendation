@@ -2,7 +2,7 @@ import { type PointerEvent, useCallback, useEffect, useRef, useState } from 'rea
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Command as CommandPrimitive } from 'cmdk'
-import { Loader2, SearchIcon } from 'lucide-react'
+import { SearchIcon } from 'lucide-react'
 
 import {
   Command,
@@ -15,9 +15,11 @@ import {
   InputGroupAddon,
 } from "@/components/ui/input-group"
 import { Kbd } from "@/components/ui/kbd"
+import { LoadingSpinner } from "@/components/loading"
 import { clientLogger } from "@/lib/client-logger"
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut"
 import { useClickOutside } from "@/hooks/useClickOutside"
+import { useLoadingState } from "@/hooks/useLoadingState"
 
 type Anime = {
   anime_id: number
@@ -35,7 +37,7 @@ export default function SearchBar() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Anime[]>([])
   const [isOpen, setIsOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const { isLoading, setIsLoading } = useLoadingState(150)
 
   const focusInput = useCallback(() => {
     const input =
@@ -129,13 +131,16 @@ export default function SearchBar() {
 
         {shouldShowResults && (
           <div
+            role="status"
+            aria-live="polite"
+            aria-busy={isLoading}
             className="absolute left-0 right-0 top-full z-50 mt-2 rounded-md border bg-popover text-popover-foreground shadow-lg"
             onPointerDown={handleResultsPointerDown}
           >
             <CommandList className="max-h-64">
               {isLoading ? (
-                <div className="flex items-center gap-2 px-3 py-4 text-sm text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" /> Searching...
+                <div className="flex items-center justify-center px-3 py-4">
+                  <LoadingSpinner size="sm" message="Searching..." />
                 </div>
               ) : results.length === 0 ? (
                 <CommandEmpty className="py-6 text-sm text-muted-foreground">No anime found</CommandEmpty>
