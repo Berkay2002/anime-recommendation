@@ -1,7 +1,7 @@
 # Project State
 
 **Current Phase:** 3 (Error Handling)
-**Overall Progress:** 7/22 requirements complete (32%)
+**Overall Progress:** 8/22 requirements complete (36%)
 
 ## Project Reference
 
@@ -23,12 +23,14 @@ See: .planning/PROJECT.md (updated 2025-01-19)
 
 ## Recent Activity
 
-**Phase 3 Plan 01 Complete: 2026-01-19**
-- Created reusable ErrorBoundary component with react-error-boundary library
-- Integrated error boundary at root layout level wrapping entire application
-- All component errors caught, logged to Pino with full context
-- User-friendly error UI with retry button for error recovery
-- Manual verification passed - error boundary prevents app crash
+**Phase 3 Plan 03 Complete: 2026-01-19**
+- Created reusable retryWithBackoff utility with exponential backoff and jitter
+- Implemented smart error detection (5xx/network/429 retry, 4xx don't)
+- Integrated retry logic into Jikan API service (4 functions)
+- Integrated retry logic into AniList GraphQL API service (1 function)
+- All retry attempts logged with full context
+- Exponential backoff: 1s → 2s → 4s (capped at 10s)
+- Jitter added (0.5x - 1.0x multiplier) to prevent thundering herd
 
 **Phase 3 Plan 02 Complete: 2026-01-19**
 - Added try-catch error handling to all service functions
@@ -36,6 +38,13 @@ See: .planning/PROJECT.md (updated 2025-01-19)
 - All errors logged with full context (params, error objects)
 - Zero TypeScript errors, zero logic changes
 - Service layer error handling complete
+
+**Phase 3 Plan 01 Complete: 2026-01-19**
+- Created reusable ErrorBoundary component with react-error-boundary library
+- Integrated error boundary at root layout level wrapping entire application
+- All component errors caught, logged to Pino with full context
+- User-friendly error UI with retry button for error recovery
+- Manual verification passed - error boundary prevents app crash
 
 **Phase 2 Plan 03-B Complete: 2026-01-19**
 - Created 2 reusable component sets (SectionHeader, DataLoadingStates)
@@ -214,16 +223,17 @@ See: .planning/PROJECT.md (updated 2025-01-19)
 
 ### Phase 3: Error Handling ⚠️
 **Status:** In Progress (2026-01-19)
-**Plans Executed:** 3/4
+**Plans Executed:** 4/4
 
 **Plans:**
 - 03-01: Error Boundary Implementation ✅
 - 03-02: Service Layer Error Handling ✅
-- 03-03: API Route Error Handling (NEXT)
-- 03-04: User Feedback Error UI (PENDING)
+- 03-03: API Retry Logic ✅
+- 03-04: User Feedback Error UI (NEXT)
 
 **Requirements Delivered:**
 - ERR-01: Component error boundaries ✅
+- ERR-03: Exponential backoff retry logic ✅
 
 **Key Artifacts:**
 - `frontend/components/ErrorBoundary.tsx` (107 lines) - Reusable error boundary with logging
@@ -231,6 +241,8 @@ See: .planning/PROJECT.md (updated 2025-01-19)
 - react-error-boundary package installed (v4.1.2)
 - Service layer try-catch blocks (animeService, anilistService, animeCacheService)
 - Child logger pattern (animeLogger, anilistLogger, cacheLogger)
+- `frontend/lib/retry.ts` (169 lines) - Reusable retry utility with exponential backoff and jitter
+- Retry logic integrated into Jikan and AniList API calls
 
 **Decisions Made:**
 
@@ -241,6 +253,16 @@ See: .planning/PROJECT.md (updated 2025-01-19)
 - **Fallback UI design**: User-friendly message in production, stack trace in development
 - **Retry button for recovery**: "Try again" button resets error state and re-renders component tree
 
+### Retry Logic Strategy
+
+- **Default maxRetries: 3** - Allows up to 4 total attempts (initial + 3 retries) for transient failures
+- **Base delay: 1 second** - First retry waits 1s, then doubles each attempt (2s, 4s, 8s)
+- **Max delay cap: 10 seconds** - Prevents excessively long waits even after many retries
+- **Jitter: 0.5-1.0x random multiplier** - Prevents thundering herd problem when multiple requests fail simultaneously
+- **Smart error detection:**
+  - **Retry:** Network errors (no response), 5xx server errors, 429 rate limit errors
+  - **Don't retry:** 4xx client errors (400-499 except 429) - these are permanent failures
+
 ### Established Patterns
 
 - Import: `import ErrorBoundary from '@/components/ErrorBoundary'`
@@ -248,22 +270,25 @@ See: .planning/PROJECT.md (updated 2025-01-19)
 - Error logging: `logger.error({ error, componentStack }, 'Component error caught by boundary')`
 - Custom fallback: Optional fallback prop for custom error UI
 - Service error handling: try-catch blocks with child logger errors
+- Retry wrapper: `import { retryWithBackoff } from '@/lib/retry'`
+- Retry usage: Wrap only the external API call with onRetry callback for logging
 
 **Commits:**
 - 0257001, 744e972 (03-01)
 - 0326996, ba5cfa8, 719db6e, 0b3ce36, 895033d (03-02)
+- 6e67f1c, 48e8d54, 193cd7c (03-03)
 
-**Duration:** ~10 minutes so far
+**Duration:** ~13 minutes so far
 
 ## Session Continuity
 
-**Last session:** 2026-01-19 16:45 UTC
-**Stopped at:** Completed 03-01-PLAN.md (Error Boundary Implementation)
+**Last session:** 2026-01-19 15:16 UTC
+**Stopped at:** Completed 03-03-PLAN.md (API Retry Logic)
 **Resume file:** None
 
 **Current position:**
 - Phase 3 (Error Handling), **In Progress**
-- 3/4 plans complete (03-01, 03-02, 03-03 pending)
+- 4/4 plans complete (03-01, 03-02, 03-03 done, 03-04 pending)
 - Error boundary infrastructure complete:
   - ErrorBoundary component created (107 lines)
   - Root layout integration complete
@@ -271,13 +296,20 @@ See: .planning/PROJECT.md (updated 2025-01-19)
   - Error UI with retry button functional
 - Service layer error handling complete:
   - animeService: 4 functions with try-catch
-  - anilistService: 1 function verified
-  - animeCacheService: 7 functions verified
-- All service errors logged with full context
-- Child logger pattern established across services
+  - anilistService: 1 function with try-catch
+  - animeCacheService: 7 functions with try-catch
+  - All service errors logged with full context
+  - Child logger pattern established across services
+- API retry logic complete:
+  - retryWithBackoff utility created (169 lines)
+  - Jikan API: 4 functions with retry logic
+  - AniList API: 1 function with retry logic
+  - Smart error detection (5xx/network/429 retry, 4xx don't)
+  - Exponential backoff with jitter implemented
+  - All retry attempts logged with context
 
-**Next action:** Continue with 03-03 (API Route Error Handling)
+**Next action:** Continue with 03-04 (User Feedback Error UI)
 
 ---
-*State updated: 2026-01-19 16:45 UTC*
+*State updated: 2026-01-19 15:16 UTC*
 
