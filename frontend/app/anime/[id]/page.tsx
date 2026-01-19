@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import RecommendationList from "@/components/RecommendationList"
 import ReviewCard from "@/components/ReviewCard"
 import AnimeDetailHeader from "@/components/AnimeDetailHeader"
+import AnimeDetailStats from "@/components/AnimeDetailStats"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -432,21 +433,7 @@ export default function AnimeDetailPage() {
         <CardContent className="flex flex-col gap-6 px-4 py-6 md:flex-row md:items-start md:gap-8">
           <AnimeDetailHeader anime={anime} />
 
-          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-2xl border border-border/50 bg-background/60 p-4"
-              >
-                <dt className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                  {stat.label}
-                </dt>
-                <dd className="text-lg font-semibold text-foreground">
-                  {stat.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
+          <AnimeDetailStats stats={stats} />
         </CardContent>
       </Card>
 
