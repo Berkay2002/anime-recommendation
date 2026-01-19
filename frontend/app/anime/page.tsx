@@ -1,50 +1,28 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 
 import AnimeBrowseHeader from "@/components/AnimeBrowseHeader"
 import AnimeBrowseFilters from "@/components/AnimeBrowseFilters"
 import AnimeBrowseGrid from "@/components/AnimeBrowseGrid"
 import AnimeBrowsePagination from "@/components/AnimeBrowsePagination"
 import AnimeBrowseActiveFilters from "@/components/AnimeBrowseActiveFilters"
-import { LoadingSpinner } from "@/components/loading"
 import { useDebounce } from "@/hooks/useDebounce"
-import { useLoadingState } from "@/hooks/useLoadingState"
 import { useLocalStorage } from "@/hooks/useLocalStorage"
-import { clientLogger } from "@/lib/client-logger"
+import { useAnimeList } from "@/lib/queries/anime"
 
 type GenreOption = "Action" | "Adventure" | "Comedy" | "Drama" | "Fantasy" | "Horror" | "Romance" | "Sci-Fi"
 
 type SortOption = "Popularity" | "Score" | "Rank"
 
-interface Anime {
-  anime_id: number
-  title: string
-  image_url?: string
-  Genres?: string[]
-  Score?: number
-  Description?: string
-  Rank?: number
-}
-
-interface ApiResponse {
-  anime: Anime[]
-  totalPages: number
-  currentPage: number
-}
-
 
 const AnimePage: React.FC = () => {
-  const [animeList, setAnimeList] = useState<Anime[]>([])
-  const { isLoading: loading, setIsLoading } = useLoadingState(150)
   const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
   const [selectedGenres, setSelectedGenres] = useLocalStorage<GenreOption[]>(
     "selectedGenres",
     []
   )
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(0)
   const [sortBy, setSortBy] = useLocalStorage<SortOption>(
     "sortBy",
     "Popularity"
@@ -53,42 +31,22 @@ const AnimePage: React.FC = () => {
   const debouncedSelectedGenres = useDebounce(selectedGenres, 300)
   const debouncedSortBy = useDebounce(sortBy, 300)
 
-  useEffect(() => {
-    const fetchAnime = (
-      page: number,
-      sortByValue: SortOption,
-      genres: GenreOption[]
-    ) => {
-      setIsLoading(true)
-      let apiUrl = `/api/anime?limit=50&page=${page}&sortBy=${sortByValue}`
-      if (genres.length > 0) {
-        apiUrl += `&genres=${genres.join(",")}`
-      }
+  // React Query hook for anime list
+  const { data, isLoading, error } = useAnimeList({
+    page: currentPage,
+    sortBy: debouncedSortBy,
+    genres: debouncedSelectedGenres,
+    limit: 50,
+  })
 
-      fetch(apiUrl)
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`)
-          }
-          return response.json()
-        })
-        .then((data: ApiResponse) => {
-          setAnimeList(data.anime)
-          setTotalPages(data.totalPages)
-          setCurrentPage(data.currentPage)
-          setIsLoading(false)
-          setIsInitialLoad((prev) => (prev ? false : prev))
-        })
-        .catch((fetchError: Error) => {
-          clientLogger.error("Error fetching anime list:", fetchError)
-          setError(
-            `Failed to load anime list. Please try again later. (${fetchError.message})`
-          )
-          setIsLoading(false)
-        })
-    }
-    fetchAnime(currentPage, debouncedSortBy, debouncedSelectedGenres)
-  }, [currentPage, debouncedSortBy, debouncedSelectedGenres])
+  const animeList = data?.anime || []
+  const totalPages = data?.totalPages || 0
+  const errorMessage = error?.message || null
+
+  // Update initial load state after first successful fetch
+  if (!isLoading && !error && isInitialLoad) {
+    setIsInitialLoad(false)
+  }
 
   const toggleGenre = useCallback(
     (genre: GenreOption) => {
@@ -110,7 +68,7 @@ const AnimePage: React.FC = () => {
 
   return (
     <div className="container mx-auto flex flex-col gap-6 px-4 py-6 sm:px-6 lg:gap-8 lg:py-8">
-      <AnimeBrowseHeader loading={loading} />
+      <AnimeBrowseHeader loading={isLoading} />
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <AnimeBrowseFilters
@@ -119,26 +77,26 @@ const AnimePage: React.FC = () => {
           selectedGenres={selectedGenres}
           onGenreToggle={toggleGenre}
           onClearGenres={() => setSelectedGenres([])}
-          loading={loading}
+          loading={isLoading}
           isInitialLoad={isInitialLoad}
         />
       </div>
 
       <AnimeBrowseActiveFilters
         selectedGenres={selectedGenres}
-        loading={loading}
+        loading={isLoading}
         onRemoveGenre={removeGenre}
         onClearGenres={() => setSelectedGenres([])}
       />
 
       <AnimeBrowseGrid
         animeList={animeList}
-        loading={loading}
+        loading={isLoading}
         isInitialLoad={isInitialLoad}
-        error={error}
+        error={errorMessage}
       />
 
-      {!loading && !error && totalPages > 1 && (
+      {!isLoading && !error && totalPages > 1 && (
         <AnimeBrowsePagination
           currentPage={currentPage}
           totalPages={totalPages}
