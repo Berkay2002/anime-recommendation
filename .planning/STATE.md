@@ -8,7 +8,7 @@
 See: .planning/PROJECT.md (updated 2025-01-19)
 
 **Core value:** Users discover anime through AI-powered recommendations based on their selections
-**Current focus:** Phase 5 - API Optimization - All 5 plans complete
+**Current focus:** Phase 5 - API Optimization - All 6 plans complete
 
 ## Phase Progress
 
@@ -24,12 +24,13 @@ See: .planning/PROJECT.md (updated 2025-01-19)
 ## Recent Activity
 
 **Phase 5 Complete: 2026-01-19**
-- All 5 plans executed successfully
+- All 6 plans executed successfully
 - React Query infrastructure established across application
-- Browse page and detail page migrated to parallel queries
+- Browse page, detail page, search, and recommendations migrated to React Query
 - Query functions library with type-safe query key factory
 - Database indexes verified and optimized
 - Expected performance improvement: 3x faster detail page loads (parallel vs sequential)
+- Search and recommendation flows optimized with caching and deduplication
 
 **Phase 5 Plan 05 Complete: 2026-01-19**
 - Migrated detail page from sequential useEffect to useQueries parallel execution
@@ -41,6 +42,18 @@ See: .planning/PROJECT.md (updated 2025-01-19)
 - Combined result pattern aggregates isLoading and errors across all queries
 - Detail page reduced from 380 to 261 lines (-119 lines, 31% reduction)
 - Duration: 4 min
+
+**Phase 5 Plan 06 Complete: 2026-01-19**
+- Search and recommendation flows optimized with React Query caching
+- Added useAnimeSearch hook with 1-minute cache for search results
+- Added useAllAnimeWithEmbeddings hook with 10-minute cache for recommendations
+- Migrated SearchBar from manual fetching (38 lines removed)
+- Migrated useRecommendations from manual fetching (79 lines removed)
+- Web Worker logic preserved for similarity computation
+- Automatic deduplication eliminates duplicate API calls
+- Extended Anime interface to support optional bert_* embedding fields
+- Zero TypeScript errors, zero ESLint errors in modified files
+- Duration: 5 min
 
 **Phase 5 Plan 04 Complete: 2026-01-19**
 - Migrated browse page from manual useEffect to React Query
@@ -502,7 +515,7 @@ See: .planning/PROJECT.md (updated 2025-01-19)
 
 ### Phase 5: API Optimization ✅
 **Status:** Complete (2026-01-19)
-**Plans Executed:** 5/5
+**Plans Executed:** 6/6
 
 **Plans:**
 - 05-01: React Query Infrastructure ✅
@@ -510,6 +523,7 @@ See: .planning/PROJECT.md (updated 2025-01-19)
 - 05-03: Query Functions Library ✅
 - 05-04: Browse Page Migration ✅
 - 05-05: Detail Page Parallel Queries ✅
+- 05-06: Search and Recommendation Optimization ✅
 
 **Requirements Delivered:**
 - API-01: React Query for data fetching ✅
@@ -574,12 +588,22 @@ See: .planning/PROJECT.md (updated 2025-01-19)
 
 ## Session Continuity
 
-**Last session:** 2026-01-19 21:45 UTC
-**Stopped at:** Completed 05-05-PLAN.md (Detail Page Parallel Queries)
+**Last session:** 2026-01-19 21:46 UTC
+**Stopped at:** Completed 05-06-PLAN.md (Search and Recommendation Optimization)
 **Resume file:** None
 
 **Current position:**
-- Phase 5 (API Optimization), **5/5 plans complete** (100% requirements, 100% plans)
+- Phase 5 (API Optimization), **6/6 plans complete** (100% requirements, 100% plans)
+- Search and recommendation optimization complete (05-06):
+  - frontend/components/SearchBar.tsx migrated to useAnimeSearch hook
+  - frontend/hooks/useRecommendations.ts migrated to useAllAnimeWithEmbeddings hook
+  - Search results cached for 1 minute with automatic deduplication
+  - Anime list with embeddings cached for 10 minutes
+  - Web Worker logic preserved for similarity computation
+  - Removed 38 lines from SearchBar (manual fetching eliminated)
+  - Removed 79 lines from useRecommendations (manual fetching eliminated)
+  - Extended Anime interface with optional bert_* fields
+  - Zero TypeScript/ESLint errors
 - Detail page migrated to parallel queries (05-05):
   - frontend/app/anime/[id]/page.tsx now uses useQueries for parallel execution
   - Replaced 3 sequential useEffect hooks with single useQueries call
