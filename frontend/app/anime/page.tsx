@@ -3,13 +3,11 @@
 import { useCallback, useEffect, useState } from "react"
 import { X } from "lucide-react"
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import AnimeBrowseCard from "@/components/AnimeBrowseCard"
 import AnimeBrowseHeader from "@/components/AnimeBrowseHeader"
 import AnimeBrowseFilters from "@/components/AnimeBrowseFilters"
-import { Card } from "@/components/ui/card"
+import AnimeBrowseGrid from "@/components/AnimeBrowseGrid"
 import {
   Pagination,
   PaginationContent,
@@ -44,7 +42,6 @@ interface ApiResponse {
   currentPage: number
 }
 
-const skeletonPlaceholders = Array.from({ length: 6 })
 const badgeSkeletonPlaceholders = Array.from({ length: 3 })
 
 
@@ -190,55 +187,12 @@ const AnimePage: React.FC = () => {
         </div>
       ) : null}
 
-      <div
-        className={cn(
-          "transition-opacity",
-          loading && !isInitialLoad ? "opacity-50" : "opacity-100"
-        )}
-      >
-        {isInitialLoad && loading ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            {skeletonPlaceholders.map((_, index) => (
-              <Card key={`anime-skeleton-${index}`} className="flex gap-4 p-4">
-                <Skeleton className="h-60 w-40 shrink-0 rounded-lg" />
-                <div className="flex w-full flex-1 flex-col gap-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-5 w-12 rounded-full" />
-                  </div>
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-5/6" />
-                  </div>
-                  <div className="mt-auto flex gap-2">
-                    <Skeleton className="h-5 w-16 rounded-full" />
-                    <Skeleton className="h-5 w-20 rounded-full" />
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        ) : error ? (
-          <Alert variant="destructive">
-            <AlertTitle>Something went wrong</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : !loading && animeList.length === 0 ? (
-          <Alert>
-            <AlertTitle>No matches found</AlertTitle>
-            <AlertDescription>
-              Try selecting different genres to discover more series.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {animeList.map((anime) => (
-              <AnimeBrowseCard key={anime.anime_id} anime={anime} />
-            ))}
-          </div>
-        )}
-      </div>
+      <AnimeBrowseGrid
+        animeList={animeList}
+        loading={loading}
+        isInitialLoad={isInitialLoad}
+        error={error}
+      />
 
       {!loading && !error && totalPages > 1 && (
         <Pagination>
