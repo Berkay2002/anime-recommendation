@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAnime } from '../../../services/animeService';
 import { getAniListImages } from '../../../services/anilistService';
 import { getCurrentSeasonAnimeWithCache, getUpcomingAnimeWithCache } from '../../../services/animeCacheService';
+import logger from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -16,7 +17,12 @@ interface GetAnimeParams {
 }
 
 export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const log = logger.child({ route: '/api/anime', method: 'GET', type: searchParams.get('type') })
+
   try {
+    log.debug({ queryParams: Object.fromEntries(searchParams) }, 'Fetching anime data')
+
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const sortBy = searchParams.get('sortBy') || 'Popularity';
@@ -53,6 +59,8 @@ export async function GET(request: Request) {
     }
 
     const data = await getAnime(params);
+
+    log.info({ type, count: data.anime?.length || 0 }, 'Successfully fetched anime data')
 
     // The old trending/top-ranked routes returned a simple array
     if (type === 'trending' || type === 'top-ranked') {
@@ -92,7 +100,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error('Failed to fetch anime data:', error);
+    log.error({ error, type: searchParams.get('type') }, 'Failed to fetch anime data');
     return NextResponse.json(
       { message: 'Failed to fetch anime data' },
       { status: 500 }

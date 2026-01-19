@@ -1,4 +1,5 @@
 import { sql } from '@vercel/postgres';
+import logger from '@/lib/logger';
 import {
   searchJikanAnime,
   getJikanAnimeById,
@@ -7,6 +8,8 @@ import {
   isDataStale,
   NormalizedAnimeData,
 } from './jikanService';
+
+const cacheLogger = logger.child({ service: 'AnimeCacheService' });
 
 // Cache freshness thresholds (in days)
 const FRESHNESS_THRESHOLDS = {
@@ -50,12 +53,12 @@ export async function searchAnimeWithCache(
       
       return mergedResults.slice(0, limit);
     } catch (jikanError) {
-      console.error('Jikan API error, falling back to DB results:', jikanError);
+      cacheLogger.error({ error: jikanError, query, limit }, 'Jikan API error, falling back to DB results');
       // If Jikan fails, return DB results even if stale
       return dbResults.slice(0, limit);
     }
   } catch (error) {
-    console.error('Error in searchAnimeWithCache:', error);
+    cacheLogger.error({ error, query, limit }, 'Error in searchAnimeWithCache');
     throw error;
   }
 }
@@ -87,12 +90,12 @@ export async function getAnimeByMalIdWithCache(malId: number): Promise<CachedAni
       
       return updatedAnime;
     } catch (jikanError) {
-      console.error(`Jikan API error for MAL ID ${malId}:`, jikanError);
+      cacheLogger.error({ error: jikanError, malId }, 'Jikan API error for MAL ID, returning cached data');
       // Return stale data if Jikan fails
       return dbAnime;
     }
   } catch (error) {
-    console.error(`Error in getAnimeByMalIdWithCache for MAL ID ${malId}:`, error);
+    cacheLogger.error({ error, malId }, 'Error in getAnimeByMalIdWithCache for MAL ID');
     return null;
   }
 }
@@ -172,7 +175,7 @@ async function searchAnimeInDatabase(query: string, limit: number): Promise<Cach
       themes: row.themes || [],
     }));
   } catch (error) {
-    console.error('Error searching anime in database:', error);
+    cacheLogger.error({ error, query, limit }, 'Error searching anime in database');
     return [];
   }
 }
@@ -246,7 +249,7 @@ async function getAnimeByMalIdFromDatabase(malId: number): Promise<CachedAnimeDa
       themes: row.themes || [],
     };
   } catch (error) {
-    console.error(`Error fetching anime by MAL ID ${malId} from database:`, error);
+    cacheLogger.error({ error, malId }, 'Error fetching anime by MAL ID from database');
     return null;
   }
 }
@@ -256,12 +259,11 @@ async function getAnimeByMalIdFromDatabase(malId: number): Promise<CachedAnimeDa
  */
 async function upsertAnimeToDatabase(anime: NormalizedAnimeData): Promise<CachedAnimeData> {
   try {
-    // Debug logging
-    console.log(`[upsertAnimeToDatabase] Processing mal_id: ${anime.mal_id}, title: ${anime.title}`);
-    
+    cacheLogger.debug({ mal_id: anime.mal_id, title: anime.title }, 'Processing anime upsert');
+
     // Verify anime object doesn't have anime_id (it shouldn't)
     if ('anime_id' in anime) {
-      console.error(`[upsertAnimeToDatabase] WARNING: anime object has anime_id property!`, anime);
+      cacheLogger.warn({ anime }, 'WARNING: anime object has anime_id property');
     }
     
     // Check if an entry with same title but NULL mal_id exists (potential duplicate)
@@ -276,7 +278,7 @@ async function upsertAnimeToDatabase(anime: NormalizedAnimeData): Promise<Cached
     
     if (existingCheck.rows.length > 0 && anime.mal_id) {
       // Update existing entry with NULL mal_id
-      console.log(`[upsertAnimeToDatabase] Found duplicate with NULL mal_id (anime_id: ${existingCheck.rows[0].anime_id}), updating...`);
+      cacheLogger.debug({ anime_id: existingCheck.rows[0].anime_id, mal_id: anime.mal_id }, 'Found duplicate with NULL mal_id, updating');
       result = await sql`
         UPDATE anime SET
           mal_id = ${anime.mal_id},
@@ -340,8 +342,8 @@ async function upsertAnimeToDatabase(anime: NormalizedAnimeData): Promise<Cached
         RETURNING anime_id, mal_id, last_jikan_sync, sync_status
       `;
     }
-    
-    console.log(`[upsertAnimeToDatabase] Success! anime_id: ${result.rows[0]?.anime_id}, mal_id: ${result.rows[0]?.mal_id}`);
+
+    cacheLogger.debug({ anime_id: result.rows[0]?.anime_id, mal_id: result.rows[0]?.mal_id }, 'Anime upsert successful');
 
     const insertedAnime = result.rows[0];
 
@@ -367,7 +369,7 @@ async function upsertAnimeToDatabase(anime: NormalizedAnimeData): Promise<Cached
       sync_status: insertedAnime.sync_status,
     };
   } catch (error) {
-    console.error('Error upserting anime to database:', error);
+    cacheLogger.error({ error, mal_id: anime.mal_id, title: anime.title }, 'Error upserting anime to database');
     throw error;
   }
 }
@@ -395,7 +397,7 @@ async function upsertGenresAndRelations(animeId: number, genres: string[]): Prom
         ON CONFLICT (anime_id, genre_id) DO NOTHING
       `;
     } catch (error) {
-      console.error(`Error upserting genre ${genreName}:`, error);
+      cacheLogger.error({ error, animeId, genreName }, 'Error upserting genre');
     }
   }
 }
@@ -423,7 +425,7 @@ async function upsertStudiosAndRelations(animeId: number, studios: string[]): Pr
         ON CONFLICT (anime_id, studio_id) DO NOTHING
       `;
     } catch (error) {
-      console.error(`Error upserting studio ${studioName}:`, error);
+      cacheLogger.error({ error, animeId, studioName }, 'Error upserting studio');
     }
   }
 }
@@ -451,7 +453,7 @@ async function upsertThemesAndRelations(animeId: number, themes: string[]): Prom
         ON CONFLICT (anime_id, theme_id) DO NOTHING
       `;
     } catch (error) {
-      console.error(`Error upserting theme ${themeName}:`, error);
+      cacheLogger.error({ error, animeId, themeName }, 'Error upserting theme');
     }
   }
 }
@@ -478,7 +480,7 @@ async function mergeAndStoreResults(
           await queueForEmbeddingGeneration(storedAnime.anime_id!, jikanAnime.mal_id, 'high');
         }
       } catch (error) {
-        console.error(`Error storing anime ${jikanAnime.mal_id}:`, error);
+        cacheLogger.error({ error, mal_id: jikanAnime.mal_id }, 'Error storing anime');
       }
     }
   }
@@ -506,7 +508,7 @@ export async function queueForEmbeddingGeneration(
         END
     `;
   } catch (error) {
-    console.error(`Error queueing anime ${animeId} for embeddings:`, error);
+    cacheLogger.error({ error, animeId, priority }, 'Error queueing anime for embeddings');
   }
 }
 
@@ -528,7 +530,7 @@ export async function getQueuedAnimeForProcessing(
 
     return result.rows as Array<{ anime_id: number; mal_id: number }>;
   } catch (error) {
-    console.error('Error getting queued anime:', error);
+    cacheLogger.error({ error, priority, limit }, 'Error getting queued anime');
     return [];
   }
 }
@@ -544,7 +546,7 @@ export async function markAnimeAsProcessed(animeId: number): Promise<void> {
       WHERE anime_id = ${animeId}
     `;
   } catch (error) {
-    console.error(`Error marking anime ${animeId} as processed:`, error);
+    cacheLogger.error({ error, animeId }, 'Error marking anime as processed');
   }
 }
 
@@ -562,7 +564,7 @@ export async function updateAnimeSyncStatus(
       WHERE anime_id = ${animeId}
     `;
   } catch (error) {
-    console.error(`Error updating sync status for anime ${animeId}:`, error);
+    cacheLogger.error({ error, animeId, status }, 'Error updating sync status for anime');
   }
 }
 
@@ -573,7 +575,7 @@ function deduplicateAnime(anime: CachedAnimeData[]): CachedAnimeData[] {
   const seen = new Set<number>();
   return anime.filter(item => {
     if (seen.has(item.anime_id!)) {
-      console.warn(`Duplicate anime_id ${item.anime_id} detected and removed`);
+      cacheLogger.warn({ anime_id: item.anime_id }, 'Duplicate anime_id detected and removed');
       return false;
     }
     seen.add(item.anime_id!);
@@ -679,7 +681,7 @@ export async function getCurrentSeasonAnimeWithCache(limit: number = 25): Promis
       
       return deduplicateAnime(stored).slice(0, limit);
     } catch (jikanError) {
-      console.error('Jikan API error, falling back to cached data:', jikanError);
+      cacheLogger.error({ error: jikanError, limit }, 'Jikan API error, falling back to cached data');
       
       // If we have some cached data, return it
       if (cachedData.length > 0) {
@@ -756,14 +758,14 @@ export async function getCurrentSeasonAnimeWithCache(limit: number = 25): Promis
           })));
         }
       } catch (dbError) {
-        console.error('Failed to fetch older cached data:', dbError);
+        cacheLogger.error({ error: dbError, limit }, 'Failed to fetch older cached data');
       }
-      
+
       // If no cached data at all, throw the Jikan error
       throw jikanError;
     }
   } catch (error) {
-    console.error('Error in getCurrentSeasonAnimeWithCache:', error);
+    cacheLogger.error({ error, limit }, 'Error in getCurrentSeasonAnimeWithCache');
     throw error;
   }
 }
@@ -866,7 +868,7 @@ export async function getUpcomingAnimeWithCache(limit: number = 25): Promise<Cac
       
       return deduplicateAnime(stored).slice(0, limit);
     } catch (jikanError) {
-      console.error('Jikan API error, falling back to cached data:', jikanError);
+      cacheLogger.error({ error: jikanError, limit }, 'Jikan API error, falling back to cached data');
       
       // If we have some cached data, return it
       if (cachedData.length > 0) {
@@ -943,14 +945,14 @@ export async function getUpcomingAnimeWithCache(limit: number = 25): Promise<Cac
           })));
         }
       } catch (dbError) {
-        console.error('Failed to fetch older cached data:', dbError);
+        cacheLogger.error({ error: dbError, limit }, 'Failed to fetch older cached data');
       }
-      
+
       // If no cached data at all, throw the Jikan error
       throw jikanError;
     }
   } catch (error) {
-    console.error('Error in getUpcomingAnimeWithCache:', error);
+    cacheLogger.error({ error, limit }, 'Error in getUpcomingAnimeWithCache');
     throw error;
   }
 }

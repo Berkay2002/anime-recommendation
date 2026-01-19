@@ -1,16 +1,24 @@
 import { NextResponse } from 'next/server';
 import { searchAnimeWithCache } from '../../../../services/animeCacheService';
+import logger from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: Request): Promise<NextResponse> {
+  const { searchParams } = new URL(request.url);
+  const query = searchParams.get('q') || '';
+  const log = logger.child({ route: '/api/anime/search', method: 'GET', query })
+
   try {
+    log.debug({ query, limit: searchParams.get('limit') }, 'Searching for anime')
+
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
     const limitParam = searchParams.get('limit');
     const limit = limitParam !== null ? parseInt(limitParam, 10) : 10;
 
     if (!query) {
+      log.warn('Search query missing')
       return NextResponse.json({ message: 'Query parameter "q" is required' }, { status: 400 });
     }
 
@@ -32,14 +40,16 @@ export async function GET(request: Request): Promise<NextResponse> {
           animeIds: pendingEmbeddings.map(a => a.anime_id),
         }),
       }).catch(err => {
-        console.error('Failed to trigger embedding generation:', err);
+        log.warn({ err, animeIds: pendingEmbeddings.map(a => a.anime_id) }, 'Failed to trigger embedding generation');
       });
     }
+
+    log.info({ query, resultCount: results.length, pendingEmbeddings: pendingEmbeddings.length }, 'Successfully searched anime')
 
     // Return results immediately (don't wait for embeddings)
     return NextResponse.json(results);
   } catch (error) {
-    console.error('Failed to search anime:', error);
+    log.error({ error, query }, 'Failed to search anime');
     return NextResponse.json(
       { message: 'Failed to search anime' },
       { status: 500 }

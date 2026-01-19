@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import logger from "@/lib/logger"
 
 export const runtime = "nodejs"
 
@@ -38,11 +39,15 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
+  const { id } = await params
+  const numericId = Number(id)
+  const log = logger.child({ route: '/api/anime/reviews/[id]', method: 'GET', animeId: id })
+
   try {
-    const { id } = await params
-    const numericId = Number(id)
+    log.debug({ animeId: id }, 'Fetching Jikan anime reviews')
 
     if (Number.isNaN(numericId)) {
+      log.warn({ animeId: id }, 'Invalid anime ID format')
       return NextResponse.json(
         { message: "Invalid anime ID format" },
         { status: 400 }
@@ -88,6 +93,8 @@ export async function GET(
       }))
       .filter((review) => review.review_text)
 
+    log.info({ animeId: numericId, reviewCount: reviews.length }, 'Successfully fetched Jikan anime reviews')
+
     return NextResponse.json(
       {
         anime_id: numericId,
@@ -101,7 +108,7 @@ export async function GET(
       }
     )
   } catch (error) {
-    console.error("Failed to fetch reviews for anime_id:", error)
+    log.error({ error, animeId: numericId }, "Failed to fetch Jikan anime reviews")
     return NextResponse.json(
       { message: "Failed to fetch reviews" },
       { status: 500 }

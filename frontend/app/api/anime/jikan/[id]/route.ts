@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import logger from "@/lib/logger"
 
 export const runtime = "nodejs"
 
@@ -132,8 +133,12 @@ export async function GET(
   try {
     const { id } = await params
     const numericId = Number(id)
+    const log = logger.child({ route: '/api/anime/jikan/[id]', method: 'GET', animeId: id })
+
+    log.debug({ animeId: id }, 'Fetching Jikan anime details')
 
     if (Number.isNaN(numericId)) {
+      log.warn({ animeId: id }, 'Invalid anime ID format')
       return NextResponse.json(
         { message: "Invalid anime ID format" },
         { status: 400 }
@@ -151,6 +156,7 @@ export async function GET(
       staffResult.status === "rejected" &&
       statsResult.status === "rejected"
     ) {
+      log.warn({ animeId: numericId }, 'All Jikan API calls failed')
       return NextResponse.json(
         { message: `Failed to fetch details for anime_id: ${numericId}` },
         { status: 502 }
@@ -170,6 +176,8 @@ export async function GET(
         ? normalizeStatistics(statsResult.value)
         : []
 
+    log.info({ animeId: numericId, charactersCount: characters.length, staffCount: staff.length }, 'Successfully fetched Jikan anime details')
+
     return NextResponse.json(
       {
         characters,
@@ -183,7 +191,7 @@ export async function GET(
       }
     )
   } catch (error) {
-    console.error("Failed to fetch Jikan anime details:", error)
+    log.error({ error, animeId: numericId }, "Failed to fetch Jikan anime details")
     return NextResponse.json(
       { message: "Failed to fetch anime details" },
       { status: 500 }
