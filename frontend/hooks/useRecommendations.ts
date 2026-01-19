@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { clientLogger } from "@/lib/client-logger"
 import { useLoadingState } from "@/hooks/useLoadingState"
+import { useAllAnimeWithEmbeddings } from '@/lib/queries/anime'
 
 interface Anime {
   anime_id: number
@@ -28,92 +29,16 @@ export function useRecommendations({
   selectedAnimeIds,
 }: UseRecommendationsProps) {
   const [recommendedAnime, setRecommendedAnime] = useState<Anime[]>([])
-  const [allAnime, setAllAnime] = useState<Anime[]>([])
+  const { data: allAnime = [], isLoading: isAllAnimeLoading, error: allAnimeError } = useAllAnimeWithEmbeddings()
   const { isLoading, setIsLoading } = useLoadingState()
   const [error, setError] = useState<string | null>(null)
   const [worker, setWorker] = useState<Worker | null>(null)
-
-  useEffect(() => {
-    const controller = new AbortController()
-    let isMounted = true
-
-    async function fetchAllAnime() {
-      try {
-        setIsLoading(true)
-        setError(null)
-
-        const response = await fetch(
-          "/api/anime?withEmbeddings=true&limit=657&sortBy=Popularity",
-          { signal: controller.signal }
-        )
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to fetch anime features: ${response.status} ${response.statusText}`
-          )
-        }
-
-        const data = await response.json()
-
-        if (!data || !Array.isArray(data.anime) || data.anime.length === 0) {
-          throw new Error("No anime data received from API")
-        }
-
-        clientLogger.debug('[useRecommendations] Fetched anime count:', data.anime.length)
-        clientLogger.debug('[useRecommendations] First anime sample:', {
-          anime_id: data.anime[0]?.anime_id,
-          title: data.anime[0]?.title,
-          has_bert_description: !!data.anime[0]?.bert_description,
-          bert_description_type: typeof data.anime[0]?.bert_description,
-          bert_description_length: data.anime[0]?.bert_description?.length
-        })
-
-        if (isMounted) {
-          setAllAnime(data.anime)
-          setError(null)
-        }
-      } catch (err) {
-        if (controller.signal.aborted) {
-          // Ignore aborted requests triggered by client-side navigation
-          return
-        }
-
-        clientLogger.error("Failed to fetch anime features:", err)
-        if (isMounted) {
-          if (err instanceof Error) {
-            setError(err.message)
-          } else {
-            setError("An unknown error occurred while fetching anime features.")
-          }
-          setAllAnime([])
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    fetchAllAnime()
-
-    return () => {
-      isMounted = false
-      controller.abort()
-    }
-    // setIsLoading is stable (wrapped in useCallback) and not needed in deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   useEffect(() => {
     if (!selectedAnimeIds.length) {
       setRecommendedAnime([])
       setError(null)
       setIsLoading(false)
-      return
-    }
-
-    if (!allAnime.length) {
-      setIsLoading(true)
       return
     }
 
@@ -174,8 +99,9 @@ export function useRecommendations({
       newWorker.terminate()
     }
     // setIsLoading is stable (wrapped in useCallback) and not needed in deps
+    // allAnime is stable from React Query, not needed in deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAnimeIds, allAnime])
+  }, [selectedAnimeIds])
 
   const cancelRecommendations = () => {
     if (worker) {
@@ -186,5 +112,10 @@ export function useRecommendations({
     }
   }
 
-  return { recommendedAnime, isLoading, error, cancelRecommendations }
+  return {
+    recommendedAnime,
+    isLoading: isLoading || isAllAnimeLoading,
+    error: error || allAnimeError?.message || null,
+    cancelRecommendations
+  }
 }
