@@ -54,6 +54,9 @@ Incremental cleanup approach: Services → Components → API Routes
 
 **Goal:** Break down large components for better maintainability and reusability
 
+**Status:** In Planning (2025-01-19)
+**Plans:** 3 plans in 2 waves
+
 **Requirements:**
 - COMP-01: Break down anime detail page (748 lines) into smaller focused components
 - COMP-02: Extract reusable sub-components from sidebar component (726 lines)
@@ -69,10 +72,16 @@ Incremental cleanup approach: Services → Components → API Routes
 5. Code duplication reduced by at least 30%
 6. All existing functionality preserved
 
+**Plans:**
+- [ ] 02-01-PLAN.md — Refactor anime detail page (749 lines → ~200 lines with 5 sub-components)
+- [ ] 02-02-PLAN.md — Refactor anime browse page (530 lines → ~150 lines with 4 sub-components)
+- [ ] 02-03-PLAN.md — Extract reusable patterns and component composition (hooks, shared components)
+
 **Notes:**
 - Use React hooks for shared logic
 - Create presentational/container component separation where appropriate
 - Maintain existing TypeScript interfaces
+- Prioritize extraction of reusable patterns
 
 ---
 
@@ -210,11 +219,11 @@ Incremental cleanup approach: Services → Components → API Routes
 
 ## Next Steps
 
-1. Run `/gsd:discuss-phase 1` to gather context for logging cleanup
-2. Execute Phase 1 plans to remove console.log statements
-3. Proceed through phases sequentially or in parallel based on capacity
-4. Track progress in .planning/STATE.md
+1. Execute Phase 2 plans to break down large components
+2. Proceed through phases sequentially or in parallel based on capacity
+3. Track progress in .planning/STATE.md
 
 ---
 
 *Roadmap created: 2025-01-19*
+*Last updated: 2025-01-19*
