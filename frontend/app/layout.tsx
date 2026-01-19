@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ConsoleFilter } from "@/components/ConsoleFilter"
 import ClerkThemeProvider from "@/components/ClerkThemeProvider"
+import ErrorBoundary from "@/components/ErrorBoundary"
 import Navbar from "../components/Navbar"
 import "../styles/globals.css"
 
@@ -16,11 +17,13 @@ export default function RootLayout({
       <body className="bg-background text-foreground">
         <ThemeProvider>
           <ClerkThemeProvider>
-            <ConsoleFilter />
-            <Suspense fallback={null}>
-              <Navbar />
-            </Suspense>
-            {children}
+            <ErrorBoundary>
+              <ConsoleFilter />
+              <Suspense fallback={null}>
+                <Navbar />
+              </Suspense>
+              {children}
+            </ErrorBoundary>
           </ClerkThemeProvider>
         </ThemeProvider>
       </body>
