@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLoadingState } from './useLoadingState';
 
 const cache = new Map();
 
@@ -7,18 +8,18 @@ export const useFetchData = <T,>(
 ): [T | null, boolean, Error | null] => {
   const [data, setData] = useState<T | null>(null)
   const cacheRef = useRef(cache)
-  const [loading, setLoading] = useState<boolean>(true)
+  const { isLoading: loading, setIsLoading } = useLoadingState(150)
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
     if (!url) {
-      setLoading(false);
+      setIsLoading(false);
       return;
     }
 
     if (cacheRef.current.has(url)) {
       setData(cacheRef.current.get(url));
-      setLoading(false);
+      setIsLoading(false);
       return;
     }
 
@@ -31,7 +32,7 @@ export const useFetchData = <T,>(
       } catch (err) {
         setError(err);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
