@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
+import { useQueries } from "@tanstack/react-query"
 
 import RecommendationList from "@/components/RecommendationList"
 import AnimeDetailHeader from "@/components/AnimeDetailHeader"
@@ -17,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { useLoadingState } from "@/hooks/useLoadingState"
 import { clientLogger } from "@/lib/client-logger"
+import { animeKeys } from "@/lib/queries/anime"
 
 interface Anime {
   anime_id: number
@@ -113,9 +115,50 @@ export default function AnimeDetailPage() {
   const reviewsErrorHandler = useErrorHandler()
   const detailsErrorState = useErrorHandler()
 
+  // BEFORE: 3 separate useEffect hooks (sequential)
+  // useEffect(() => { fetchAnimeDetails() }, [numericId])
+  // useEffect(() => { fetchRecommendations() }, [anime])
+  // useEffect(() => { fetchReviews() }, [anime])
+
+  // AFTER: Single useQueries call (parallel)
+  const results = useQueries({
+    queries: [
+      {
+        queryKey: ['anime', 'detail', numericId],
+        queryFn: () => fetch(`/api/anime?limit=1000`).then(r => r.json()).then(data => {
+          const animeList = data.anime || []
+          return animeList.find((item: Anime) => item.anime_id === numericId) || null
+        }),
+        enabled: !!numericId,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+      },
+      {
+        queryKey: ['anime', numericId, 'recommendations'],
+        queryFn: () => fetch(`/api/anime/recommendation/${numericId}`).then(r => r.json()),
+        enabled: !!numericId,
+        staleTime: 5 * 60 * 1000,
+      },
+      {
+        queryKey: ['anime', numericId, 'reviews'],
+        queryFn: () => fetch(`/api/anime/reviews/${numericId}`).then(r => r.json()),
+        enabled: !!numericId,
+        staleTime: 5 * 60 * 1000,
+      },
+    ],
+    combine: (results) => ({
+      anime: results[0].data,
+      recommendations: results[1].data?.similar_anime || [],
+      reviews: results[2].data?.reviews || [],
+      isLoading: results.some(r => r.isLoading),
+      errors: results.filter(r => r.error).map(r => r.error),
+    })
+  })
+
+  const { anime: animeFromQuery, recommendations: recommendationsFromQuery, reviews: reviewsFromQuery, isLoading: isLoadingFromQuery, errors: errorsFromQuery } = results
+
   const recommendedAnime = useMemo(() => {
     // API returns complete anime data, use it directly
-    return recommendations.map(rec => ({
+    return recommendationsFromQuery.map(rec => ({
       anime_id: rec.anime_id,
       title: rec.title,
       image_url: rec.image_url,
@@ -129,7 +172,7 @@ export default function AnimeDetailPage() {
       bert_rating: [],
       bert_themes: [],
     } as Anime))
-  }, [recommendations])
+  }, [recommendationsFromQuery])
 
   useEffect(() => {
     async function fetchAnimeDetails() {
