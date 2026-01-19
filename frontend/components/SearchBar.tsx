@@ -17,6 +17,7 @@ import {
 import { Kbd } from "@/components/ui/kbd"
 import { clientLogger } from "@/lib/client-logger"
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut"
+import { useClickOutside } from "@/hooks/useClickOutside"
 
 type Anime = {
   anime_id: number
@@ -57,22 +58,7 @@ export default function SearchBar() {
     preventDefault: true
   })
 
-  useEffect(() => {
-    const closeOnOutsideClick = (event: MouseEvent | TouchEvent) => {
-      if (!containerRef.current) return
-      if (!containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-
-    document.addEventListener("mousedown", closeOnOutsideClick)
-    document.addEventListener("touchstart", closeOnOutsideClick)
-
-    return () => {
-      document.removeEventListener("mousedown", closeOnOutsideClick)
-      document.removeEventListener("touchstart", closeOnOutsideClick)
-    }
-  }, [])
+  useClickOutside(containerRef, () => setIsOpen(false), isOpen)
 
   useEffect(() => {
     if (query.trim() === "") {
