@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import CurrentlyAiringSection from "@/components/CurrentlyAiringSection"
+import HeroSection from "@/components/HeroSection"
 import RecommendedSection from "@/components/RecommendedSection"
 import TopRankedSection from "@/components/TopRankedSection"
 import TrendingSection from "@/components/TrendingSection"
@@ -19,38 +20,36 @@ interface Anime {
 }
 
 const HomePage = () => {
-  const [selectedAnime, setSelectedAnime] = useState<Anime[]>([])
-  const [selectedAnimeIds, setSelectedAnimeIds] = useState<number[]>([])
-  const [isHydrated, setIsHydrated] = useState(false)
-
-  // Load from localStorage only on client-side after hydration
-  useEffect(() => {
+  const [selectedAnime, setSelectedAnime] = useState<Anime[]>(() => {
+    if (typeof window === "undefined") return []
     const savedChoices = localStorage.getItem("userChoices")
-    if (savedChoices) {
-      try {
-        const parsed = JSON.parse(savedChoices)
-        setSelectedAnime(parsed)
-        setSelectedAnimeIds(parsed.map((anime: Anime) => anime.anime_id))
-      } catch (parseError) {
-        console.error(
-          "Failed to parse saved choices from localStorage:",
-          parseError
-        )
-        localStorage.removeItem("userChoices")
-      }
+    if (!savedChoices) return []
+    try {
+      return JSON.parse(savedChoices) as Anime[]
+    } catch (parseError) {
+      console.error(
+        "Failed to parse saved choices from localStorage:",
+        parseError
+      )
+      localStorage.removeItem("userChoices")
+      return []
     }
-    setIsHydrated(true)
-  }, [])
+  })
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    localStorage.setItem("userChoices", JSON.stringify(selectedAnime))
+  }, [selectedAnime])
+
+  const selectedAnimeIds = useMemo(
+    () => selectedAnime.map((anime) => anime.anime_id),
+    [selectedAnime]
+  )
 
   const selectedAnimeIdSet = useMemo(
     () => new Set(selectedAnimeIds),
     [selectedAnimeIds]
   )
-
-  const syncSelections = useCallback((nextSelections: Anime[]) => {
-    setSelectedAnimeIds(nextSelections.map((item) => item.anime_id))
-    localStorage.setItem("userChoices", JSON.stringify(nextSelections))
-  }, [])
 
   const handleSelectAnime = useCallback(
     (anime: Anime) => {
@@ -58,75 +57,72 @@ const HomePage = () => {
         if (prev.some((item) => item.anime_id === anime.anime_id)) {
           return prev
         }
-        const nextSelections = [...prev, anime]
-        syncSelections(nextSelections)
-        return nextSelections
+        return [...prev, anime]
       })
     },
-    [syncSelections]
+    []
   )
 
   const handleRemoveAnime = useCallback(
     (anime: Anime) => {
       setSelectedAnime((prev) => {
-        const nextSelections = prev.filter(
-          (item) => item.anime_id !== anime.anime_id
-        )
-        syncSelections(nextSelections)
-        return nextSelections
+        return prev.filter((item) => item.anime_id !== anime.anime_id)
       })
     },
-    [syncSelections]
+    []
   )
 
   return (
-    <div className="container mx-auto flex flex-col gap-8 px-4 py-6 sm:gap-10 sm:px-6 lg:gap-12 lg:py-10">
-      <section className="order-1 space-y-4 md:order-1">
-        <YourChoiceSection
-          selectedAnime={selectedAnime}
-          onRemoveAnime={handleRemoveAnime}
-        />
-      </section>
+    <div className="flex flex-col">
+      <HeroSection />
+      <div className="container mx-auto flex flex-col gap-8 px-4 py-6 sm:gap-10 sm:px-6 lg:gap-12 lg:py-10">
+        <section className="order-1 space-y-4 md:order-1">
+          <YourChoiceSection
+            selectedAnime={selectedAnime}
+            onRemoveAnime={handleRemoveAnime}
+          />
+        </section>
 
-      <section className="order-2 md:order-2">
-        <RecommendedSection
-          selectedAnimeIds={selectedAnimeIds}
-          onSelectAnime={handleSelectAnime}
-        />
-      </section>
+        <section className="order-2 md:order-2">
+          <RecommendedSection
+            selectedAnimeIds={selectedAnimeIds}
+            onSelectAnime={handleSelectAnime}
+          />
+        </section>
 
-      <section className="order-3 md:order-3">
-        <TrendingSection
-          onSelectAnime={handleSelectAnime}
-          selectedAnimeIdSet={selectedAnimeIdSet}
-        />
-      </section>
+        <section className="order-3 md:order-3">
+          <TrendingSection
+            onSelectAnime={handleSelectAnime}
+            selectedAnimeIdSet={selectedAnimeIdSet}
+          />
+        </section>
 
-      <section className="order-4 md:order-4">
-        <CurrentlyAiringSection
-          onSelectAnime={handleSelectAnime}
-          selectedAnimeIdSet={selectedAnimeIdSet}
-        />
-      </section>
+        <section className="order-4 md:order-4">
+          <CurrentlyAiringSection
+            onSelectAnime={handleSelectAnime}
+            selectedAnimeIdSet={selectedAnimeIdSet}
+          />
+        </section>
 
-      <section className="order-5 md:order-5">
-        <UpcomingSection
-          onSelectAnime={handleSelectAnime}
-          selectedAnimeIdSet={selectedAnimeIdSet}
-        />
-      </section>
+        <section className="order-5 md:order-5">
+          <UpcomingSection
+            onSelectAnime={handleSelectAnime}
+            selectedAnimeIdSet={selectedAnimeIdSet}
+          />
+        </section>
 
-      <section className="order-6 hidden md:block">
-        <TopRankedSection
-          onSelectAnime={handleSelectAnime}
-          selectedAnimeIdSet={selectedAnimeIdSet}
-        />
-      </section>
+        <section className="order-6 hidden md:block">
+          <TopRankedSection
+            onSelectAnime={handleSelectAnime}
+            selectedAnimeIdSet={selectedAnimeIdSet}
+          />
+        </section>
 
-      <div className="order-6 md:hidden">
-        <Button asChild variant="outline" className="w-full">
-          <Link href="/anime?sortBy=Rank">Browse top ranked picks</Link>
-        </Button>
+        <div className="order-6 md:hidden">
+          <Button asChild variant="outline" className="w-full">
+            <Link href="/anime?sortBy=Rank">Browse top ranked picks</Link>
+          </Button>
+        </div>
       </div>
     </div>
   )

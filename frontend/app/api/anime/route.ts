@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAnime } from '../../../services/animeService';
+import { getAniListImages } from '../../../services/anilistService';
 import { getCurrentSeasonAnimeWithCache, getUpcomingAnimeWithCache } from '../../../services/animeCacheService';
 
 export const runtime = 'nodejs';
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '30', 10);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const withEmbeddings = searchParams.get('withEmbeddings') === 'true';
+    const includeBanner = searchParams.get('includeBanner') === 'true';
     const genres = searchParams.get('genres')?.split(',').filter(Boolean);
 
     const params: GetAnimeParams = { sortBy, limit, page, withEmbeddings };
@@ -54,11 +56,32 @@ export async function GET(request: Request) {
 
     // The old trending/top-ranked routes returned a simple array
     if (type === 'trending' || type === 'top-ranked') {
-        return NextResponse.json(data.anime, {
-            headers: {
-              'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-            },
-        });
+      let anime = data.anime;
+
+      if (includeBanner) {
+        anime = await Promise.all(
+          anime.map(async (item: any) => {
+            const search =
+              item.english_title || item.title || item.japanese_title || null;
+            const images = await getAniListImages({
+              malId: item.mal_id,
+              search,
+            });
+
+            return {
+              ...item,
+              banner_image: images.bannerImage,
+              cover_image: images.coverImage,
+            };
+          })
+        );
+      }
+
+      return NextResponse.json(anime, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        },
+      });
     }
 
     // The metadata/features routes returned a paginated object

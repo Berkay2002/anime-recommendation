@@ -5,6 +5,7 @@ import { revalidateTag } from 'next/cache';
 // Comprehensive Anime Interface
 interface Anime {
   anime_id: number;
+  mal_id?: number;
   title: string;
   english_title?: string;
   japanese_title?: string;
@@ -74,6 +75,7 @@ function parseVector(vector: any): number[] | undefined {
 function formatAnime(anime: any): Anime {
   return {
     anime_id: anime.anime_id,
+    mal_id: anime.mal_id,
     title: anime.title,
     english_title: anime.english_title,
     japanese_title: anime.japanese_title,
@@ -173,6 +175,7 @@ export const getAnime = cache(async (params: GetAnimeParams = {}) => {
   const query = `
     SELECT 
       a.anime_id,
+      a.mal_id,
       a.title,
       a.english_title,
       a.japanese_title,
@@ -208,7 +211,7 @@ export const getAnime = cache(async (params: GetAnimeParams = {}) => {
     LEFT JOIN themes t ON at.theme_id = t.id
     ${embeddingJoin}
     ${whereClause}
-    GROUP BY a.anime_id ${withEmbeddings ? ', ae.description_embedding, ae.genres_embedding, ae.demographic_embedding, ae.rating_embedding, ae.themes_embedding, ae.anime_id' : ''}
+    GROUP BY a.anime_id, a.mal_id ${withEmbeddings ? ', ae.description_embedding, ae.genres_embedding, ae.demographic_embedding, ae.rating_embedding, ae.themes_embedding, ae.anime_id' : ''}
     ORDER BY ${orderBy}
     LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
   `;

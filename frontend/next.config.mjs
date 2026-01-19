@@ -6,6 +6,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'cdn.myanimelist.net',
       },
+      {
+        protocol: 'https',
+        hostname: 's4.anilist.co',
+      },
     ],
     qualities: [75, 80],
   },
