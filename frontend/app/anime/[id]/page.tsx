@@ -8,8 +8,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import RecommendationList from "@/components/RecommendationList"
 import ReviewCard from "@/components/ReviewCard"
+import AnimeDetailHeader from "@/components/AnimeDetailHeader"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -430,59 +430,23 @@ export default function AnimeDetailPage() {
     <div className="container mx-auto flex flex-col gap-8 px-4 py-6 sm:gap-10 sm:px-6 lg:gap-12 lg:py-10">
       <Card className="overflow-hidden border border-border/60 bg-card/80 shadow-sm">
         <CardContent className="flex flex-col gap-6 px-4 py-6 md:flex-row md:items-start md:gap-8">
-          <div className="relative aspect-2/3 w-full max-w-[450px] shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
-            <Image
-              src={anime.image_url || "/placeholder.jpg"}
-              alt={anime.title || "Anime artwork"}
-              fill
-              sizes="(max-width: 768px) 100vw, 450px"
-              className="object-cover"
-              priority
-            />
-          </div>
+          <AnimeDetailHeader anime={anime} />
 
-          <div className="flex flex-1 flex-col gap-6">
-            <div className="space-y-3">
-              <h1 className="text-3xl font-semibold leading-tight tracking-tight text-foreground">
-                {anime.title || "Unknown Title"}
-              </h1>
-              {(anime.genres || anime.Genres)?.length ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  {(anime.genres || anime.Genres)?.map((genre) => (
-                    <Badge
-                      key={`${anime.anime_id}-${genre}`}
-                      variant="outline"
-                      className="rounded-full"
-                    >
-                      {genre}
-                    </Badge>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-
-            <p className="text-base leading-relaxed text-muted-foreground">
-              {anime.description || anime.Description || "No description available for this title."}
-            </p>
-
-            <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {stats.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="rounded-2xl border border-border/50 bg-background/60 p-4"
-                >
-                  <dt className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                    {stat.label}
-                  </dt>
-                  <dd className="text-lg font-semibold text-foreground">
-                    {stat.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-
-            <ButtonRow animeId={anime.anime_id} />
-          </div>
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {stats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-2xl border border-border/50 bg-background/60 p-4"
+              >
+                <dt className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                  {stat.label}
+                </dt>
+                <dd className="text-lg font-semibold text-foreground">
+                  {stat.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
         </CardContent>
       </Card>
 
@@ -731,19 +695,6 @@ export default function AnimeDetailPage() {
           </Alert>
         )}
       </section>
-    </div>
-  )
-}
-
-function ButtonRow({ animeId }: { animeId: number }) {
-  return (
-    <div className="flex flex-wrap gap-3">
-      <Button asChild className="w-full sm:w-auto">
-        <Link href={`/anime/${animeId}`}>View full details</Link>
-      </Button>
-      <Button asChild variant="outline" className="w-full sm:w-auto">
-        <Link href="#reviews">Jump to reviews</Link>
-      </Button>
     </div>
   )
 }
