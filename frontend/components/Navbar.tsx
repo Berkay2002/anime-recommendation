@@ -13,6 +13,7 @@ import { Menu } from "lucide-react"
 
 import SearchBar from "./SearchBar"
 import ThemeToggle from "./ThemeToggle"
+import SectionHeader from "./SectionHeader"
 import { Button } from "@/components/ui/button"
 import {
   NavigationMenu,
@@ -24,10 +25,7 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
-  SheetDescription,
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 
@@ -67,14 +65,10 @@ const Navbar: React.FC = () => {
                 onOpenAutoFocus={(event) => event.preventDefault()}
                 className="flex w-full max-w-xs flex-col gap-6 border-border/60 bg-background/95 px-6 py-6 backdrop-blur"
               >
-                <SheetHeader className="space-y-1 text-left">
-                  <SheetTitle className="text-2xl font-semibold tracking-tight">
-                    Browse AniMatch
-                  </SheetTitle>
-                  <SheetDescription>
-                    Jump to a page or search for a new series.
-                  </SheetDescription>
-                </SheetHeader>
+                <SectionHeader
+                  title="Browse AniMatch"
+                  description="Jump to a page or search for a new series."
+                />
 
                 <SearchBar />
 

@@ -3,6 +3,7 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent } from "@/components/ui/card"
+import SectionHeader from "@/components/SectionHeader"
 import {
   Table,
   TableBody,
@@ -59,14 +60,10 @@ export default function AnimeDetailExtraDetails({
 }: AnimeDetailExtraDetailsProps) {
   return (
     <section className="space-y-4" id="details">
-      <div className="space-y-1">
-        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-          Extra details
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Characters, staff, and community stats pulled from Jikan (MAL).
-        </p>
-      </div>
+      <SectionHeader
+        title="Extra details"
+        description="Characters, staff, and community stats pulled from Jikan (MAL)."
+      />
       <Card className="border border-border/60 bg-card/80 shadow-sm">
         <CardContent className="px-4 py-5 sm:px-6">
           <Tabs defaultValue="characters" className="gap-4">

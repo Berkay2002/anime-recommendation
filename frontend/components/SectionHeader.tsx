@@ -1,24 +1,44 @@
-import { Separator } from "./ui/separator"
+import { HTMLAttributes, ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 
-interface SectionHeaderProps {
-  title: string
+interface SectionHeaderProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
+  title: string | ReactNode
   description?: string
+  id?: string
+  className?: string
+  titleClassName?: string
+  descriptionClassName?: string
 }
 
-const SectionHeader: React.FC<SectionHeaderProps> = ({ title, description }) => {
+export default function SectionHeader({
+  title,
+  description,
+  id,
+  className,
+  titleClassName,
+  descriptionClassName,
+  ...props
+}: SectionHeaderProps) {
   return (
-    <div className="space-y-2 px-4 pt-5 sm:px-6 sm:pt-6">
-      <div>
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">
-          {title}
-        </h2>
-        {description ? (
-          <p className="text-sm text-muted-foreground">{description}</p>
-        ) : null}
-      </div>
-      <Separator className="bg-primary/60" />
+    <div id={id} className={cn('space-y-1', className)} {...props}>
+      <h2
+        className={cn(
+          'text-2xl font-semibold tracking-tight text-foreground',
+          titleClassName
+        )}
+      >
+        {title}
+      </h2>
+      {description && (
+        <p
+          className={cn(
+            'text-sm text-muted-foreground',
+            descriptionClassName
+          )}
+        >
+          {description}
+        </p>
+      )}
     </div>
   )
 }
-
-export default SectionHeader

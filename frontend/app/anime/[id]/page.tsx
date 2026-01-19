@@ -11,6 +11,7 @@ import AnimeDetailStats from "@/components/AnimeDetailStats"
 import AnimeDetailSkeleton from "@/components/AnimeDetailSkeleton"
 import AnimeDetailExtraDetails from "@/components/AnimeDetailExtraDetails"
 import AnimeDetailReviews from "@/components/AnimeDetailReviews"
+import SectionHeader from "@/components/SectionHeader"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent } from "@/components/ui/card"
 import { clientLogger } from "@/lib/client-logger"
@@ -313,15 +314,10 @@ export default function AnimeDetailPage() {
       </Card>
 
       <section className="space-y-4" id="recommendations">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-            Recommendations
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Similar shows based on description, genres, demographics, and
-            themes.
-          </p>
-        </div>
+        <SectionHeader
+          title="Recommendations"
+          description="Similar shows based on description, genres, demographics, and themes."
+        />
         {recommendedAnime.length ? (
           <RecommendationList recommendedAnime={recommendedAnime} showIcon={false} />
         ) : (

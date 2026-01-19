@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import ReviewCard from "@/components/ReviewCard"
+import SectionHeader from "@/components/SectionHeader"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 
@@ -27,19 +28,19 @@ export default function AnimeDetailReviews({
 
   return (
     <section className="space-y-6" id="reviews">
-      <div className="space-y-2">
-        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-          Reviews
-          {reviews.length > 0 && (
-            <span className="ml-3 text-base font-normal text-muted-foreground">
-              ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
-            </span>
-          )}
-        </h2>
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          What fans are saying about this anime.
-        </p>
-      </div>
+      <SectionHeader
+        title={
+          <>
+            Reviews
+            {reviews.length > 0 && (
+              <span className="ml-3 text-base font-normal text-muted-foreground">
+                ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
+              </span>
+            )}
+          </>
+        }
+        description="What fans are saying about this anime."
+      />
       {reviews.length ? (
         <>
           <div className="grid gap-5">
