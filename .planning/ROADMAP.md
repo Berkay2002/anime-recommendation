@@ -94,6 +94,9 @@ Incremental cleanup approach: Services → Components → API Routes
 
 **Goal:** Implement error boundaries and graceful error recovery mechanisms
 
+**Status:** In Planning (2026-01-19)
+**Plans:** 4/4 planned
+
 **Requirements:**
 - ERR-01: Implement React error boundaries at page and section levels
 - ERR-02: Add try-catch blocks in service layer functions
@@ -110,10 +113,17 @@ Incremental cleanup approach: Services → Components → API Routes
 5. Users see friendly error messages instead of blank screens
 6. Error states are properly managed and can be reset
 
+**Plans:**
+- [ ] 03-01-PLAN.md — Create and integrate React error boundaries at app and page levels
+- [ ] 03-02-PLAN.md — Add try-catch error handling to all service layer functions
+- [ ] 03-03-PLAN.md — Implement exponential backoff retry logic for external API calls
+- [ ] 03-04-PLAN.md — Add error state management and user-friendly error messages
+
 **Notes:**
-- Error boundaries should log errors for debugging
-- Consider using React Query or SWR for built-in retry logic
-- Error messages should be actionable where possible
+- Error boundaries log errors to Pino logger for debugging
+- Reusable retry utility with jitter to avoid thundering herd
+- Error messages are actionable with retry functionality
+- Error type detection (network, timeout, server, client, unknown)
 
 ---
 
@@ -224,11 +234,11 @@ Incremental cleanup approach: Services → Components → API Routes
 
 ## Next Steps
 
-1. Execute Phase 2 plans to break down large components
+1. Execute Phase 3 plans to implement error handling
 2. Proceed through phases sequentially or in parallel based on capacity
 3. Track progress in .planning/STATE.md
 
 ---
 
 *Roadmap created: 2025-01-19*
-*Last updated: 2025-01-19*
+*Last updated: 2026-01-19 (Phase 3 planning complete)*
