@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useMemo, useSyncExternalStore } from "react"
+import { useMemo, useRef, useSyncExternalStore } from "react"
 
 import { useFetchData } from "@/hooks/useFetchData"
 import { Button } from "@/components/ui/button"
@@ -21,15 +21,23 @@ interface Anime {
 
 const AUTO_ROTATE_MS = 7000
 
-const useIntervalNow = (intervalMs: number) =>
-  useSyncExternalStore(
+const useIntervalNow = (intervalMs: number) => {
+  const lastSnapshotRef = useRef(0)
+
+  return useSyncExternalStore(
     (onStoreChange) => {
-      const intervalId = setInterval(onStoreChange, intervalMs)
+      lastSnapshotRef.current = Date.now()
+      onStoreChange()
+      const intervalId = setInterval(() => {
+        lastSnapshotRef.current = Date.now()
+        onStoreChange()
+      }, intervalMs)
       return () => clearInterval(intervalId)
     },
-    () => Date.now(),
+    () => lastSnapshotRef.current,
     () => 0
   )
+}
 
 const resolveAnimeTitle = (anime?: Anime | null) =>
   anime?.title ||

@@ -12,6 +12,8 @@
     "vercel-build": "next build"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.36.8",
+    "@clerk/themes": "^2.4.48",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^5.2.2",
     "@neondatabase/serverless": "^1.0.2",

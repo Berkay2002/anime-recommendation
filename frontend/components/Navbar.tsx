@@ -1,5 +1,12 @@
 "use client"
 
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from "@clerk/nextjs"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Menu } from "lucide-react"
@@ -71,6 +78,24 @@ const Navbar: React.FC = () => {
 
                 <SearchBar />
 
+                <div className="flex flex-col gap-2">
+                  <SignedOut>
+                    <SignInButton mode="modal">
+                      <Button variant="secondary" className="w-full">
+                        Sign in
+                      </Button>
+                    </SignInButton>
+                    <SignUpButton mode="modal">
+                      <Button className="w-full">Sign up</Button>
+                    </SignUpButton>
+                  </SignedOut>
+                  <SignedIn>
+                    <div className="flex items-center">
+                      <UserButton />
+                    </div>
+                  </SignedIn>
+                </div>
+
                 <nav className="flex flex-col gap-1">
                   {links.map((link) => {
                     const isActive = pathname === link.href
@@ -130,6 +155,21 @@ const Navbar: React.FC = () => {
                 })}
               </NavigationMenuList>
             </NavigationMenu>
+            <SignedOut>
+              <div className="flex items-center gap-2">
+                <SignInButton mode="modal">
+                  <Button variant="ghost" size="sm">
+                    Sign in
+                  </Button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <Button size="sm">Sign up</Button>
+                </SignUpButton>
+              </div>
+            </SignedOut>
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
           </div>
         </div>
       </div>
