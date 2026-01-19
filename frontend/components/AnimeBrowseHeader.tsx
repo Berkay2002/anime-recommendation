@@ -2,12 +2,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 interface AnimeBrowseHeaderProps {
   loading: boolean
-  isInitialLoad: boolean
 }
 
 export default function AnimeBrowseHeader({
   loading,
-  isInitialLoad,
 }: AnimeBrowseHeaderProps) {
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

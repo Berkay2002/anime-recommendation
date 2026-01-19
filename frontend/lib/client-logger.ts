@@ -9,8 +9,6 @@
  * clientLogger.error('Error message', error)
  */
 
-type LogLevel = 'debug' | 'info' | 'warn' | 'error'
-
 const isDevelopment = process.env.NODE_ENV === 'development'
 
 export const clientLogger = {

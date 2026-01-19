@@ -3,18 +3,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 const skeletonPlaceholders = Array.from({ length: 3 })
 const statSkeletonPlaceholders = Array.from({ length: 5 })
-const detailSkeletonPlaceholders = Array.from({ length: 6 })
-
-const detailsSkeleton = (
-  <div className='space-y-3'>
-    {detailSkeletonPlaceholders.map((_, index) => (
-      <Skeleton
-        key={`detail-skeleton-${index}`}
-        className='h-8 w-full'
-      />
-    ))}
-  </div>
-)
 
 export default function AnimeDetailSkeleton() {
   return (

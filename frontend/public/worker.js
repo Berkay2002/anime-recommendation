@@ -70,7 +70,7 @@ function combineEmbeddings(embeddings, weights) {
  */
 self.onmessage = function(event) {
   try {
-    const { selectedEmbeddings, allEmbeddings, selectedTitles, selectedAnimeIds } = event.data;
+    const { selectedEmbeddings, allEmbeddings, selectedAnimeIds } = event.data;
 
     console.log('[Worker] Received data:', {
       selectedEmbeddingsCount: selectedEmbeddings?.length,

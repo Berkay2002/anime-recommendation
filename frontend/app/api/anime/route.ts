@@ -6,6 +6,9 @@ import logger from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
+type GetAnimeResult = Awaited<ReturnType<typeof getAnime>>
+type AnimeListItem = GetAnimeResult['anime'][number]
+
 interface GetAnimeParams {
   sortBy?: string;
   limit?: number;
@@ -63,11 +66,11 @@ export async function GET(request: Request) {
 
     // The old trending/top-ranked routes returned a simple array
     if (type === 'trending' || type === 'top-ranked') {
-      let anime = data.anime;
+      let anime: AnimeListItem[] = data.anime;
 
       if (includeBanner) {
         anime = await Promise.all(
-          anime.map(async (item: any) => {
+          anime.map(async (item) => {
             const search =
               item.english_title || item.title || item.japanese_title || null;
             const images = await getAniListImages({

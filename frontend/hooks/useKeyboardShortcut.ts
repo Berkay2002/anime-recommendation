@@ -44,11 +44,6 @@ export function useKeyboardShortcut(
         return
       }
 
-      // Check modifier keys
-      const hasCtrlOrCmd = ctrlOrCmd && (event.metaKey || event.ctrlKey)
-      const hasAlt = alt && event.altKey
-      const hasShift = shift && event.shiftKey
-
       // Verify all required modifiers are present
       const modifiersCorrect =
         (!ctrlOrCmd || (event.metaKey || event.ctrlKey)) &&

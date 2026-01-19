@@ -8,23 +8,13 @@ export function ConsoleFilter() {
       const originalError = console.error
       const originalWarn = console.warn
 
-      console.error = (...args: any[]) => {
-        const message = args[0]?.toString() || ''
-        
-        // Suppress async params/searchParams warnings from React DevTools
-        if (
-          message.includes('params are being enumerated') ||
-          message.includes('params is a Promise and must be unwrapped') ||
-          (message.includes('searchParams') && message.includes('Promise and must be unwrapped'))
-        ) {
-          return
-        }
-        
-        originalError.apply(console, args)
+      const getMessage = (args: unknown[]) => {
+        const first = args[0]
+        return first == null ? '' : String(first)
       }
 
-      console.warn = (...args: any[]) => {
-        const message = args[0]?.toString() || ''
+      console.error = (...args: unknown[]) => {
+        const message = getMessage(args)
         
         // Suppress async params/searchParams warnings from React DevTools
         if (
@@ -35,7 +25,22 @@ export function ConsoleFilter() {
           return
         }
         
-        originalWarn.apply(console, args)
+        originalError(...(args as Parameters<typeof console.error>))
+      }
+
+      console.warn = (...args: unknown[]) => {
+        const message = getMessage(args)
+        
+        // Suppress async params/searchParams warnings from React DevTools
+        if (
+          message.includes('params are being enumerated') ||
+          message.includes('params is a Promise and must be unwrapped') ||
+          (message.includes('searchParams') && message.includes('Promise and must be unwrapped'))
+        ) {
+          return
+        }
+        
+        originalWarn(...(args as Parameters<typeof console.warn>))
       }
 
       return () => {

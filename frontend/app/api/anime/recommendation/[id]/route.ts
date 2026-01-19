@@ -5,19 +5,6 @@ import logger from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-interface SimilarAnime {
-  anime_id: number;
-  title: string;
-  similarity: number;
-}
-
-interface Recommendation {
-  _id: string;
-  anime_id: number;
-  title: string;
-  similar_anime: SimilarAnime[];
-}
-
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ id: string }> }

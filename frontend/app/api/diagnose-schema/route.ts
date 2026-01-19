@@ -4,13 +4,71 @@ import logger from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
+interface ColumnInfo {
+  column_name: string
+  data_type: string
+  column_default: string | null
+  is_nullable: string
+  character_maximum_length: number | null
+}
+
+interface SequenceInfo {
+  sequence_name: string
+  data_type: string
+  start_value: number | string
+  minimum_value: number | string
+  maximum_value: number | string
+  increment: number | string
+}
+
+interface ConstraintInfo {
+  constraint_name: string
+  table_name: string
+  column_name: string
+  constraint_type: string
+}
+
+interface TableExistsInfo {
+  table_name: string
+  table_type: string
+}
+
+interface MaxIdInfo {
+  max_id: number | null
+  total_count: number | null
+}
+
+interface SchemaDiagnosisDetails {
+  columns?: ColumnInfo[]
+  sequences?: SequenceInfo[]
+  constraints?: ConstraintInfo[]
+  jikan_sync_queue_exists?: boolean
+  jikan_sync_queue_columns?: ColumnInfo[]
+  current_max_anime_id?: number | null
+  total_anime_count?: number | null
+  anime_id_problem?: {
+    current_default: string | null
+    expected: string
+  }
+  max_id_error?: string
+}
+
+interface SchemaDiagnosis {
+  timestamp: string
+  issues: string[]
+  fixes: string[]
+  details: SchemaDiagnosisDetails
+  status?: 'OK' | 'ISSUES_FOUND'
+  critical?: boolean
+}
+
 /**
  * Diagnose database schema to identify anime_id auto-increment issues
  */
 export async function GET() {
   const log = logger.child({ route: '/api/diagnose-schema', method: 'GET' })
 
-  const diagnosis: any = {
+  const diagnosis: SchemaDiagnosis = {
     timestamp: new Date().toISOString(),
     issues: [],
     fixes: [],
@@ -20,7 +78,7 @@ export async function GET() {
   try {
     // 1. Check anime table columns
     log.debug('Checking anime table columns');
-    const columns = await sql`
+    const columns = await sql<ColumnInfo>`
       SELECT 
         column_name, 
         data_type, 
@@ -58,7 +116,7 @@ export async function GET() {
     
     // 2. Check sequences
     log.debug('Checking sequences');
-    const sequences = await sql`
+    const sequences = await sql<SequenceInfo>`
       SELECT 
         sequence_name,
         data_type,
@@ -74,7 +132,7 @@ export async function GET() {
 
     // 3. Check constraints
     log.debug('Checking constraints');
-    const constraints = await sql`
+    const constraints = await sql<ConstraintInfo>`
       SELECT 
         tc.constraint_name, 
         tc.table_name, 
@@ -91,7 +149,7 @@ export async function GET() {
 
     // 4. Check jikan_sync_queue table
     log.debug('Checking jikan_sync_queue table');
-    const tableExists = await sql`
+    const tableExists = await sql<TableExistsInfo>`
       SELECT 
         table_name,
         table_type
@@ -105,7 +163,7 @@ export async function GET() {
       diagnosis.issues.push('jikan_sync_queue table does not exist');
       diagnosis.fixes.push('Need to create jikan_sync_queue table');
     } else {
-      const queueColumns = await sql`
+      const queueColumns = await sql<ColumnInfo>`
         SELECT 
           column_name, 
           data_type, 
@@ -121,7 +179,7 @@ export async function GET() {
     // 5. Check current max anime_id
     log.debug('Checking current max anime_id');
     try {
-      const maxId = await sql`
+      const maxId = await sql<MaxIdInfo>`
         SELECT MAX(anime_id) as max_id, COUNT(*) as total_count
         FROM anime
       `;

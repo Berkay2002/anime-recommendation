@@ -92,22 +92,62 @@ const rateLimiter = new RateLimiter();
 export interface NormalizedAnimeData {
   mal_id: number;
   title: string;
-  english_title?: string;
-  japanese_title?: string;
-  synonyms?: string;
-  description?: string;
-  image_url?: string;
-  score?: number;
-  popularity?: number;
-  rank?: number;
-  rating?: string;
-  status?: string;
-  premiered?: string;
-  demographic?: string;
-  producers?: string;
+  english_title?: string | null;
+  japanese_title?: string | null;
+  synonyms?: string | null;
+  description?: string | null;
+  image_url?: string | null;
+  score?: number | null;
+  popularity?: number | null;
+  rank?: number | null;
+  rating?: string | null;
+  status?: string | null;
+  premiered?: string | null;
+  demographic?: string | null;
+  producers?: string | null;
   genres?: string[];
   studios?: string[];
   themes?: string[];
+}
+
+interface JikanNamedResource {
+  name: string
+}
+
+interface JikanImages {
+  jpg?: {
+    image_url?: string | null
+    large_image_url?: string | null
+  } | null
+}
+
+interface JikanAired {
+  prop?: {
+    from?: unknown
+  } | null
+}
+
+interface JikanAnime {
+  mal_id: number
+  title?: string | null
+  title_english?: string | null
+  title_japanese?: string | null
+  title_synonyms?: string[] | null
+  synopsis?: string | null
+  images?: JikanImages | null
+  score?: number | null
+  popularity?: number | null
+  rank?: number | null
+  rating?: string | null
+  status?: string | null
+  season?: string | null
+  year?: number | null
+  aired?: JikanAired | null
+  demographics?: JikanNamedResource[] | null
+  producers?: JikanNamedResource[] | null
+  genres?: JikanNamedResource[] | null
+  studios?: JikanNamedResource[] | null
+  themes?: JikanNamedResource[] | null
 }
 
 /**
@@ -130,7 +170,8 @@ export async function searchJikanAnime(query: string, limit: number = 10): Promi
       });
     });
 
-    return result.data.map((anime: any) => normalizeJikanData(anime));
+    const data = result.data as JikanAnime[]
+    return data.map((anime) => normalizeJikanData(anime));
   } catch (error) {
     jikanLogger.error({ error, query, limit }, 'Error searching Jikan anime');
     throw new Error('Failed to search anime on Jikan');
@@ -153,7 +194,7 @@ export async function getJikanAnimeById(malId: number): Promise<NormalizedAnimeD
       });
     });
 
-    return normalizeJikanData(result.data as any);
+    return normalizeJikanData(result.data as JikanAnime);
   } catch (error) {
     jikanLogger.error({ error, malId }, 'Error fetching anime from Jikan');
     throw new Error(`Failed to fetch anime ${malId} from Jikan`);
@@ -193,7 +234,8 @@ export async function getCurrentSeasonAnime(limit: number = 25): Promise<Normali
       });
     });
 
-    return result.data.map((anime: any) => normalizeJikanData(anime));
+    const data = result.data as JikanAnime[]
+    return data.map((anime) => normalizeJikanData(anime));
   } catch (error) {
     jikanLogger.error({ error, limit }, 'Error fetching current season anime');
     throw new Error('Failed to fetch current season anime');
@@ -218,7 +260,8 @@ export async function getUpcomingAnime(limit: number = 25): Promise<NormalizedAn
       });
     });
 
-    return result.data.map((anime: any) => normalizeJikanData(anime));
+    const data = result.data as JikanAnime[]
+    return data.map((anime) => normalizeJikanData(anime));
   } catch (error) {
     jikanLogger.error({ error, limit }, 'Error fetching upcoming anime');
     throw new Error('Failed to fetch upcoming anime');
@@ -228,7 +271,7 @@ export async function getUpcomingAnime(limit: number = 25): Promise<NormalizedAn
 /**
  * Convert Jikan API response to our normalized database schema
  */
-function normalizeJikanData(jikanAnime: any): NormalizedAnimeData {
+function normalizeJikanData(jikanAnime: JikanAnime): NormalizedAnimeData {
   return {
     mal_id: jikanAnime.mal_id,
     title: jikanAnime.title || jikanAnime.title_english || 'Unknown',

@@ -62,7 +62,6 @@ interface AnimeBrowseFiltersProps {
   onSortChange: (value: SortOption) => void
   selectedGenres: GenreOption[]
   onGenreToggle: (genre: GenreOption) => void
-  onGenreRemove: (genre: GenreOption) => void
   onClearGenres: () => void
   loading: boolean
   isInitialLoad: boolean
@@ -73,7 +72,6 @@ export default function AnimeBrowseFilters({
   onSortChange,
   selectedGenres,
   onGenreToggle,
-  onGenreRemove,
   onClearGenres,
   loading,
   isInitialLoad,

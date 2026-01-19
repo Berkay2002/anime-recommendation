@@ -13,9 +13,9 @@ export interface RetryOptions {
   /** Maximum delay cap in milliseconds (default: 10000ms) */
   maxDelay?: number;
   /** Function to determine if an error is retryable (default: retries network errors and 5xx/429 status codes) */
-  shouldRetry?: (error: any) => boolean;
+  shouldRetry?: (error: unknown) => boolean;
   /** Callback called before each retry attempt with attempt number and error */
-  onRetry?: (attempt: number, error: any, delay: number) => void;
+  onRetry?: (attempt: number, error: unknown, delay: number) => void;
 }
 
 /**
@@ -29,14 +29,31 @@ export interface RetryOptions {
  * Does not retry:
  * - 4xx client errors (400-499 except 429)
  */
-function defaultShouldRetry(error: any): boolean {
+const hasResponse = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') return false
+  if (!('response' in error)) return false
+  return (error as { response?: unknown }).response != null
+}
+
+const getStatusCode = (error: unknown): number | undefined => {
+  if (!error || typeof error !== 'object') return undefined
+  const response = (error as { response?: unknown }).response
+  if (!response || typeof response !== 'object') return undefined
+  const status = (response as { status?: unknown }).status
+  return typeof status === 'number' ? status : undefined
+}
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error)
+
+function defaultShouldRetry(error: unknown): boolean {
   // Network error (no response object) - retry
-  if (!error?.response) {
+  if (!hasResponse(error)) {
     return true;
   }
 
   // Check HTTP status code
-  const status = error.response?.status;
+  const status = getStatusCode(error);
 
   // Rate limit error (429) - retry
   if (status === 429) {
@@ -117,7 +134,7 @@ export async function retryWithBackoff<T>(
     onRetry,
   } = options || {};
 
-  let lastError: any;
+  let lastError: unknown;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -137,7 +154,7 @@ export async function retryWithBackoff<T>(
           attempt: attempt + 1,
           maxRetries: maxRetries + 1,
           retryable,
-          error: lastError.message || lastError,
+          error: getErrorMessage(lastError),
         }, `${reason} - throwing error`);
         throw error;
       }
@@ -149,7 +166,7 @@ export async function retryWithBackoff<T>(
       retryLogger.debug({
         attempt: attempt + 1,
         maxRetries: maxRetries + 1,
-        error: lastError.message || lastError,
+        error: getErrorMessage(lastError),
         delay,
         nextAttemptIn: `${delay}ms`,
       }, 'Retrying request after exponential backoff');

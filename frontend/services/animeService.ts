@@ -1,6 +1,5 @@
 import { cache } from 'react';
 import { sql } from '../lib/postgres';
-import { revalidateTag } from 'next/cache';
 import logger from '@/lib/logger';
 
 const animeLogger = logger.child({ service: 'AnimeService' });
@@ -39,33 +38,79 @@ interface Anime {
   bert_themes?: number[];
 }
 
-interface Review {
-  id: number;
-  anime_id: number;
-  review_text: string;
-  author: string;
-  score?: number;
-  helpful_count?: number;
-  created_at: string;
+interface AnimeRow {
+  anime_id: number
+  mal_id?: number | null
+  title: string
+  english_title?: string | null
+  japanese_title?: string | null
+  synonyms?: string | null
+  image_url?: string | null
+  popularity?: number | string | null
+  rank?: number | string | null
+  score?: number | string | null
+  description?: string | null
+  themes?: string[] | null
+  rating?: string | null
+  status?: string | null
+  premiered?: string | null
+  studios?: string[] | null
+  genres?: string[] | null
+  demographic?: string | null
+  description_embedding?: number[] | string | null
+  genres_embedding?: number[] | string | null
+  demographic_embedding?: number[] | string | null
+  rating_embedding?: number[] | string | null
+  themes_embedding?: number[] | string | null
 }
 
+interface RecommendationRow {
+  anime_id: number
+  title?: string | null
+  english_title?: string | null
+  image_url?: string | null
+  score?: number | string | null
+  popularity?: number | string | null
+  genres?: string[] | null
+  similarity: number | string
+}
+
+interface ReviewRow {
+  id: number
+  anime_id: number
+  review_text: string
+  author: string
+  score?: number | string | null
+  helpful_count?: number | string | null
+  created_at: string | Date
+  title: string
+}
+
+const isUnknownArray = (value: unknown): value is unknown[] => Array.isArray(value)
+
 // Helper function to parse pgvector to array
-function parseVector(vector: any): number[] | undefined {
+function parseVector(vector: unknown): number[] | undefined {
   if (!vector) return undefined;
   
   // If it's already an array, return it
-  if (Array.isArray(vector)) return vector;
+  if (isUnknownArray(vector)) {
+    const numbers = vector.map((value) => Number(value))
+    return numbers.every((value) => Number.isFinite(value)) ? numbers : undefined
+  }
   
   // If it's a string like "[1.0,2.0,...]", parse it
   if (typeof vector === 'string') {
     try {
       const parsed = JSON.parse(vector);
-      return Array.isArray(parsed) ? parsed : undefined;
+      if (!Array.isArray(parsed)) return undefined
+      const numbers = parsed.map((value) => Number(value))
+      return numbers.every((value) => Number.isFinite(value)) ? numbers : undefined
     } catch {
       // Try parsing without JSON if it's a pgvector format
       const match = vector.match(/^\[(.*)\]$/);
       if (match) {
-        return match[1].split(',').map(v => parseFloat(v.trim()));
+        const numbers = match[1].split(',').map((value) => Number(value.trim()))
+        return numbers.every((value) => Number.isFinite(value)) ? numbers : undefined
       }
       return undefined;
     }
@@ -75,7 +120,16 @@ function parseVector(vector: any): number[] | undefined {
 }
 
 // --- DATA FORMATTING HELPER ---
-function formatAnime(anime: any): Anime {
+const normalizeStringArray = (value: unknown): string[] =>
+  isUnknownArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+
+const normalizeNumber = (value: number | string | null | undefined): number | undefined => {
+  if (value === null || value === undefined) return undefined
+  const numberValue = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(numberValue) ? numberValue : undefined
+}
+
+function formatAnime(anime: AnimeRow): Anime {
   return {
     anime_id: anime.anime_id,
     mal_id: anime.mal_id,
@@ -85,16 +139,16 @@ function formatAnime(anime: any): Anime {
     synonyms: anime.synonyms,
     description: anime.description,
     image_url: anime.image_url,
-    score: anime.score ? parseFloat(anime.score) : undefined,
-    popularity: anime.popularity,
-    rank: anime.rank,
+    score: normalizeNumber(anime.score),
+    popularity: normalizeNumber(anime.popularity),
+    rank: normalizeNumber(anime.rank),
     rating: anime.rating,
     status: anime.status,
     premiered: anime.premiered,
     demographic: anime.demographic,
-    genres: anime.genres || [],
-    studios: anime.studios || [],
-    themes: anime.themes || [],
+    genres: normalizeStringArray(anime.genres),
+    studios: normalizeStringArray(anime.studios),
+    themes: normalizeStringArray(anime.themes),
     // Include embeddings if present (with backward compatibility)
     description_embedding: parseVector(anime.description_embedding),
     genres_embedding: parseVector(anime.genres_embedding),
@@ -135,7 +189,7 @@ export const getAnime = cache(async (params: GetAnimeParams = {}) => {
 
     // Build WHERE clause for genre filtering
     let whereClause = 'WHERE a.popularity IS NOT NULL AND a.rank IS NOT NULL AND a.score IS NOT NULL';
-    const queryParams: any[] = [];
+    const queryParams: Array<string | number> = [];
     let paramIndex = 1;
 
     if (filter.genres && filter.genres.length > 0) {
@@ -234,11 +288,11 @@ export const getAnime = cache(async (params: GetAnimeParams = {}) => {
   `;
 
   const [animeList, countResult] = await Promise.all([
-    sql(query, queryParams),
-    sql(countQuery, queryParams.slice(0, -2)) // Remove limit and offset for count
+    sql<AnimeRow>(query, queryParams),
+    sql<{ count: string | number }>(countQuery, queryParams.slice(0, -2)) // Remove limit and offset for count
   ]);
 
-  const totalAnime = parseInt(countResult[0]?.count || '0');
+  const totalAnime = Number(countResult[0]?.count ?? 0);
   const totalPages = Math.ceil(totalAnime / limit);
 
   const formattedAnime = animeList.map(formatAnime);
@@ -306,7 +360,7 @@ export const searchAnime = cache(async (query: string) => {
   `;
 
   const searchPattern = `%${query}%`;
-  const animeList = await sql(searchQuery, [searchPattern, query]);
+  const animeList = await sql<AnimeRow>(searchQuery, [searchPattern, query]);
 
   return animeList.map(formatAnime);
   } catch (error) {
@@ -404,19 +458,19 @@ export const getRecommendations = cache(async (animeIds: number[], limit: number
     ORDER BY similarity_score DESC;
   `;
 
-  const recommendations = await sql(recommendationQuery, [animeIds, limit]);
+  const recommendations = await sql<RecommendationRow>(recommendationQuery, [animeIds, limit]);
 
   return [{
     anime_id: animeIds[0],
     title: '', // We'll get this from a separate query if needed
-    similar_anime: recommendations.map((rec: any) => ({
+    similar_anime: recommendations.map((rec) => ({
       anime_id: rec.anime_id,
       title: rec.title || rec.english_title,
       image_url: rec.image_url,
-      score: rec.score,
-      popularity: rec.popularity,
-      genres: rec.genres,
-      similarity: rec.similarity
+      score: normalizeNumber(rec.score),
+      popularity: normalizeNumber(rec.popularity),
+      genres: normalizeStringArray(rec.genres),
+      similarity: normalizeNumber(rec.similarity) ?? 0
     }))
   }];
   } catch (error) {
@@ -444,7 +498,7 @@ export const getReviews = cache(async (animeId: number) => {
     ORDER BY r.helpful_count DESC, r.created_at DESC
   `;
 
-  const reviews = await sql(reviewQuery, [animeId]);
+  const reviews = await sql<ReviewRow>(reviewQuery, [animeId]);
 
   if (reviews.length === 0) {
     return null;
@@ -453,12 +507,12 @@ export const getReviews = cache(async (animeId: number) => {
   return {
     anime_id: animeId,
     title: reviews[0].title,
-    reviews: reviews.map((r: any) => ({
+    reviews: reviews.map((r) => ({
       id: r.id,
       review_text: r.review_text,
       author: r.author,
-      score: r.score,
-      helpful_count: r.helpful_count,
+      score: normalizeNumber(r.score),
+      helpful_count: normalizeNumber(r.helpful_count),
       created_at: r.created_at
     }))
   };

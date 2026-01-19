@@ -1,6 +1,6 @@
 'use client'
 
-import { Component, ReactNode } from 'react'
+import { ReactNode } from 'react'
 import { ErrorBoundary as ErrorBoundaryBase } from 'react-error-boundary'
 import logger from '@/lib/logger'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'

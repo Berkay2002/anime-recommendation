@@ -8,9 +8,9 @@ export { sql as vercelSql } from '@vercel/postgres';
 
 // Backward-compatible function-based query for existing code
 // Usage: sql(queryString, params)
-export async function sql(queryString: string, params: any[] = []) {
+export async function sql<T = unknown>(queryString: string, params: unknown[] = []): Promise<T[]> {
   try {
-    const result = await vercelSql.query(queryString, params);
+    const result = await vercelSql.query<T>(queryString, params);
     return result.rows;
   } catch (error) {
     logger.error({ error, query: queryString, params }, 'PostgreSQL query error');
