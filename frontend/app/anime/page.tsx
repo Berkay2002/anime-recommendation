@@ -7,7 +7,9 @@ import AnimeBrowseFilters from "@/components/AnimeBrowseFilters"
 import AnimeBrowseGrid from "@/components/AnimeBrowseGrid"
 import AnimeBrowsePagination from "@/components/AnimeBrowsePagination"
 import AnimeBrowseActiveFilters from "@/components/AnimeBrowseActiveFilters"
+import { LoadingSpinner } from "@/components/loading"
 import { useDebounce } from "@/hooks/useDebounce"
+import { useLoadingState } from "@/hooks/useLoadingState"
 import { useLocalStorage } from "@/hooks/useLocalStorage"
 import { clientLogger } from "@/lib/client-logger"
 
@@ -34,7 +36,7 @@ interface ApiResponse {
 
 const AnimePage: React.FC = () => {
   const [animeList, setAnimeList] = useState<Anime[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
+  const { isLoading: loading, setIsLoading } = useLoadingState(150)
   const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedGenres, setSelectedGenres] = useLocalStorage<GenreOption[]>(
@@ -57,7 +59,7 @@ const AnimePage: React.FC = () => {
       sortByValue: SortOption,
       genres: GenreOption[]
     ) => {
-      setLoading(true)
+      setIsLoading(true)
       let apiUrl = `/api/anime?limit=50&page=${page}&sortBy=${sortByValue}`
       if (genres.length > 0) {
         apiUrl += `&genres=${genres.join(",")}`
@@ -74,7 +76,7 @@ const AnimePage: React.FC = () => {
           setAnimeList(data.anime)
           setTotalPages(data.totalPages)
           setCurrentPage(data.currentPage)
-          setLoading(false)
+          setIsLoading(false)
           setIsInitialLoad((prev) => (prev ? false : prev))
         })
         .catch((fetchError: Error) => {
@@ -82,7 +84,7 @@ const AnimePage: React.FC = () => {
           setError(
             `Failed to load anime list. Please try again later. (${fetchError.message})`
           )
-          setLoading(false)
+          setIsLoading(false)
         })
     }
     fetchAnime(currentPage, debouncedSortBy, debouncedSelectedGenres)
