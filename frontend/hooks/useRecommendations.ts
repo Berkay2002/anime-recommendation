@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { clientLogger } from "@/lib/client-logger"
+import { useLoadingState } from "@/hooks/useLoadingState"
 
 interface Anime {
   anime_id: number
@@ -28,7 +29,7 @@ export function useRecommendations({
 }: UseRecommendationsProps) {
   const [recommendedAnime, setRecommendedAnime] = useState<Anime[]>([])
   const [allAnime, setAllAnime] = useState<Anime[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const { isLoading, setIsLoading } = useLoadingState()
   const [error, setError] = useState<string | null>(null)
   const [worker, setWorker] = useState<Worker | null>(null)
 
