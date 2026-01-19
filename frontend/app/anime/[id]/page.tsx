@@ -16,9 +16,6 @@ import { LoadingSpinner } from "@/components/loading"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent } from "@/components/ui/card"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
-import { useLoadingState } from "@/hooks/useLoadingState"
-import { clientLogger } from "@/lib/client-logger"
-import { animeKeys } from "@/lib/queries/anime"
 
 interface Anime {
   anime_id: number
@@ -45,38 +42,6 @@ interface Anime {
   bert_demographic?: number[]
   bert_rating?: number[]
   bert_themes?: number[]
-}
-
-interface Recommendation {
-  anime_id: number
-  title: string
-  image_url?: string
-  score?: number
-  popularity?: number
-  genres?: string[]
-  similarity: number
-}
-
-interface RecommendationResponseItem {
-  anime_id: number
-  title: string
-  image_url?: string
-  score?: number
-  popularity?: number
-  genres?: string[]
-  similarity: number
-}
-
-interface RecommendationResponse {
-  similar_anime?: RecommendationResponseItem[]
-}
-
-interface ReviewResponseItem {
-  review_text: string
-}
-
-interface ReviewResponse {
-  reviews?: ReviewResponseItem[]
 }
 
 interface JikanDetails {
@@ -211,7 +176,7 @@ export default function AnimeDetailPage() {
     }
   }, [anime, detailsErrorState])
 
-  if (loading) {
+  if (isLoadingFromQuery) {
     return <AnimeDetailSkeleton />
   }
 
@@ -238,10 +203,14 @@ export default function AnimeDetailPage() {
 
   return (
     <div className="container mx-auto flex flex-col gap-8 px-4 py-6 sm:gap-10 sm:px-6 lg:gap-12 lg:py-10">
-      {mainError.error.hasError && (
+      {errorsFromQuery.length > 0 && (
         <ErrorMessage
-          error={mainError.error}
-          onRetry={() => mainError.retry(() => window.location.reload())}
+          error={{
+            message: errorsFromQuery[0]?.message || 'Failed to load data',
+            errorType: 'unknown',
+            isRetryable: true
+          }}
+          onRetry={() => window.location.reload()}
         />
       )}
 
@@ -258,21 +227,16 @@ export default function AnimeDetailPage() {
         id="recommendations"
         role="status"
         aria-live="polite"
-        aria-busy={recommendationsLoading}
+        aria-busy={isLoadingFromQuery}
       >
         <SectionHeader
           title="Recommendations"
           description="Similar shows based on description, genres, demographics, and themes."
         />
-        {recommendationsLoading ? (
+        {isLoadingFromQuery ? (
           <div className="flex items-center justify-center py-8">
             <LoadingSpinner size="md" message="Loading recommendations..." />
           </div>
-        ) : recommendationsError.error.hasError ? (
-          <ErrorMessage
-            error={recommendationsError.error}
-            onRetry={() => recommendationsError.retry()}
-          />
         ) : recommendedAnime.length ? (
           <RecommendationList recommendedAnime={recommendedAnime} showIcon={false} />
         ) : (
@@ -291,7 +255,7 @@ export default function AnimeDetailPage() {
         detailsError={detailsError}
       />
 
-      <AnimeDetailReviews reviews={reviews} isLoading={reviewsLoading} />
+      <AnimeDetailReviews reviews={reviewsFromQuery.map(r => r.review_text)} isLoading={isLoadingFromQuery} />
     </div>
   )
 }
