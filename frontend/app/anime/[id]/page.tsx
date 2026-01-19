@@ -4,16 +4,14 @@ import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import RecommendationList from "@/components/RecommendationList"
-import ReviewCard from "@/components/ReviewCard"
 import AnimeDetailHeader from "@/components/AnimeDetailHeader"
 import AnimeDetailStats from "@/components/AnimeDetailStats"
 import AnimeDetailSkeleton from "@/components/AnimeDetailSkeleton"
 import AnimeDetailExtraDetails from "@/components/AnimeDetailExtraDetails"
+import AnimeDetailReviews from "@/components/AnimeDetailReviews"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { clientLogger } from "@/lib/client-logger"
 
@@ -103,9 +101,6 @@ export default function AnimeDetailPage() {
   const [detailsLoading, setDetailsLoading] = useState<boolean>(false)
   const [detailsError, setDetailsError] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
-  const [currentPage, setCurrentPage] = useState<number>(1)
-
-  const REVIEWS_PER_PAGE = 3
 
   const recommendedAnime = useMemo(() => {
     // API returns complete anime data, use it directly
@@ -124,14 +119,6 @@ export default function AnimeDetailPage() {
       bert_themes: [],
     } as Anime))
   }, [recommendations])
-
-  const paginatedReviews = useMemo(() => {
-    const startIndex = (currentPage - 1) * REVIEWS_PER_PAGE
-    const endIndex = startIndex + REVIEWS_PER_PAGE
-    return reviews.slice(startIndex, endIndex)
-  }, [reviews, currentPage, REVIEWS_PER_PAGE])
-
-  const totalPages = Math.ceil(reviews.length / REVIEWS_PER_PAGE)
 
   useEffect(() => {
     async function fetchAnimeDetails() {
@@ -230,7 +217,6 @@ export default function AnimeDetailPage() {
         // Handle the response which has {anime_id, title, reviews: [...]} structure
         const reviewsList = data.reviews ?? []
         setReviews(reviewsList.map((review) => review.review_text))
-        setCurrentPage(1) // Reset to first page when new reviews load
       } catch (reviewsError: unknown) {
         if (reviewsError instanceof Error) {
           if (reviewsError.name !== "AbortError") {
@@ -354,72 +340,7 @@ export default function AnimeDetailPage() {
         detailsError={detailsError}
       />
 
-      <section className="space-y-6" id="reviews">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-            Reviews
-            {reviews.length > 0 && (
-              <span className="ml-3 text-base font-normal text-muted-foreground">
-                ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
-              </span>
-            )}
-          </h2>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            What fans are saying about this anime.
-          </p>
-        </div>
-        {reviews.length ? (
-          <>
-            <div className="grid gap-5">
-              {paginatedReviews.map((review, index) => (
-                <ReviewCard
-                  key={`review-${(currentPage - 1) * REVIEWS_PER_PAGE + index}`}
-                  review={review}
-                />
-              ))}
-            </div>
-
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between gap-4 pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="gap-1.5"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className="gap-1.5"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </>
-        ) : (
-          <Alert>
-            <AlertTitle>No reviews available</AlertTitle>
-            <AlertDescription>
-              Be the first to share your thoughts on this title.
-            </AlertDescription>
-          </Alert>
-        )}
-      </section>
+      <AnimeDetailReviews reviews={reviews} />
     </div>
   )
 }
