@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useCallback, useState } from "react"
 
 interface UseProgressState {
   progress: number | undefined
@@ -19,31 +19,31 @@ export function useProgress(): UseProgressState & UseProgressActions {
   const [message, setMessage] = useState<string>("")
   const [isGenerating, setIsGenerating] = useState<boolean>(false)
 
-  const startProgress = (initialMessage: string = "Starting...") => {
+  const startProgress = useCallback((initialMessage: string = "Starting...") => {
     setIsGenerating(true)
     setProgress(undefined)
     setMessage(initialMessage)
-  }
+  }, [])
 
-  const updateProgress = (value: number) => {
+  const updateProgress = useCallback((value: number) => {
     setProgress(Math.min(100, Math.max(0, value)))
-  }
+  }, [])
 
-  const setStep = (stepMessage: string) => {
+  const setStep = useCallback((stepMessage: string) => {
     setMessage(stepMessage)
-  }
+  }, [])
 
-  const finishProgress = () => {
+  const finishProgress = useCallback(() => {
     setIsGenerating(false)
     setProgress(undefined)
     setMessage("")
-  }
+  }, [])
 
-  const cancel = () => {
+  const cancel = useCallback(() => {
     setIsGenerating(false)
     setProgress(undefined)
     setMessage("")
-  }
+  }, [])
 
   return {
     progress,

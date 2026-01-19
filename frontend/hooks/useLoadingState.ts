@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react"
 
 /**
  * Custom hook for managing loading state with delay to prevent flicker
@@ -15,32 +15,43 @@ import { useCallback, useState, useEffect } from 'react';
  * setIsLoading(false); // If called before 150ms, loading never appears
  */
 export function useLoadingState(initialDelay = 150) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [showLoading, setShowLoading] = useState(false);
+  const [showLoading, setShowLoading] = useState(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isLoadingRef = useRef(false)
 
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    if (isLoading) {
-      // Delay showing loading state to prevent flicker
-      timeoutId = setTimeout(() => {
-        setShowLoading(true);
-      }, initialDelay);
-    } else {
-      // Hide loading immediately when state changes to false
-      setShowLoading(false);
+  const clearPending = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
     }
-
-    // Cleanup timeout on unmount or state change
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [isLoading, initialDelay]);
+  }, [])
 
   // Wrap setIsLoading in useCallback to ensure stability for React Hook dependencies
-  const stableSetIsLoading = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
-    setIsLoading(value);
-  }, []);
+  const stableSetIsLoading = useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      const next =
+        typeof value === "function" ? value(isLoadingRef.current) : value
+      isLoadingRef.current = next
 
-  return { isLoading: showLoading, setIsLoading: stableSetIsLoading };
+      if (next) {
+        clearPending()
+        timeoutRef.current = setTimeout(() => {
+          setShowLoading(true)
+          timeoutRef.current = null
+        }, initialDelay)
+      } else {
+        clearPending()
+        setShowLoading(false)
+      }
+    },
+    [clearPending, initialDelay]
+  )
+
+  useEffect(() => {
+    return () => {
+      clearPending()
+    }
+  }, [clearPending])
+
+  return { isLoading: showLoading, setIsLoading: stableSetIsLoading }
 }

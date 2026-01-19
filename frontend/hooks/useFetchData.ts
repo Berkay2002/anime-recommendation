@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { useLoadingState } from './useLoadingState';
+import { useEffect, useRef, useState } from "react"
+import { useLoadingState } from "./useLoadingState"
 
-const cache = new Map();
+const cache = new Map<string, unknown>()
 
 export const useFetchData = <T,>(
   url: string
@@ -13,31 +13,33 @@ export const useFetchData = <T,>(
 
   useEffect(() => {
     if (!url) {
-      setIsLoading(false);
-      return;
+      setIsLoading(false)
+      return
     }
 
     if (cacheRef.current.has(url)) {
-      setData(cacheRef.current.get(url));
-      setIsLoading(false);
-      return;
+      setData(cacheRef.current.get(url) as T)
+      setIsLoading(false)
+      return
     }
 
     const fetchData = async () => {
       try {
-        const response = await fetch(url);
-        const result = await response.json();
-        cacheRef.current.set(url, result);
-        setData(result);
+        const response = await fetch(url)
+        const result = await response.json()
+        cacheRef.current.set(url, result)
+        setData(result)
       } catch (err) {
-        setError(err);
+        setError(
+          err instanceof Error ? err : new Error("Failed to fetch data")
+        )
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
+    }
 
-    fetchData();
-  }, [url]);
+    fetchData()
+  }, [url, setIsLoading])
 
-  return [data, loading, error];
-};
+  return [data, loading, error]
+}

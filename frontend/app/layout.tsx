@@ -20,10 +20,12 @@ export default function RootLayout({
           <ClerkThemeProvider>
             <ErrorBoundary>
               <ConsoleFilter />
-              <Suspense fallback={null}>
-                <Navbar />
-              </Suspense>
-              <Providers>{children}</Providers>
+              <Providers>
+                <Suspense fallback={null}>
+                  <Navbar />
+                </Suspense>
+                {children}
+              </Providers>
             </ErrorBoundary>
           </ClerkThemeProvider>
         </ThemeProvider>

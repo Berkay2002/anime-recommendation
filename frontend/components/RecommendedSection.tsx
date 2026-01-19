@@ -39,21 +39,35 @@ function RecommendedSection({
       selectedAnimeIds,
     })
 
-  const progress = useProgress()
+  const {
+    progress: progressValue,
+    message,
+    isGenerating,
+    startProgress,
+    cancel,
+    finishProgress,
+  } = useProgress()
 
   useEffect(() => {
     if (isLoading) {
-      progress.startProgress("Generating recommendations...")
+      startProgress("Generating recommendations...")
     } else if (error) {
-      progress.cancel()
+      cancel()
     } else if (recommendedAnime.length > 0) {
-      progress.finishProgress()
+      finishProgress()
     }
-  }, [isLoading, error, recommendedAnime.length])
+  }, [
+    isLoading,
+    error,
+    recommendedAnime.length,
+    startProgress,
+    cancel,
+    finishProgress,
+  ])
 
   const handleCancel = () => {
     cancelRecommendations()
-    progress.cancel()
+    cancel()
   }
 
   return (
@@ -63,11 +77,11 @@ function RecommendedSection({
         description="Hand-picked matches powered by your latest selections."
       />
 
-      {progress.isGenerating ? (
+      {isGenerating ? (
         <div className="px-4 pb-6 sm:px-6">
           <ProgressBar
-            progress={progress.progress}
-            message={progress.message}
+            progress={progressValue}
+            message={message}
             onCancel={handleCancel}
           />
         </div>
