@@ -1,6 +1,9 @@
 import { cache } from 'react';
 import { sql } from '../lib/postgres';
 import { revalidateTag } from 'next/cache';
+import logger from '@/lib/logger';
+
+const animeLogger = logger.child({ service: 'AnimeService' });
 
 // Comprehensive Anime Interface
 interface Anime {
@@ -119,15 +122,16 @@ interface GetAnimeParams {
 }
 
 export const getAnime = cache(async (params: GetAnimeParams = {}) => {
-  const {
-    sortBy = 'popularity',
-    limit = 30,
-    page = 1,
-    filter = {},
-    withEmbeddings = false,
-  } = params;
+  try {
+    const {
+      sortBy = 'popularity',
+      limit = 30,
+      page = 1,
+      filter = {},
+      withEmbeddings = false,
+    } = params;
 
-  const offset = (page - 1) * limit;
+    const offset = (page - 1) * limit;
 
   // Build WHERE clause for genre filtering
   let whereClause = 'WHERE a.popularity IS NOT NULL AND a.rank IS NOT NULL AND a.score IS NOT NULL';
@@ -244,13 +248,18 @@ export const getAnime = cache(async (params: GetAnimeParams = {}) => {
     totalPages,
     currentPage: page,
   };
+  } catch (error) {
+    animeLogger.error({ error, params }, 'Failed to fetch anime list');
+    throw new Error('Failed to fetch anime list');
+  }
 });
 
 // --- SEARCH ANIME LOGIC ---
 export const searchAnime = cache(async (query: string) => {
-  if (!query || query.trim().length === 0) {
-    return [];
-  }
+  try {
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
 
   // Use PostgreSQL full-text search with ranking
   const searchQuery = `
@@ -300,13 +309,18 @@ export const searchAnime = cache(async (query: string) => {
   const animeList = await sql(searchQuery, [searchPattern, query]);
 
   return animeList.map(formatAnime);
+  } catch (error) {
+    animeLogger.error({ error, query }, 'Failed to search anime');
+    throw new Error('Failed to search anime');
+  }
 });
 
 // --- RECOMMENDATIONS LOGIC (Live with pgvector) ---
 export const getRecommendations = cache(async (animeIds: number[], limit: number = 10) => {
-  if (!animeIds || animeIds.length === 0) {
-    return [];
-  }
+  try {
+    if (!animeIds || animeIds.length === 0) {
+      return [];
+    }
 
   // Weighted similarity calculation:
   // - Description: 25%
@@ -405,11 +419,16 @@ export const getRecommendations = cache(async (animeIds: number[], limit: number
       similarity: rec.similarity
     }))
   }];
+  } catch (error) {
+    animeLogger.error({ error, animeIds, limit }, 'Failed to get recommendations');
+    throw new Error('Failed to get recommendations');
+  }
 });
 
 // --- REVIEWS LOGIC ---
 export const getReviews = cache(async (animeId: number) => {
-  const reviewQuery = `
+  try {
+    const reviewQuery = `
     SELECT 
       r.id,
       r.anime_id,
@@ -443,4 +462,8 @@ export const getReviews = cache(async (animeId: number) => {
       created_at: r.created_at
     }))
   };
+  } catch (error) {
+    animeLogger.error({ error, animeId }, 'Failed to get reviews');
+    throw new Error('Failed to get reviews');
+  }
 });
