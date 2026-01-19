@@ -1,32 +1,110 @@
-import { NextResponse } from 'next/server';
-import { getReviews } from '../../../../../services/animeService';
+import { NextResponse } from "next/server"
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs"
+
+const JIKAN_BASE_URL = "https://api.jikan.moe/v4"
+
+interface JikanReviewUser {
+  username?: string
+}
+
+interface JikanReviewReactions {
+  overall?: number
+}
+
+interface JikanReviewItem {
+  mal_id?: number
+  review?: string
+  user?: JikanReviewUser
+  score?: number
+  reactions?: JikanReviewReactions
+  date?: string
+}
+
+interface JikanReviewResponse {
+  data?: JikanReviewItem[]
+}
+
+interface NormalizedReview {
+  id: number
+  review_text: string
+  author: string
+  score: number | null
+  helpful_count: number
+  created_at: string | null
+}
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
-    const { id } = await params;
-    const numericId = Number(id);
+    const { id } = await params
+    const numericId = Number(id)
 
-    if (isNaN(numericId)) {
-      return NextResponse.json({ message: 'Invalid anime ID format' }, { status: 400 });
+    if (Number.isNaN(numericId)) {
+      return NextResponse.json(
+        { message: "Invalid anime ID format" },
+        { status: 400 }
+      )
     }
 
-    const review = await getReviews(numericId);
+    const url = new URL(`${JIKAN_BASE_URL}/anime/${numericId}/reviews`)
+    url.searchParams.set("spoilers", "false")
+    url.searchParams.set("preliminary", "false")
 
-    if (!review) {
-      return NextResponse.json({ message: `Reviews not found for anime_id: ${numericId}` }, { status: 404 });
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json",
+      },
+      next: { revalidate: 3600 },
+    })
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { message: `Failed to fetch reviews for anime_id: ${numericId}` },
+        { status: response.status }
+      )
     }
 
-    return NextResponse.json(review);
-  } catch (error) {
-    console.error('Failed to fetch reviews for anime_id:', error);
+    const payload = (await response.json()) as JikanReviewResponse
+    const reviewItems = payload.data ?? []
+
+    if (reviewItems.length === 0) {
+      return NextResponse.json(
+        { message: `Reviews not found for anime_id: ${numericId}` },
+        { status: 404 }
+      )
+    }
+
+    const reviews = reviewItems
+      .map((review, index): NormalizedReview => ({
+        id: review.mal_id ?? index,
+        review_text: review.review || "",
+        author: review.user?.username || "Unknown",
+        score: review.score ?? null,
+        helpful_count: review.reactions?.overall ?? 0,
+        created_at: review.date || null,
+      }))
+      .filter((review) => review.review_text)
+
     return NextResponse.json(
-      { message: 'Failed to fetch reviews' },
+      {
+        anime_id: numericId,
+        title: "",
+        reviews,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=600, stale-while-revalidate=3600",
+        },
+      }
+    )
+  } catch (error) {
+    console.error("Failed to fetch reviews for anime_id:", error)
+    return NextResponse.json(
+      { message: "Failed to fetch reviews" },
       { status: 500 }
-    );
+    )
   }
 }

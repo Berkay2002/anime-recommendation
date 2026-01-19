@@ -13,9 +13,19 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface Anime {
   anime_id: number
+  mal_id?: number
   title: string
   image_url?: string
   description?: string
@@ -50,8 +60,53 @@ interface Recommendation {
   similarity: number
 }
 
+interface RecommendationResponseItem {
+  anime_id: number
+  title: string
+  image_url?: string
+  score?: number
+  popularity?: number
+  genres?: string[]
+  similarity: number
+}
+
+interface RecommendationResponse {
+  similar_anime?: RecommendationResponseItem[]
+}
+
+interface ReviewResponseItem {
+  review_text: string
+}
+
+interface ReviewResponse {
+  reviews?: ReviewResponseItem[]
+}
+
+interface JikanCharacter {
+  name: string
+  role: string
+  voiceActors: string[]
+}
+
+interface JikanStaff {
+  name: string
+  positions: string[]
+}
+
+interface JikanStatistic {
+  label: string
+  value: number
+}
+
+interface JikanDetails {
+  characters: JikanCharacter[]
+  staff: JikanStaff[]
+  statistics: JikanStatistic[]
+}
+
 const skeletonPlaceholders = Array.from({ length: 3 })
 const statSkeletonPlaceholders = Array.from({ length: 5 })
+const detailSkeletonPlaceholders = Array.from({ length: 6 })
 
 export default function AnimeDetailPage() {
   const { id } = useParams()
@@ -60,6 +115,9 @@ export default function AnimeDetailPage() {
   const [anime, setAnime] = useState<Anime | null>(null)
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [reviews, setReviews] = useState<string[]>([])
+  const [details, setDetails] = useState<JikanDetails | null>(null)
+  const [detailsLoading, setDetailsLoading] = useState<boolean>(false)
+  const [detailsError, setDetailsError] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [currentPage, setCurrentPage] = useState<number>(1)
 
@@ -90,6 +148,16 @@ export default function AnimeDetailPage() {
   }, [reviews, currentPage, REVIEWS_PER_PAGE])
 
   const totalPages = Math.ceil(reviews.length / REVIEWS_PER_PAGE)
+  const detailsSkeleton = (
+    <div className="space-y-3">
+      {detailSkeletonPlaceholders.map((_, index) => (
+        <Skeleton
+          key={`detail-skeleton-${index}`}
+          className="h-8 w-full"
+        />
+      ))}
+    </div>
+  )
 
   useEffect(() => {
     async function fetchAnimeDetails() {
@@ -140,9 +208,9 @@ export default function AnimeDetailPage() {
           throw new Error(`Failed to fetch recommendations: ${response.statusText}`)
         }
 
-        const data = await response.json()
+        const data = (await response.json()) as RecommendationResponse
         // Transform server response to match existing Recommendation interface
-        const transformedRecs = data.similar_anime?.map((rec: any) => ({
+        const transformedRecs = (data.similar_anime ?? []).map((rec) => ({
           anime_id: rec.anime_id,
           title: rec.title,
           image_url: rec.image_url,
@@ -166,12 +234,16 @@ export default function AnimeDetailPage() {
   }, [anime])
 
   useEffect(() => {
+    if (!anime) return
+
     const controller = new AbortController()
     const { signal } = controller
 
     async function fetchReviews() {
       try {
-        const response = await fetch(`/api/anime/reviews/${id}`, { signal })
+        const reviewId = anime.mal_id ?? anime.anime_id
+        setReviews([])
+        const response = await fetch(`/api/anime/reviews/${reviewId}`, { signal })
         if (!response.ok) {
           // 404 is expected when there are no reviews, silently handle it
           if (response.status === 404) {
@@ -180,10 +252,10 @@ export default function AnimeDetailPage() {
           }
           throw new Error(`Failed to fetch reviews: ${response.statusText}`)
         }
-        const data = await response.json()
+        const data = (await response.json()) as ReviewResponse
         // Handle the response which has {anime_id, title, reviews: [...]} structure
-        const reviewsList = Array.isArray(data.reviews) ? data.reviews : []
-        setReviews(reviewsList.map((r: any) => r.review_text))
+        const reviewsList = data.reviews ?? []
+        setReviews(reviewsList.map((review) => review.review_text))
         setCurrentPage(1) // Reset to first page when new reviews load
       } catch (reviewsError: unknown) {
         if (reviewsError instanceof Error) {
@@ -201,14 +273,56 @@ export default function AnimeDetailPage() {
     return () => {
       controller.abort()
     }
-  }, [id])
+  }, [anime])
+
+  useEffect(() => {
+    if (!anime) return
+
+    const controller = new AbortController()
+    const { signal } = controller
+
+    async function fetchDetails() {
+      try {
+        setDetailsLoading(true)
+        setDetailsError(null)
+        setDetails(null)
+        const detailId = anime.mal_id ?? anime.anime_id
+        const response = await fetch(`/api/anime/jikan/${detailId}`, { signal })
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch details: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        setDetails(data)
+      } catch (detailsError: unknown) {
+        if (detailsError instanceof Error) {
+          if (detailsError.name !== "AbortError") {
+            console.error("Error fetching details:", detailsError)
+            setDetailsError("Unable to load extra details right now.")
+          }
+        } else {
+          console.error("An unknown error occurred:", detailsError)
+          setDetailsError("Unable to load extra details right now.")
+        }
+      } finally {
+        setDetailsLoading(false)
+      }
+    }
+
+    fetchDetails()
+
+    return () => {
+      controller.abort()
+    }
+  }, [anime])
 
   if (loading) {
     return (
       <div className="container mx-auto flex flex-col gap-6 px-4 py-6 sm:px-6 lg:gap-8 lg:py-8">
         <Card className="overflow-hidden border border-border/60 bg-card/80 shadow-sm">
           <CardContent className="flex flex-col gap-6 px-4 py-6 md:flex-row md:items-start md:gap-8">
-            <div className="relative aspect-[2/3] w-full max-w-[450px] shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
+            <div className="relative aspect-2/3 w-full max-w-[450px] shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
               <Skeleton className="h-full w-full" />
             </div>
 
@@ -315,7 +429,7 @@ export default function AnimeDetailPage() {
     <div className="container mx-auto flex flex-col gap-8 px-4 py-6 sm:gap-10 sm:px-6 lg:gap-12 lg:py-10">
       <Card className="overflow-hidden border border-border/60 bg-card/80 shadow-sm">
         <CardContent className="flex flex-col gap-6 px-4 py-6 md:flex-row md:items-start md:gap-8">
-          <div className="relative aspect-[2/3] w-full max-w-[450px] shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
+          <div className="relative aspect-2/3 w-full max-w-[450px] shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
             <Image
               src={anime.image_url || "/placeholder.jpg"}
               alt={anime.title || "Anime artwork"}
@@ -391,6 +505,163 @@ export default function AnimeDetailPage() {
             </AlertDescription>
           </Alert>
         )}
+      </section>
+
+      <section className="space-y-4" id="details">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+            Extra details
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Characters, staff, and community stats pulled from Jikan (MAL).
+          </p>
+        </div>
+        <Card className="border border-border/60 bg-card/80 shadow-sm">
+          <CardContent className="px-4 py-5 sm:px-6">
+            <Tabs defaultValue="characters" className="gap-4">
+              <TabsList className="flex flex-wrap gap-2">
+                <TabsTrigger value="characters">Characters</TabsTrigger>
+                <TabsTrigger value="staff">Staff</TabsTrigger>
+                <TabsTrigger value="stats">Stats</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="characters">
+                {detailsLoading ? (
+                  detailsSkeleton
+                ) : detailsError ? (
+                  <Alert variant="destructive">
+                    <AlertTitle>Details unavailable</AlertTitle>
+                    <AlertDescription>{detailsError}</AlertDescription>
+                  </Alert>
+                ) : details?.characters?.length ? (
+                  <div className="rounded-2xl border border-border/60 bg-background/50">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Character</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>Voice actors</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {details.characters.slice(0, 12).map((character) => (
+                          <TableRow
+                            key={`${character.name}-${character.role}`}
+                          >
+                            <TableCell className="font-medium text-foreground">
+                              {character.name}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {character.role}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {character.voiceActors.length
+                                ? character.voiceActors.join(", ")
+                                : "TBA"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <Alert>
+                    <AlertTitle>No characters found</AlertTitle>
+                    <AlertDescription>
+                      Jikan did not return any character data for this title.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </TabsContent>
+
+              <TabsContent value="staff">
+                {detailsLoading ? (
+                  detailsSkeleton
+                ) : detailsError ? (
+                  <Alert variant="destructive">
+                    <AlertTitle>Details unavailable</AlertTitle>
+                    <AlertDescription>{detailsError}</AlertDescription>
+                  </Alert>
+                ) : details?.staff?.length ? (
+                  <div className="rounded-2xl border border-border/60 bg-background/50">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Staff member</TableHead>
+                          <TableHead>Role</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {details.staff.slice(0, 12).map((member) => (
+                          <TableRow
+                            key={`${member.name}-${member.positions.join("-")}`}
+                          >
+                            <TableCell className="font-medium text-foreground">
+                              {member.name}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {member.positions.length
+                                ? member.positions.join(", ")
+                                : "TBA"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <Alert>
+                    <AlertTitle>No staff details found</AlertTitle>
+                    <AlertDescription>
+                      Jikan did not return staff data for this title.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </TabsContent>
+
+              <TabsContent value="stats">
+                {detailsLoading ? (
+                  detailsSkeleton
+                ) : detailsError ? (
+                  <Alert variant="destructive">
+                    <AlertTitle>Details unavailable</AlertTitle>
+                    <AlertDescription>{detailsError}</AlertDescription>
+                  </Alert>
+                ) : details?.statistics?.length ? (
+                  <div className="rounded-2xl border border-border/60 bg-background/50">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Metric</TableHead>
+                          <TableHead className="text-right">Count</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {details.statistics.map((stat) => (
+                          <TableRow key={stat.label}>
+                            <TableCell className="font-medium text-foreground">
+                              {stat.label}
+                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground">
+                              {stat.value.toLocaleString()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <Alert>
+                    <AlertTitle>No statistics available</AlertTitle>
+                    <AlertDescription>
+                      Jikan did not return stats for this title.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </section>
 
       <section className="space-y-6" id="reviews">
