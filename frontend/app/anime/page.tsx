@@ -7,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import AnimeBrowseCard from "@/components/AnimeBrowseCard"
+import AnimeBrowseHeader from "@/components/AnimeBrowseHeader"
 import { Card } from "@/components/ui/card"
 import {
   Command,
@@ -178,23 +179,9 @@ const AnimePage: React.FC = () => {
 
   return (
     <div className="container mx-auto flex flex-col gap-6 px-4 py-6 sm:px-6 lg:gap-8 lg:py-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        {loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-9 w-48" />
-            <Skeleton className="h-5 w-64" />
-          </div>
-        ) : (
-          <div className="space-y-1">
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-              Explore Anime
-            </h1>
-            <p className="text-muted-foreground">
-              Browse the catalog and filter by genres you love.
-            </p>
-          </div>
-        )}
+      <AnimeBrowseHeader loading={loading} isInitialLoad={isInitialLoad} />
 
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="hidden flex-col gap-2 md:flex md:flex-row">
           {loading && isInitialLoad ? (
             <Skeleton className="h-11 w-48 rounded-xl border border-border/60 bg-background/60" />
