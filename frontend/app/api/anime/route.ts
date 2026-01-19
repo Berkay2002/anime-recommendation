@@ -3,11 +3,9 @@ import { getAnime } from '../../../services/animeService';
 import { getAniListImages } from '../../../services/anilistService';
 import { getCurrentSeasonAnimeWithCache, getUpcomingAnimeWithCache } from '../../../services/animeCacheService';
 import logger from '@/lib/logger';
+import type { AnimeListItem } from '@/types/anime';
 
 export const runtime = 'nodejs';
-
-type GetAnimeResult = Awaited<ReturnType<typeof getAnime>>
-type AnimeListItem = GetAnimeResult['anime'][number]
 
 interface GetAnimeParams {
   sortBy?: string;
