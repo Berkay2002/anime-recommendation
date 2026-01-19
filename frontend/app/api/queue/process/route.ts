@@ -41,10 +41,13 @@ function prepareTextForEmbedding(text: string | null | undefined, maxLength: num
  * Manually trigger queue processing
  */
 export async function POST(request: Request): Promise<NextResponse> {
+  const log = logger.child({ route: '/api/queue/process', method: 'POST' })
+
   try {
     const { limit = 5 } = await request.json().catch(() => ({}));
 
     if (!process.env.GOOGLE_API_KEY) {
+      log.error('Google API key not configured');
       return NextResponse.json(
         { message: 'Google API key not configured' },
         { status: 500 }
@@ -56,20 +59,21 @@ export async function POST(request: Request): Promise<NextResponse> {
       SELECT anime_id, mal_id, priority
       FROM jikan_sync_queue
       WHERE processed_at IS NULL
-      ORDER BY 
+      ORDER BY
         CASE priority WHEN 'high' THEN 1 WHEN 'low' THEN 2 END,
         created_at ASC
       LIMIT ${limit}
     `;
 
     if (queueResult.rows.length === 0) {
-      return NextResponse.json({ 
-        message: 'No anime in queue to process', 
-        processed: 0 
+      log.debug('No anime in queue to process');
+      return NextResponse.json({
+        message: 'No anime in queue to process',
+        processed: 0
       });
     }
 
-    console.log(`Processing ${queueResult.rows.length} anime from queue...`);
+    log.info({ count: queueResult.rows.length }, 'Processing anime from queue');
 
     const processedAnimeIds: number[] = [];
     const errors: Array<{ anime_id: number; error: string }> = [];
@@ -96,7 +100,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         `;
 
         if (animeResult.rows.length === 0) {
-          console.error(`Anime ${anime_id} not found`);
+          log.warn({ anime_id }, 'Anime not found in database');
           continue;
         }
 
@@ -110,7 +114,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         const ratingText = prepareTextForEmbedding(anime.rating);
 
         // Generate embeddings
-        console.log(`Generating embeddings for anime ${anime_id}...`);
+        log.debug({ anime_id }, 'Generating embeddings');
         const [
           descriptionEmbedding,
           genresEmbedding,
@@ -172,9 +176,9 @@ export async function POST(request: Request): Promise<NextResponse> {
         `;
 
         processedAnimeIds.push(anime_id);
-        console.log(`✅ Successfully processed embeddings for anime ${anime_id}`);
+        log.debug({ anime_id }, 'Successfully processed embeddings');
       } catch (error) {
-        console.error(`Error processing anime ${anime_id}:`, error);
+        log.error({ error, anime_id }, 'Error processing anime embeddings');
         errors.push({
           anime_id,
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -190,7 +194,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
-    console.error('Failed to process queue:', error);
+    log.error({ error }, 'Failed to process queue');
     return NextResponse.json(
       {
         message: 'Failed to process queue',
@@ -205,9 +209,11 @@ export async function POST(request: Request): Promise<NextResponse> {
  * GET endpoint to check queue status
  */
 export async function GET(): Promise<NextResponse> {
+  const log = logger.child({ route: '/api/queue/process', method: 'GET' })
+
   try {
     const result = await sql`
-      SELECT 
+      SELECT
         COUNT(*) FILTER (WHERE processed_at IS NULL AND priority = 'high') as high_priority,
         COUNT(*) FILTER (WHERE processed_at IS NULL AND priority = 'low') as low_priority,
         COUNT(*) FILTER (WHERE processed_at IS NOT NULL) as processed,
@@ -223,7 +229,7 @@ export async function GET(): Promise<NextResponse> {
       FROM jikan_sync_queue jsq
       LEFT JOIN anime a ON jsq.anime_id = a.anime_id
       WHERE processed_at IS NULL
-      ORDER BY 
+      ORDER BY
         CASE priority WHEN 'high' THEN 1 WHEN 'low' THEN 2 END,
         created_at ASC
       LIMIT 5
@@ -239,7 +245,7 @@ export async function GET(): Promise<NextResponse> {
       next_to_process: nextItems.rows,
     });
   } catch (error) {
-    console.error('Failed to get queue status:', error);
+    log.error({ error }, 'Failed to get queue status');
     return NextResponse.json(
       { message: 'Failed to get queue status' },
       { status: 500 }

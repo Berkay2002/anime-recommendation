@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
+import logger from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -7,6 +8,8 @@ export const runtime = 'nodejs';
  * Diagnose database schema to identify anime_id auto-increment issues
  */
 export async function GET() {
+  const log = logger.child({ route: '/api/diagnose-schema', method: 'GET' })
+
   const diagnosis: any = {
     timestamp: new Date().toISOString(),
     issues: [],
@@ -16,7 +19,7 @@ export async function GET() {
 
   try {
     // 1. Check anime table columns
-    console.log('Checking anime table columns...');
+    log.debug('Checking anime table columns');
     const columns = await sql`
       SELECT 
         column_name, 
@@ -54,7 +57,7 @@ export async function GET() {
     }
     
     // 2. Check sequences
-    console.log('Checking sequences...');
+    log.debug('Checking sequences');
     const sequences = await sql`
       SELECT 
         sequence_name,
@@ -68,9 +71,9 @@ export async function GET() {
     `;
     
     diagnosis.details.sequences = sequences.rows;
-    
+
     // 3. Check constraints
-    console.log('Checking constraints...');
+    log.debug('Checking constraints');
     const constraints = await sql`
       SELECT 
         tc.constraint_name, 
@@ -85,9 +88,9 @@ export async function GET() {
     `;
     
     diagnosis.details.constraints = constraints.rows;
-    
+
     // 4. Check jikan_sync_queue table
-    console.log('Checking jikan_sync_queue table...');
+    log.debug('Checking jikan_sync_queue table');
     const tableExists = await sql`
       SELECT 
         table_name,
@@ -114,9 +117,9 @@ export async function GET() {
       `;
       diagnosis.details.jikan_sync_queue_columns = queueColumns.rows;
     }
-    
+
     // 5. Check current max anime_id
-    console.log('Checking current max anime_id...');
+    log.debug('Checking current max anime_id');
     try {
       const maxId = await sql`
         SELECT MAX(anime_id) as max_id, COUNT(*) as total_count
@@ -131,13 +134,15 @@ export async function GET() {
     // Summary
     diagnosis.status = diagnosis.issues.length === 0 ? 'OK' : 'ISSUES_FOUND';
     diagnosis.critical = diagnosis.issues.some(i => i.includes('anime_id'));
-    
+
+    log.info({ status: diagnosis.status, issuesCount: diagnosis.issues.length }, 'Schema diagnosis completed');
+
     return NextResponse.json(diagnosis, {
       status: diagnosis.issues.length > 0 ? 500 : 200,
     });
-    
+
   } catch (error) {
-    console.error('Error during diagnosis:', error);
+    log.error({ error }, 'Error during schema diagnosis');
     return NextResponse.json({
       error: 'Failed to diagnose schema',
       message: error instanceof Error ? error.message : 'Unknown error',
