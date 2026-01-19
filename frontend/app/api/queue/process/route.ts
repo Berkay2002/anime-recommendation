@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { sql } from '@vercel/postgres';
+import logger from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -18,7 +19,7 @@ async function generateEmbedding(text: string): Promise<number[]> {
     const result = await model.embedContent(processedText);
     return result.embedding.values || [];
   } catch (error) {
-    console.error('Error generating embedding:', error);
+    logger.error({ error, textLength: text.length }, 'Error generating embedding');
     return new Array(768).fill(0);
   }
 }
