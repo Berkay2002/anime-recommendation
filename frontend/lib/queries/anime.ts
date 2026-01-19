@@ -45,6 +45,8 @@ export const animeKeys = {
   detail: (id: number) => [...animeKeys.details(), id] as const,
   recommendations: (id: number) => ['anime', id, 'recommendations'] as const,
   reviews: (id: number) => ['anime', id, 'reviews'] as const,
+  search: (query: string) => ['anime', 'search', query] as const,
+  allWithEmbeddings: () => ['anime', 'all', 'embeddings'] as const,
 }
 
 // Fetcher functions
@@ -103,6 +105,25 @@ async function fetchReviews(id: number): Promise<{ reviews?: Review[] }> {
   return response.json()
 }
 
+async function fetchAnimeSearch(query: string): Promise<Anime[]> {
+  if (!query.trim()) return []
+  const response = await fetch(`/api/anime/search?q=${encodeURIComponent(query)}`)
+  if (!response.ok) {
+    throw new Error(`Failed to search anime: ${response.status}`)
+  }
+  const data = await response.json()
+  return data.anime || []
+}
+
+async function fetchAllAnimeWithEmbeddings(): Promise<Anime[]> {
+  const response = await fetch('/api/anime?withEmbeddings=true&limit=657&sortBy=Popularity')
+  if (!response.ok) {
+    throw new Error(`Failed to fetch anime with embeddings: ${response.status}`)
+  }
+  const data = await response.json()
+  return data.anime || []
+}
+
 // Query hooks
 export function useAnimeList(params: {
   sortBy?: string
@@ -141,5 +162,22 @@ export function useReviews(id: number) {
     queryFn: () => fetchReviews(id),
     enabled: !!id,
     staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+export function useAnimeSearch(query: string) {
+  return useQuery({
+    queryKey: animeKeys.search(query),
+    queryFn: () => fetchAnimeSearch(query),
+    enabled: query.trim().length > 0, // Only run if query is not empty
+    staleTime: 1 * 60 * 1000, // 1 minute for search results (CONTEXT.md decision)
+  })
+}
+
+export function useAllAnimeWithEmbeddings() {
+  return useQuery({
+    queryKey: animeKeys.allWithEmbeddings(),
+    queryFn: fetchAllAnimeWithEmbeddings,
+    staleTime: 10 * 60 * 1000, // 10 minutes for full anime list with embeddings
   })
 }
