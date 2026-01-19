@@ -19,7 +19,7 @@ import { LoadingSpinner } from "@/components/loading"
 import { clientLogger } from "@/lib/client-logger"
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut"
 import { useClickOutside } from "@/hooks/useClickOutside"
-import { useLoadingState } from "@/hooks/useLoadingState"
+import { useAnimeSearch } from '@/lib/queries/anime'
 
 type Anime = {
   anime_id: number
@@ -28,16 +28,15 @@ type Anime = {
 }
 
 const SEARCH_DEBOUNCE_MS = 300
-const SEARCH_ENDPOINT = '/api/anime/search'
 
 export default function SearchBar() {
   const router = useRouter()
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<Anime[]>([])
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
-  const { isLoading, setIsLoading } = useLoadingState(150)
+  const { data: searchResults = [], isLoading, error } = useAnimeSearch(debouncedQuery)
 
   const focusInput = useCallback(() => {
     const input =
@@ -59,44 +58,16 @@ export default function SearchBar() {
 
   useClickOutside(containerRef, () => setIsOpen(false), isOpen)
 
+  // Debounce search query
   useEffect(() => {
-    if (query.trim() === '') {
-      setResults([])
-      setIsLoading(false)
-      return
-    }
-
-    const controller = new AbortController()
-    const searchTimeout = window.setTimeout(async () => {
-      try {
-        setIsLoading(true)
-        const response = await fetch(
-          `${SEARCH_ENDPOINT}?q=${encodeURIComponent(query)}`,
-          { signal: controller.signal }
-        )
-
-        if (!response.ok) {
-          throw new Error(`Search failed: ${response.statusText}`)
-        }
-
-        const data: Anime[] = await response.json()
-        setResults(data)
-      } catch (error) {
-        if (!(error instanceof DOMException && error.name === 'AbortError')) {
-          clientLogger.error('Error performing search:', error)
-        }
-      } finally {
-        setIsLoading(false)
-      }
+    const timeout = window.setTimeout(() => {
+      setDebouncedQuery(query)
     }, SEARCH_DEBOUNCE_MS)
 
-    return () => {
-      window.clearTimeout(searchTimeout)
-      controller.abort()
-    }
+    return () => clearTimeout(timeout)
   }, [query])
 
-  const shouldShowResults = isOpen && query.trim().length > 0
+  const shouldShowResults = isOpen && debouncedQuery.trim().length > 0 && (isLoading || searchResults.length > 0 || !!error)
 
   const handleResultsPointerDown = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
@@ -152,7 +123,6 @@ export default function SearchBar() {
                     onSelect={() => {
                       setIsOpen(false)
                       setQuery('')
-                      setResults([])
                       router.push(`/anime/${anime.anime_id}`)
                     }}
                   >
