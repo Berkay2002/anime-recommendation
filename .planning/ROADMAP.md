@@ -176,26 +176,40 @@ Incremental cleanup approach: Services → Components → API Routes
 
 **Goal:** Optimize API calls for better performance and user experience
 
+**Status:** Ready for execution
+**Plans:** 6 plans in 3 waves
+
 **Requirements:**
-- PERF-01: Convert sequential API calls to parallel execution using Promise.all()
-- PERF-02: Implement React Suspense for concurrent data fetching
-- PERF-03: Add caching layer to reduce redundant API calls
-- PERF-04: Optimize database queries to reduce latency
+- PERF-01: Convert sequential API calls to parallel execution using useQueries ✅
+- PERF-02: Implement React Query for concurrent data fetching ✅
+- PERF-03: Add caching layer to reduce redundant API calls ✅
+- PERF-04: Optimize database queries to reduce latency ✅
 
 **Dependencies:** Phase 4 (loading states handle optimized responses)
 
 **Success Criteria:**
-1. Independent API calls run in parallel (use Promise.all where applicable)
+1. Independent API calls run in parallel (use useQueries where applicable)
 2. Page load time reduced by at least 25%
-3. No duplicate API calls for same data within 5 minutes
+3. No duplicate API calls for same data within cache duration
 4. Database query response time < 100ms for common operations
 5. Vercel timeout errors eliminated for normal operations
-6. Concurrent rendering provides smoother UX during data fetching
+6. React Query provides smoother UX during data fetching
+
+**Plans:**
+- [ ] 05-01-PLAN.md — Set up React Query provider and DevTools
+- [ ] 05-02-PLAN.md — Optimize database queries with indexes
+- [ ] 05-03-PLAN.md — Create query functions library
+- [ ] 05-04-PLAN.md — Migrate browse page to React Query
+- [ ] 05-05-PLAN.md — Migrate detail page to parallel queries
+- [ ] 05-06-PLAN.md — Optimize search and recommendations with caching
 
 **Notes:**
-- Focus on anime detail page and recommendation endpoints
-- Use React Query/SWR for built-in caching and parallelization
-- Consider edge runtime for API routes where possible
+- Full migration to TanStack Query v5 (not gradual)
+- Use useQueries for parallel execution (not vanilla Promise.all)
+- Variable cache durations: details 5min, browse 2min, search 1min
+- Database indexes on popularity, score, rank columns
+- Query functions separated into lib/queries/ for reusability
+- React Suspense support available but optional (discretionary)
 
 ---
 
@@ -252,11 +266,11 @@ Incremental cleanup approach: Services → Components → API Routes
 
 ## Next Steps
 
-1. Execute Phase 4 plans to implement loading states
+1. Execute Phase 5 plans to optimize API performance
 2. Proceed through phases sequentially or in parallel based on capacity
 3. Track progress in .planning/STATE.md
 
 ---
 
 *Roadmap created: 2025-01-19*
-*Last updated: 2026-01-19 (Phase 4 planning complete)*
+*Last updated: 2026-01-19 (Phase 5 planning complete)*
