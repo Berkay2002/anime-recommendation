@@ -196,7 +196,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
-    console.error('Failed to process embeddings:', error);
+    log.error({ error }, 'Failed to process embeddings');
     return NextResponse.json(
       {
         message: 'Failed to process embeddings',
@@ -211,6 +211,8 @@ export async function POST(request: Request): Promise<NextResponse> {
  * GET endpoint to check queue status
  */
 export async function GET(): Promise<NextResponse> {
+  const log = logger.child({ route: '/api/embeddings/process', method: 'GET' })
+
   try {
     const highPriorityQueue = await getQueuedAnimeForProcessing('high', 10);
     const lowPriorityQueue = await getQueuedAnimeForProcessing('low', 10);
@@ -222,7 +224,7 @@ export async function GET(): Promise<NextResponse> {
       nextLowPriority: lowPriorityQueue.slice(0, 2),
     });
   } catch (error) {
-    console.error('Failed to get queue status:', error);
+    log.error({ error }, 'Failed to get queue status');
     return NextResponse.json(
       { message: 'Failed to get queue status' },
       { status: 500 }
