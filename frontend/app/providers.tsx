@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { useState } from 'react'
-import { logger } from '@/lib/logger'
+import { clientLogger } from '@/lib/client-logger'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => {
@@ -16,7 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           retry: (failureCount, error) => {
             // Log retries
             if (failureCount > 0) {
-              logger.warn({ error, failureCount }, 'Query retrying')
+              clientLogger.warn('Query retrying', { error, failureCount })
             }
             return failureCount < 2 // Max 2 retries
           },
@@ -24,23 +24,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
       },
     })
 
-    // Enable query logging in development
-    if (process.env.NODE_ENV === 'development') {
-      const queryCache = client.getQueryCache()
-      queryCache.subscribe({
-        onQueryAdded: (query) => {
-          logger.debug({ queryKey: query.queryKey }, 'Query added')
-        },
-      })
-    }
-
     return client
   })
 
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+      <ReactQueryDevtools initialIsOpen={false} position="bottom" />
     </QueryClientProvider>
   )
 }
