@@ -99,20 +99,7 @@ export default function AnimeDetailPage() {
   const { id } = useParams()
   const numericId = Number(id)
 
-  const [anime, setAnime] = useState<Anime | null>(null)
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([])
-  const [reviews, setReviews] = useState<string[]>([])
-  const [details, setDetails] = useState<JikanDetails | null>(null)
-  const [detailsLoading, setDetailsLoading] = useState<boolean>(false)
-  const [detailsError, setDetailsError] = useState<string | null>(null)
-  const { isLoading: loading, setIsLoading } = useLoadingState(150)
-  const { isLoading: recommendationsLoading, setIsLoading: setRecommendationsLoading } = useLoadingState(150)
-  const { isLoading: reviewsLoading, setIsLoading: setReviewsLoading } = useLoadingState(150)
-
-  // Error state management for main data fetch
-  const mainError = useErrorHandler()
-  const recommendationsError = useErrorHandler()
-  const reviewsErrorHandler = useErrorHandler()
+  // Error state management for Jikan extra details (still uses manual fetch)
   const detailsErrorState = useErrorHandler()
 
   // BEFORE: 3 separate useEffect hooks (sequential)
@@ -174,126 +161,13 @@ export default function AnimeDetailPage() {
     } as Anime))
   }, [recommendationsFromQuery])
 
-  useEffect(() => {
-    async function fetchAnimeDetails() {
-      try {
-        // Fetch just this anime's metadata - no embeddings needed
-        const response = await fetch(`/api/anime?limit=1000`)
+  // Note: Anime details, recommendations, and reviews now fetched in parallel via useQueries above
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch anime: ${response.status}`)
-        }
-
-        const payload = await response.json()
-        const animeList: Anime[] = payload.anime || []
-
-        const selectedAnime = animeList.find(
-          (item) => item.anime_id === numericId
-        )
-
-        if (selectedAnime) {
-          setAnime(selectedAnime)
-        }
-      } catch (error) {
-        mainError.setError(error, 'Failed to fetch anime details')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchAnimeDetails()
-  }, [numericId, mainError])
-
-  useEffect(() => {
-    if (!anime) return
-
-    const controller = new AbortController()
-    const { signal } = controller
-
-    async function fetchRecommendations() {
-      try {
-        setRecommendationsLoading(true)
-        const response = await fetch(`/api/anime/recommendation/${anime.anime_id}`, { signal })
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            clientLogger.debug('No recommendations found for this anime')
-            setRecommendations([])
-            return
-          }
-          throw new Error(`Failed to fetch recommendations: ${response.statusText}`)
-        }
-
-        const data = (await response.json()) as RecommendationResponse
-        // Transform server response to match existing Recommendation interface
-        const transformedRecs = (data.similar_anime ?? []).map((rec) => ({
-          anime_id: rec.anime_id,
-          title: rec.title,
-          image_url: rec.image_url,
-          score: rec.score,
-          popularity: rec.popularity,
-          genres: rec.genres,
-          similarity: rec.similarity
-        })) || []
-
-        setRecommendations(transformedRecs)
-      } catch (error: unknown) {
-        if (error instanceof Error && error.name !== 'AbortError') {
-          recommendationsError.setError(error, 'Failed to fetch recommendations')
-        }
-      } finally {
-        setRecommendationsLoading(false)
-      }
-    }
-
-    fetchRecommendations()
-
-    return () => controller.abort()
-  }, [anime, recommendationsError, setRecommendationsLoading])
-
-  useEffect(() => {
-    if (!anime) return
-
-    const controller = new AbortController()
-    const { signal } = controller
-
-    async function fetchReviews() {
-      try {
-        setReviewsLoading(true)
-        const reviewId = anime.mal_id ?? anime.anime_id
-        setReviews([])
-        const response = await fetch(`/api/anime/reviews/${reviewId}`, { signal })
-        if (!response.ok) {
-          // 404 is expected when there are no reviews, silently handle it
-          if (response.status === 404) {
-            setReviews([])
-            return
-          }
-          throw new Error(`Failed to fetch reviews: ${response.statusText}`)
-        }
-        const data = (await response.json()) as ReviewResponse
-        // Handle the response which has {anime_id, title, reviews: [...]} structure
-        const reviewsList = data.reviews ?? []
-        setReviews(reviewsList.map((review) => review.review_text))
-      } catch (fetchError: unknown) {
-        if (fetchError instanceof Error) {
-          if (fetchError.name !== "AbortError") {
-            reviewsErrorHandler.setError(fetchError, 'Failed to fetch reviews')
-          }
-        } else {
-          reviewsErrorHandler.setError(new Error('Unknown error fetching reviews'), 'Failed to fetch reviews')
-        }
-      } finally {
-        setReviewsLoading(false)
-      }
-    }
-
-    fetchReviews()
-
-    return () => {
-      controller.abort()
-    }
-  }, [anime, reviewsErrorHandler, setReviewsLoading])
+  // Jikan extra details still uses manual fetch (not migrated to React Query)
+  const [details, setDetails] = useState<JikanDetails | null>(null)
+  const [detailsLoading, setDetailsLoading] = useState<boolean>(false)
+  const [detailsError, setDetailsError] = useState<string | null>(null)
+  const anime = animeFromQuery // Alias for compatibility with existing code
 
   useEffect(() => {
     if (!anime) return
