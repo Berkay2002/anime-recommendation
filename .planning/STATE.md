@@ -17,7 +17,7 @@ See: .planning/PROJECT.md (updated 2025-01-19)
 | 1 | ✓ Complete | 3/3 | 100% |
 | 2 | ✓ Complete | 3/3 | 100% |
 | 3 | ✓ Complete | 4/4 | 100% |
-| 4 | ◑ In Progress | 1/4 | 25% |
+| 4 | ◑ In Progress | 2/4 | 50% |
 | 5 | ○ Not Started | 4/4 | 0% |
 | 6 | ○ Not Started | 4/4 | 0% |
 
@@ -338,10 +338,10 @@ See: .planning/PROJECT.md (updated 2025-01-19)
 - Phase 4 (Loading States), **In Progress**
 - 2/4 plans complete (04-01, 04-02 done; 04-03, 04-04 remaining)
 - Skeleton shimmer enhancement complete (04-01):
-  - Shimmer keyframes added to globals.css (2s linear cycle)
+  - Shimmer keyframes added to globals.css (04-01) (2s linear cycle)
   - Skeleton component enhanced with ARIA accessibility
   - Professional gradient shimmer effect replacing generic pulse
-  - All 3 existing skeleton usages automatically upgraded
+  - All 3 existing skeleton usages automatically upgraded (04-01)
 - Loading state delay infrastructure complete (04-02):
   - useLoadingState hook created (56 lines)
   - 150ms default delay to prevent flicker
