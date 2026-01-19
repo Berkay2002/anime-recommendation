@@ -21,7 +21,7 @@ interface AnimeDetailHeaderProps {
 
 export default function AnimeDetailHeader({ anime }: AnimeDetailHeaderProps) {
   return (
-    <>
+    <div className='flex flex-col gap-6 md:flex-row md:items-start md:gap-8'>
       <div className='relative aspect-2/3 w-full max-w-[450px] shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg'>
         <Image
           src={anime.image_url || '/placeholder.jpg'}
@@ -33,7 +33,7 @@ export default function AnimeDetailHeader({ anime }: AnimeDetailHeaderProps) {
         />
       </div>
 
-      <div className='flex flex-1 flex-col gap-6'>
+      <div className='flex min-w-0 flex-1 flex-col gap-6'>
         <div className='space-y-3'>
           <h1 className='text-3xl font-semibold leading-tight tracking-tight text-foreground'>
             {anime.title || 'Unknown Title'}
@@ -59,7 +59,7 @@ export default function AnimeDetailHeader({ anime }: AnimeDetailHeaderProps) {
 
         <ButtonRow animeId={anime.anime_id} />
       </div>
-    </>
+    </div>
   )
 }
 

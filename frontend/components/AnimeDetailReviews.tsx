@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import ReviewCard from "@/components/ReviewCard"
-import SectionHeader from "@/components/SectionHeader"
 import { LoadingSpinner } from "@/components/loading"
 import { EmptyState } from "@/components/DataLoadingStates"
 import { Button } from "@/components/ui/button"
@@ -12,14 +11,19 @@ interface AnimeDetailReviewsProps {
   reviews: string[]
   reviewsPerPage?: number
   isLoading?: boolean
+  variant?: "section" | "tab"
+  className?: string
 }
 
 export default function AnimeDetailReviews({
   reviews,
   reviewsPerPage = 3,
   isLoading = false,
+  variant = "section",
+  className,
 }: AnimeDetailReviewsProps) {
   const [currentPage, setCurrentPage] = useState<number>(1)
+  const isTabVariant = variant === "tab"
 
   const paginatedReviews = useMemo(() => {
     const startIndex = (currentPage - 1) * reviewsPerPage
@@ -29,34 +33,54 @@ export default function AnimeDetailReviews({
 
   const totalPages = Math.ceil(reviews.length / reviewsPerPage)
 
+  const containerClassName = [
+    isTabVariant ? "space-y-4" : "space-y-6",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ")
+
+  const Wrapper = isTabVariant ? "div" : "section"
+  const wrapperProps = isTabVariant
+    ? {}
+    : {
+        id: "reviews",
+        role: "status",
+        "aria-live": "polite",
+        "aria-busy": isLoading,
+      }
+
   return (
-    <section
-      className="space-y-6"
-      id="reviews"
-      role="status"
-      aria-live="polite"
-      aria-busy={isLoading}
-    >
-      <SectionHeader
-        title={
-          <>
+    <Wrapper className={containerClassName} {...wrapperProps}>
+      {!isTabVariant && (
+        <div className="space-y-1">
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground">
             Reviews
             {reviews.length > 0 && (
               <span className="ml-3 text-base font-normal text-muted-foreground">
-                ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
+                ({reviews.length} {reviews.length === 1 ? "review" : "reviews"})
               </span>
             )}
-          </>
-        }
-        description="What fans are saying about this anime."
-      />
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            What fans are saying about this anime.
+          </p>
+        </div>
+      )}
+      {isTabVariant && reviews.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+          <span>
+            {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
+          </span>
+        </div>
+      )}
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <LoadingSpinner size="md" message="Loading reviews..." />
         </div>
       ) : reviews.length ? (
         <>
-          <div className="grid gap-5">
+          <div className={`grid ${isTabVariant ? "gap-4" : "gap-5"}`}>
             {paginatedReviews.map((review, index) => (
               <ReviewCard
                 key={`review-${(currentPage - 1) * reviewsPerPage + index}`}
@@ -66,7 +90,11 @@ export default function AnimeDetailReviews({
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between gap-4 pt-2">
+            <div
+              className={`flex items-center justify-between gap-4 ${
+                isTabVariant ? "pt-1" : "pt-2"
+              }`}
+            >
               <Button
                 variant="outline"
                 size="sm"
@@ -103,6 +131,6 @@ export default function AnimeDetailReviews({
           title="No reviews available"
         />
       )}
-    </section>
+    </Wrapper>
   )
 }

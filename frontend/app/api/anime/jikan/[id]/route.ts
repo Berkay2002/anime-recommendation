@@ -15,6 +15,14 @@ interface JikanVoiceActor {
 interface JikanCharacterItem {
   character?: {
     name?: string
+    images?: {
+      jpg?: {
+        image_url?: string
+      }
+      webp?: {
+        image_url?: string
+      }
+    }
   }
   role?: string
   voice_actors?: JikanVoiceActor[]
@@ -27,6 +35,14 @@ interface JikanCharactersResponse {
 interface JikanStaffItem {
   person?: {
     name?: string
+    images?: {
+      jpg?: {
+        image_url?: string
+      }
+      webp?: {
+        image_url?: string
+      }
+    }
   }
   positions?: string[]
 }
@@ -51,12 +67,14 @@ interface JikanStatisticsResponse {
 type JikanCharacter = {
   name: string
   role: string
-  voiceActors: string[]
+  voiceActors: { name: string; language: string }[]
+  imageUrl?: string | null
 }
 
 type JikanStaff = {
   name: string
   positions: string[]
+  imageUrl?: string | null
 }
 
 type JikanStatistic = {
@@ -82,17 +100,36 @@ async function fetchJikan<T>(path: string): Promise<T> {
 function normalizeCharacters(payload: JikanCharactersResponse): JikanCharacter[] {
   const items = payload.data ?? []
   return items.map((item) => {
-    const voiceActors = (item.voice_actors ?? [])
-      .slice(0, 2)
-      .map((actor) => {
-        const name = actor.person?.name || "Unknown"
-        return actor.language ? `${name} (${actor.language})` : name
-      })
+    const voiceActors = item.voice_actors ?? []
+    const japaneseActor = voiceActors.find(
+      (actor) => actor.language?.toLowerCase() === "japanese"
+    )
+    const englishActor = voiceActors.find(
+      (actor) => actor.language?.toLowerCase() === "english"
+    )
+    const normalizedVoiceActors = [
+      japaneseActor
+        ? {
+            name: japaneseActor.person?.name || "Unknown",
+            language: "Japanese",
+          }
+        : null,
+      englishActor
+        ? {
+            name: englishActor.person?.name || "Unknown",
+            language: "English",
+          }
+        : null,
+    ].filter(Boolean) as { name: string; language: string }[]
 
     return {
       name: item.character?.name || "Unknown",
       role: item.role || "Unknown",
-      voiceActors,
+      voiceActors: normalizedVoiceActors,
+      imageUrl:
+        item.character?.images?.jpg?.image_url ||
+        item.character?.images?.webp?.image_url ||
+        null,
     }
   })
 }
@@ -102,6 +139,10 @@ function normalizeStaff(payload: JikanStaffResponse): JikanStaff[] {
   return items.map((item) => ({
     name: item.person?.name || "Unknown",
     positions: item.positions ?? [],
+    imageUrl:
+      item.person?.images?.jpg?.image_url ||
+      item.person?.images?.webp?.image_url ||
+      null,
   }))
 }
 

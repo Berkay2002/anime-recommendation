@@ -9,7 +9,6 @@ import AnimeDetailHeader from "@/components/AnimeDetailHeader"
 import AnimeDetailStats from "@/components/AnimeDetailStats"
 import AnimeDetailSkeleton from "@/components/AnimeDetailSkeleton"
 import AnimeDetailExtraDetails from "@/components/AnimeDetailExtraDetails"
-import AnimeDetailReviews from "@/components/AnimeDetailReviews"
 import SectionHeader from "@/components/SectionHeader"
 import { ErrorMessage } from "@/components/ErrorMessage"
 import { LoadingSpinner } from "@/components/loading"
@@ -48,11 +47,13 @@ interface JikanDetails {
   characters: {
     name: string
     role: string
-    voiceActors: string[]
+    voiceActors: { name: string; language: string }[]
+    imageUrl?: string | null
   }[]
   staff: {
     name: string
     positions: string[]
+    imageUrl?: string | null
   }[]
   statistics: {
     label: string
@@ -65,7 +66,7 @@ export default function AnimeDetailPage() {
   const numericId = Number(id)
 
   // Error state management for Jikan extra details (still uses manual fetch)
-  const detailsErrorState = useErrorHandler()
+  const { setError: setDetailsErrorState } = useErrorHandler()
 
   // BEFORE: 3 separate useEffect hooks (sequential)
   // useEffect(() => { fetchAnimeDetails() }, [numericId])
@@ -102,11 +103,12 @@ export default function AnimeDetailPage() {
       recommendations: results[1].data?.similar_anime || [],
       reviews: results[2].data?.reviews || [],
       isLoading: results.some(r => r.isLoading),
+      reviewsLoading: results[2].isLoading,
       errors: results.filter(r => r.error).map(r => r.error),
     })
   })
 
-  const { anime: animeFromQuery, recommendations: recommendationsFromQuery, reviews: reviewsFromQuery, isLoading: isLoadingFromQuery, errors: errorsFromQuery } = results
+  const { anime: animeFromQuery, recommendations: recommendationsFromQuery, reviews: reviewsFromQuery, isLoading: isLoadingFromQuery, reviewsLoading, errors: errorsFromQuery } = results
 
   const recommendedAnime = useMemo(() => {
     // API returns complete anime data, use it directly
@@ -157,11 +159,11 @@ export default function AnimeDetailPage() {
       } catch (fetchError: unknown) {
         if (fetchError instanceof Error) {
           if (fetchError.name !== "AbortError") {
-            detailsErrorState.setError(fetchError, 'Failed to fetch extra details')
+            setDetailsErrorState(fetchError, 'Failed to fetch extra details')
             setDetailsError("Unable to load extra details right now.")
           }
         } else {
-          detailsErrorState.setError(new Error('Unknown error fetching details'), 'Failed to fetch extra details')
+          setDetailsErrorState(new Error('Unknown error fetching details'), 'Failed to fetch extra details')
           setDetailsError("Unable to load extra details right now.")
         }
       } finally {
@@ -174,7 +176,7 @@ export default function AnimeDetailPage() {
     return () => {
       controller.abort()
     }
-  }, [anime, detailsErrorState])
+  }, [anime, setDetailsErrorState])
 
   if (isLoadingFromQuery) {
     return <AnimeDetailSkeleton />
@@ -215,10 +217,12 @@ export default function AnimeDetailPage() {
       )}
 
       <Card className="overflow-hidden border border-border/60 bg-card/80 shadow-sm">
-        <CardContent className="flex flex-col gap-6 px-4 py-6 md:flex-row md:items-start md:gap-8">
+        <CardContent className="grid gap-6 px-4 py-6 md:gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start">
           <AnimeDetailHeader anime={anime} />
 
-          <AnimeDetailStats stats={stats} />
+          <div className="lg:max-w-[420px]">
+            <AnimeDetailStats stats={stats} />
+          </div>
         </CardContent>
       </Card>
 
@@ -254,11 +258,8 @@ export default function AnimeDetailPage() {
           details={details}
           detailsLoading={detailsLoading}
           detailsError={detailsError}
-        />
-
-        <AnimeDetailReviews
           reviews={reviewsFromQuery.map(r => r.review_text)}
-          isLoading={isLoadingFromQuery}
+          reviewsLoading={reviewsLoading}
         />
       </div>
     </div>
