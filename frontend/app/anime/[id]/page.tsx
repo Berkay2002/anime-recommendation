@@ -12,8 +12,10 @@ import AnimeDetailSkeleton from "@/components/AnimeDetailSkeleton"
 import AnimeDetailExtraDetails from "@/components/AnimeDetailExtraDetails"
 import AnimeDetailReviews from "@/components/AnimeDetailReviews"
 import SectionHeader from "@/components/SectionHeader"
+import { ErrorMessage } from "@/components/ErrorMessage"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent } from "@/components/ui/card"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { clientLogger } from "@/lib/client-logger"
 
 interface Anime {
@@ -103,6 +105,12 @@ export default function AnimeDetailPage() {
   const [detailsError, setDetailsError] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
 
+  // Error state management for main data fetch
+  const mainError = useErrorHandler()
+  const recommendationsError = useErrorHandler()
+  const reviewsErrorHandler = useErrorHandler()
+  const detailsErrorState = useErrorHandler()
+
   const recommendedAnime = useMemo(() => {
     // API returns complete anime data, use it directly
     return recommendations.map(rec => ({
@@ -137,19 +145,19 @@ export default function AnimeDetailPage() {
         const selectedAnime = animeList.find(
           (item) => item.anime_id === numericId
         )
-        
+
         if (selectedAnime) {
           setAnime(selectedAnime)
         }
       } catch (error) {
-        clientLogger.error("Error fetching anime:", error)
+        mainError.setError(error, 'Failed to fetch anime details')
       } finally {
         setLoading(false)
       }
     }
 
     fetchAnimeDetails()
-  }, [numericId])
+  }, [numericId, mainError])
 
   useEffect(() => {
     if (!anime) return
@@ -160,7 +168,7 @@ export default function AnimeDetailPage() {
     async function fetchRecommendations() {
       try {
         const response = await fetch(`/api/anime/recommendation/${anime.anime_id}`, { signal })
-        
+
         if (!response.ok) {
           if (response.status === 404) {
             clientLogger.debug('No recommendations found for this anime')
@@ -181,11 +189,11 @@ export default function AnimeDetailPage() {
           genres: rec.genres,
           similarity: rec.similarity
         })) || []
-        
+
         setRecommendations(transformedRecs)
       } catch (error: unknown) {
         if (error instanceof Error && error.name !== 'AbortError') {
-          clientLogger.error('Error fetching recommendations:', error)
+          recommendationsError.setError(error, 'Failed to fetch recommendations')
         }
       }
     }
@@ -193,7 +201,7 @@ export default function AnimeDetailPage() {
     fetchRecommendations()
 
     return () => controller.abort()
-  }, [anime])
+  }, [anime, recommendationsError])
 
   useEffect(() => {
     if (!anime) return
@@ -218,13 +226,13 @@ export default function AnimeDetailPage() {
         // Handle the response which has {anime_id, title, reviews: [...]} structure
         const reviewsList = data.reviews ?? []
         setReviews(reviewsList.map((review) => review.review_text))
-      } catch (reviewsError: unknown) {
-        if (reviewsError instanceof Error) {
-          if (reviewsError.name !== "AbortError") {
-            clientLogger.error("Error fetching reviews:", reviewsError)
+      } catch (fetchError: unknown) {
+        if (fetchError instanceof Error) {
+          if (fetchError.name !== "AbortError") {
+            reviewsErrorHandler.setError(fetchError, 'Failed to fetch reviews')
           }
         } else {
-          clientLogger.error("An unknown error occurred:", reviewsError)
+          reviewsErrorHandler.setError(new Error('Unknown error fetching reviews'), 'Failed to fetch reviews')
         }
       }
     }
@@ -234,7 +242,7 @@ export default function AnimeDetailPage() {
     return () => {
       controller.abort()
     }
-  }, [anime])
+  }, [anime, reviewsErrorHandler])
 
   useEffect(() => {
     if (!anime) return
@@ -256,14 +264,14 @@ export default function AnimeDetailPage() {
 
         const data = await response.json()
         setDetails(data)
-      } catch (detailsError: unknown) {
-        if (detailsError instanceof Error) {
-          if (detailsError.name !== "AbortError") {
-            clientLogger.error("Error fetching details:", detailsError)
+      } catch (fetchError: unknown) {
+        if (fetchError instanceof Error) {
+          if (fetchError.name !== "AbortError") {
+            detailsErrorState.setError(fetchError, 'Failed to fetch extra details')
             setDetailsError("Unable to load extra details right now.")
           }
         } else {
-          clientLogger.error("An unknown error occurred:", detailsError)
+          detailsErrorState.setError(new Error('Unknown error fetching details'), 'Failed to fetch extra details')
           setDetailsError("Unable to load extra details right now.")
         }
       } finally {
@@ -276,7 +284,7 @@ export default function AnimeDetailPage() {
     return () => {
       controller.abort()
     }
-  }, [anime])
+  }, [anime, detailsErrorState])
 
   if (loading) {
     return <AnimeDetailSkeleton />
@@ -305,6 +313,13 @@ export default function AnimeDetailPage() {
 
   return (
     <div className="container mx-auto flex flex-col gap-8 px-4 py-6 sm:gap-10 sm:px-6 lg:gap-12 lg:py-10">
+      {mainError.error.hasError && (
+        <ErrorMessage
+          error={mainError.error}
+          onRetry={() => mainError.retry(() => window.location.reload())}
+        />
+      )}
+
       <Card className="overflow-hidden border border-border/60 bg-card/80 shadow-sm">
         <CardContent className="flex flex-col gap-6 px-4 py-6 md:flex-row md:items-start md:gap-8">
           <AnimeDetailHeader anime={anime} />
@@ -318,7 +333,12 @@ export default function AnimeDetailPage() {
           title="Recommendations"
           description="Similar shows based on description, genres, demographics, and themes."
         />
-        {recommendedAnime.length ? (
+        {recommendationsError.error.hasError ? (
+          <ErrorMessage
+            error={recommendationsError.error}
+            onRetry={() => recommendationsError.retry()}
+          />
+        ) : recommendedAnime.length ? (
           <RecommendationList recommendedAnime={recommendedAnime} showIcon={false} />
         ) : (
           <Alert>
