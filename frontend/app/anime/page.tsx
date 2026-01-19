@@ -8,14 +8,7 @@ import { Button } from "@/components/ui/button"
 import AnimeBrowseHeader from "@/components/AnimeBrowseHeader"
 import AnimeBrowseFilters from "@/components/AnimeBrowseFilters"
 import AnimeBrowseGrid from "@/components/AnimeBrowseGrid"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
+import AnimeBrowsePagination from "@/components/AnimeBrowsePagination"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDebounce } from "@/hooks/useDebounce"
 import { useLocalStorage } from "@/hooks/useLocalStorage"
@@ -100,13 +93,6 @@ const AnimePage: React.FC = () => {
     }
     fetchAnime(currentPage, debouncedSortBy, debouncedSelectedGenres)
   }, [currentPage, debouncedSortBy, debouncedSelectedGenres])
-
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page)
-      window.scrollTo({ top: 0, behavior: "smooth" })
-    }
-  }
 
   const toggleGenre = useCallback(
     (genre: GenreOption) => {
@@ -195,51 +181,11 @@ const AnimePage: React.FC = () => {
       />
 
       {!loading && !error && totalPages > 1 && (
-        <Pagination>
-          <PaginationContent className="flex-wrap justify-center gap-1.5 sm:gap-2">
-            <PaginationItem>
-              <PaginationPrevious
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  handlePageChange(currentPage - 1)
-                }}
-                className={
-                  currentPage === 1 ? "pointer-events-none opacity-50" : ""
-                }
-              />
-            </PaginationItem>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <PaginationItem key={page}>
-                <PaginationLink
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    handlePageChange(page)
-                  }}
-                  isActive={currentPage === page}
-                  size="default"
-                >
-                  {page}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-            <PaginationItem>
-              <PaginationNext
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  handlePageChange(currentPage + 1)
-                }}
-                className={
-                  currentPage === totalPages
-                    ? "pointer-events-none opacity-50"
-                    : ""
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        <AnimeBrowsePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       )}
     </div>
   )
