@@ -13,6 +13,12 @@ export interface Anime {
   popularity?: number
   demographic?: string
   rating?: string
+  // BERT embedding fields (when withEmbeddings=true)
+  bert_description?: number[]
+  bert_genres?: number[]
+  bert_demographic?: number[]
+  bert_rating?: number[]
+  bert_themes?: number[]
 }
 
 export interface AnimeListResponse {

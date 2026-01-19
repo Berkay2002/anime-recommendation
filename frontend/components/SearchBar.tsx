@@ -16,16 +16,9 @@ import {
 } from "@/components/ui/input-group"
 import { Kbd } from "@/components/ui/kbd"
 import { LoadingSpinner } from "@/components/loading"
-import { clientLogger } from "@/lib/client-logger"
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut"
 import { useClickOutside } from "@/hooks/useClickOutside"
 import { useAnimeSearch } from '@/lib/queries/anime'
-
-type Anime = {
-  anime_id: number
-  title: string
-  image_url?: string
-}
 
 const SEARCH_DEBOUNCE_MS = 300
 
@@ -113,10 +106,10 @@ export default function SearchBar() {
                 <div className="flex items-center justify-center px-3 py-4">
                   <LoadingSpinner size="sm" message="Searching..." />
                 </div>
-              ) : results.length === 0 ? (
+              ) : searchResults.length === 0 ? (
                 <CommandEmpty className="py-6 text-sm text-muted-foreground">No anime found</CommandEmpty>
               ) : (
-                results.map((anime) => (
+                searchResults.map((anime) => (
                   <CommandItem
                     key={anime.anime_id}
                     value={anime.title}

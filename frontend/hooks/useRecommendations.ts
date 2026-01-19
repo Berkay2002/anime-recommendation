@@ -8,12 +8,14 @@ interface Anime {
   English?: string
   Japanese?: string
   image_url?: string
-  bert_description: number[]
-  bert_genres: number[]
-  bert_demographic: number[]
-  bert_rating: number[]
-  bert_themes: number[]
   title: string
+  Description?: string
+  // BERT embedding fields
+  bert_description?: number[]
+  bert_genres?: number[]
+  bert_demographic?: number[]
+  bert_rating?: number[]
+  bert_themes?: number[]
 }
 
 interface SimilarityResult {
