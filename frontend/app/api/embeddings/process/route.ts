@@ -6,6 +6,7 @@ import {
   markAnimeAsProcessed,
   updateAnimeSyncStatus,
 } from '../../../../services/animeCacheService';
+import logger from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const maxDuration = 10; // Vercel free tier timeout limit
@@ -19,15 +20,15 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 async function generateEmbedding(text: string): Promise<number[]> {
   try {
     const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
-    
+
     // Prepare text (handle empty strings)
     const processedText = text && text.trim() ? text : 'unknown';
-    
+
     const result = await model.embedContent(processedText);
-    
+
     return result.embedding.values || [];
   } catch (error) {
-    console.error('Error generating embedding:', error);
+    logger.error({ error, textLength: text.length }, 'Error generating embedding');
     // Return zero vector on error (768 dimensions for text-embedding-004)
     return new Array(768).fill(0);
   }
@@ -53,10 +54,13 @@ function prepareTextForEmbedding(text: string | null | undefined, maxLength: num
  * Process embeddings for queued anime
  */
 export async function POST(request: Request): Promise<NextResponse> {
+  const log = logger.child({ route: '/api/embeddings/process', method: 'POST' })
+
   try {
     const { animeIds } = await request.json();
 
     if (!process.env.GOOGLE_API_KEY) {
+      log.error('Google API key not configured');
       return NextResponse.json(
         { message: 'Google API key not configured' },
         { status: 500 }
@@ -75,8 +79,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     if (animeToProcess.length === 0) {
+      log.debug('No anime to process');
       return NextResponse.json({ message: 'No anime to process', processed: 0 });
     }
+
+    log.info({ animeIds: animeToProcess.map(a => a.anime_id) }, 'Processing embeddings for anime');
 
     const processedAnimeIds: number[] = [];
     const errors: Array<{ anime_id: number; error: string }> = [];
@@ -103,7 +110,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         `;
 
         if (animeResult.rows.length === 0) {
-          console.error(`Anime ${anime_id} not found`);
+          log.warn({ anime_id }, 'Anime not found in database');
           continue;
         }
 
@@ -117,7 +124,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         const ratingText = prepareTextForEmbedding(anime.rating);
 
         // Generate embeddings
-        console.log(`Generating embeddings for anime ${anime_id}...`);
+        log.debug({ anime_id }, 'Generating embeddings');
         const [
           descriptionEmbedding,
           genresEmbedding,
@@ -172,9 +179,9 @@ export async function POST(request: Request): Promise<NextResponse> {
         await markAnimeAsProcessed(anime_id);
 
         processedAnimeIds.push(anime_id);
-        console.log(`Successfully processed embeddings for anime ${anime_id}`);
+        log.debug({ anime_id }, 'Successfully processed embeddings');
       } catch (error) {
-        console.error(`Error processing anime ${anime_id}:`, error);
+        log.error({ error, anime_id }, 'Error processing anime embeddings');
         errors.push({
           anime_id,
           error: error instanceof Error ? error.message : 'Unknown error',
