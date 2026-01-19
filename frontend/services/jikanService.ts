@@ -2,6 +2,7 @@ import { JikanClient } from '@tutkli/jikan-ts';
 import { setupCache } from 'axios-cache-interceptor';
 import axios from 'axios';
 import logger from '@/lib/logger';
+import { retryWithBackoff } from '@/lib/retry';
 
 const jikanLogger = logger.child({ service: 'JikanService' });
 
@@ -115,10 +116,17 @@ export interface NormalizedAnimeData {
 export async function searchJikanAnime(query: string, limit: number = 10): Promise<NormalizedAnimeData[]> {
   try {
     const result = await rateLimiter.throttle(async () => {
-      return await jikanClient.anime.getAnimeSearch({
-        q: query,
-        limit,
-        order_by: 'popularity',
+      return await retryWithBackoff(async () => {
+        return await jikanClient.anime.getAnimeSearch({
+          q: query,
+          limit,
+          order_by: 'popularity',
+        });
+      }, {
+        maxRetries: 3,
+        onRetry: (attempt, error, delay) => {
+          jikanLogger.debug({ attempt, error, delay, query, limit }, 'Retrying Jikan API search call');
+        }
       });
     });
 
@@ -135,7 +143,14 @@ export async function searchJikanAnime(query: string, limit: number = 10): Promi
 export async function getJikanAnimeById(malId: number): Promise<NormalizedAnimeData> {
   try {
     const result = await rateLimiter.throttle(async () => {
-      return await jikanClient.anime.getAnimeById(malId);
+      return await retryWithBackoff(async () => {
+        return await jikanClient.anime.getAnimeById(malId);
+      }, {
+        maxRetries: 3,
+        onRetry: (attempt, error, delay) => {
+          jikanLogger.debug({ attempt, error, delay, malId }, 'Retrying Jikan API getAnimeById call');
+        }
+      });
     });
 
     return normalizeJikanData(result.data as any);
@@ -166,8 +181,15 @@ export async function getJikanAnimeByIds(malIds: number[]): Promise<NormalizedAn
 export async function getCurrentSeasonAnime(limit: number = 25): Promise<NormalizedAnimeData[]> {
   try {
     const result = await rateLimiter.throttle(async () => {
-      return await jikanClient.seasons.getSeasonNow({
-        limit,
+      return await retryWithBackoff(async () => {
+        return await jikanClient.seasons.getSeasonNow({
+          limit,
+        });
+      }, {
+        maxRetries: 3,
+        onRetry: (attempt, error, delay) => {
+          jikanLogger.debug({ attempt, error, delay, limit }, 'Retrying Jikan API getSeasonNow call');
+        }
       });
     });
 
@@ -184,8 +206,15 @@ export async function getCurrentSeasonAnime(limit: number = 25): Promise<Normali
 export async function getUpcomingAnime(limit: number = 25): Promise<NormalizedAnimeData[]> {
   try {
     const result = await rateLimiter.throttle(async () => {
-      return await jikanClient.seasons.getSeasonUpcoming({
-        limit,
+      return await retryWithBackoff(async () => {
+        return await jikanClient.seasons.getSeasonUpcoming({
+          limit,
+        });
+      }, {
+        maxRetries: 3,
+        onRetry: (attempt, error, delay) => {
+          jikanLogger.debug({ attempt, error, delay, limit }, 'Retrying Jikan API getSeasonUpcoming call');
+        }
       });
     });
 
