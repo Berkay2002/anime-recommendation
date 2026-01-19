@@ -1,4 +1,5 @@
 import logger from '@/lib/logger';
+import { retryWithBackoff } from '@/lib/retry';
 
 const ANILIST_ENDPOINT = "https://graphql.anilist.co"
 
@@ -48,20 +49,27 @@ export async function getAniListImages({
   }
 
   try {
-    const response = await fetch(ANILIST_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        query: MEDIA_QUERY,
-        variables: {
-          idMal: malId ?? undefined,
-          search: search ?? undefined,
+    const response = await retryWithBackoff(async () => {
+      return await fetch(ANILIST_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-      }),
-    })
+        body: JSON.stringify({
+          query: MEDIA_QUERY,
+          variables: {
+            idMal: malId ?? undefined,
+            search: search ?? undefined,
+          },
+        }),
+      })
+    }, {
+      maxRetries: 3,
+      onRetry: (attempt, error, delay) => {
+        anilistLogger.debug({ attempt, error, delay, malId, search }, 'Retrying AniList API call');
+      }
+    });
 
     if (!response.ok) {
       return { bannerImage: null, coverImage: null }
