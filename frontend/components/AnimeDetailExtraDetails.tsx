@@ -1,9 +1,8 @@
 "use client"
 
-import { Skeleton } from "@/components/ui/skeleton"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent } from "@/components/ui/card"
 import SectionHeader from "@/components/SectionHeader"
+import { LoadingState, ErrorState, EmptyState } from "@/components/DataLoadingStates"
 import {
   Table,
   TableBody,
@@ -42,17 +41,6 @@ interface AnimeDetailExtraDetailsProps {
   detailsError: string | null
 }
 
-const detailsSkeleton = (
-  <div className='space-y-3'>
-    {Array.from({ length: 6 }).map((_, index) => (
-      <Skeleton
-        key={`detail-skeleton-${index}`}
-        className='h-8 w-full'
-      />
-    ))}
-  </div>
-)
-
 export default function AnimeDetailExtraDetails({
   details,
   detailsLoading,
@@ -75,12 +63,9 @@ export default function AnimeDetailExtraDetails({
 
             <TabsContent value="characters">
               {detailsLoading ? (
-                detailsSkeleton
+                <LoadingState count={6} type="default" />
               ) : detailsError ? (
-                <Alert variant="destructive">
-                  <AlertTitle>Details unavailable</AlertTitle>
-                  <AlertDescription>{detailsError}</AlertDescription>
-                </Alert>
+                <ErrorState message={detailsError} title="Details unavailable" />
               ) : details?.characters?.length ? (
                 <div className="rounded-2xl border border-border/60 bg-background/50">
                   <Table>
@@ -113,23 +98,18 @@ export default function AnimeDetailExtraDetails({
                   </Table>
                 </div>
               ) : (
-                <Alert>
-                  <AlertTitle>No characters found</AlertTitle>
-                  <AlertDescription>
-                    Jikan did not return any character data for this title.
-                  </AlertDescription>
-                </Alert>
+                <EmptyState
+                  message="Jikan did not return any character data for this title."
+                  title="No characters found"
+                />
               )}
             </TabsContent>
 
             <TabsContent value="staff">
               {detailsLoading ? (
-                detailsSkeleton
+                <LoadingState count={6} type="default" />
               ) : detailsError ? (
-                <Alert variant="destructive">
-                  <AlertTitle>Details unavailable</AlertTitle>
-                  <AlertDescription>{detailsError}</AlertDescription>
-                </Alert>
+                <ErrorState message={detailsError} title="Details unavailable" />
               ) : details?.staff?.length ? (
                 <div className="rounded-2xl border border-border/60 bg-background/50">
                   <Table>
@@ -158,23 +138,18 @@ export default function AnimeDetailExtraDetails({
                   </Table>
                 </div>
               ) : (
-                <Alert>
-                  <AlertTitle>No staff details found</AlertTitle>
-                  <AlertDescription>
-                    Jikan did not return staff data for this title.
-                  </AlertDescription>
-                </Alert>
+                <EmptyState
+                  message="Jikan did not return staff data for this title."
+                  title="No staff details found"
+                />
               )}
             </TabsContent>
 
             <TabsContent value="stats">
               {detailsLoading ? (
-                detailsSkeleton
+                <LoadingState count={6} type="default" />
               ) : detailsError ? (
-                <Alert variant="destructive">
-                  <AlertTitle>Details unavailable</AlertTitle>
-                  <AlertDescription>{detailsError}</AlertDescription>
-                </Alert>
+                <ErrorState message={detailsError} title="Details unavailable" />
               ) : details?.statistics?.length ? (
                 <div className="rounded-2xl border border-border/60 bg-background/50">
                   <Table>
@@ -199,12 +174,10 @@ export default function AnimeDetailExtraDetails({
                   </Table>
                 </div>
               ) : (
-                <Alert>
-                  <AlertTitle>No statistics available</AlertTitle>
-                  <AlertDescription>
-                    Jikan did not return stats for this title.
-                  </AlertDescription>
-                </Alert>
+                <EmptyState
+                  message="Jikan did not return stats for this title."
+                  title="No statistics available"
+                />
               )}
             </TabsContent>
           </Tabs>

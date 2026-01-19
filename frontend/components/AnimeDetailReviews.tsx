@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import ReviewCard from "@/components/ReviewCard"
 import SectionHeader from "@/components/SectionHeader"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { EmptyState } from "@/components/DataLoadingStates"
 import { Button } from "@/components/ui/button"
 
 interface AnimeDetailReviewsProps {
@@ -85,12 +85,10 @@ export default function AnimeDetailReviews({
           )}
         </>
       ) : (
-        <Alert>
-          <AlertTitle>No reviews available</AlertTitle>
-          <AlertDescription>
-            Be the first to share your thoughts on this title.
-          </AlertDescription>
-        </Alert>
+        <EmptyState
+          message="Be the first to share your thoughts on this title."
+          title="No reviews available"
+        />
       )}
     </section>
   )
