@@ -1,8 +1,10 @@
 "use client"
 
-import { memo } from "react"
+import { memo, useEffect } from "react"
 
 import { useRecommendations } from "@/hooks/useRecommendations"
+import { useProgress } from "@/hooks/useProgress"
+import { ProgressBar } from "./loading/ProgressBar"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import AnimeCardSkeleton from "./AnimeCardSkeleton"
 import RecommendationList from "./RecommendationList"
@@ -32,9 +34,27 @@ function RecommendedSection({
   onSelectAnime,
   selectedAnimeIds,
 }: RecommendedSectionProps) {
-  const { recommendedAnime, isLoading, error } = useRecommendations({
-    selectedAnimeIds,
-  })
+  const { recommendedAnime, isLoading, error, cancelRecommendations } =
+    useRecommendations({
+      selectedAnimeIds,
+    })
+
+  const progress = useProgress()
+
+  useEffect(() => {
+    if (isLoading) {
+      progress.startProgress("Generating recommendations...")
+    } else if (error) {
+      progress.cancel()
+    } else if (recommendedAnime.length > 0) {
+      progress.finishProgress()
+    }
+  }, [isLoading, error, recommendedAnime.length])
+
+  const handleCancel = () => {
+    cancelRecommendations()
+    progress.cancel()
+  }
 
   return (
     <section className="relative">
@@ -43,7 +63,15 @@ function RecommendedSection({
         description="Hand-picked matches powered by your latest selections."
       />
 
-      {isLoading ? (
+      {progress.isGenerating ? (
+        <div className="px-4 pb-6 sm:px-6">
+          <ProgressBar
+            progress={progress.progress}
+            message={progress.message}
+            onCancel={handleCancel}
+          />
+        </div>
+      ) : isLoading ? (
         <div className="flex gap-3 overflow-x-auto px-4 pb-2 pt-4 scroll-smooth sm:gap-4 sm:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {skeletonItems.map((_, index) => (
             <AnimeCardSkeleton key={`recommended-skeleton-${index}`} />

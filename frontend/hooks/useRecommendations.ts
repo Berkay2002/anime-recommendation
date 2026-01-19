@@ -30,6 +30,7 @@ export function useRecommendations({
   const [allAnime, setAllAnime] = useState<Anime[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [worker, setWorker] = useState<Worker | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -123,11 +124,12 @@ export function useRecommendations({
       return
     }
 
-    const worker = new Worker("/worker.js")
+    const newWorker = new Worker("/worker.js")
+    setWorker(newWorker)
     setError(null)
     setIsLoading(true)
 
-    worker.postMessage({
+    newWorker.postMessage({
       selectedEmbeddings: selectedAnimeList.map((anime) => ({
         bert_description: anime.bert_description,
         bert_genres: anime.bert_genres,
@@ -140,7 +142,7 @@ export function useRecommendations({
       selectedAnimeIds,
     })
 
-    worker.onmessage = (event: MessageEvent<SimilarityResult[]>) => {
+    newWorker.onmessage = (event: MessageEvent<SimilarityResult[]>) => {
       const similarities = event.data || []
       const recommendations = similarities
         .slice(0, 30)
@@ -152,21 +154,32 @@ export function useRecommendations({
       setRecommendedAnime(recommendations)
       setError(null)
       setIsLoading(false)
-      worker.terminate()
+      setWorker(null)
+      newWorker.terminate()
     }
 
-    worker.onerror = (workerError) => {
+    newWorker.onerror = (workerError) => {
       clientLogger.error("Recommendation worker error:", workerError)
       setError("Failed to generate recommendations")
       setRecommendedAnime([])
       setIsLoading(false)
-      worker.terminate()
+      setWorker(null)
+      newWorker.terminate()
     }
 
     return () => {
-      worker.terminate()
+      newWorker.terminate()
     }
   }, [selectedAnimeIds, allAnime])
 
-  return { recommendedAnime, isLoading, error }
+  const cancelRecommendations = () => {
+    if (worker) {
+      worker.terminate()
+      setWorker(null)
+      setIsLoading(false)
+      setRecommendedAnime([])
+    }
+  }
+
+  return { recommendedAnime, isLoading, error, cancelRecommendations }
 }
