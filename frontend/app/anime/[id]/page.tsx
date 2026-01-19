@@ -14,6 +14,7 @@ import { ErrorMessage } from "@/components/ErrorMessage"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent } from "@/components/ui/card"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
+import { useLoadingState } from "@/hooks/useLoadingState"
 import { clientLogger } from "@/lib/client-logger"
 
 interface Anime {
@@ -101,7 +102,7 @@ export default function AnimeDetailPage() {
   const [details, setDetails] = useState<JikanDetails | null>(null)
   const [detailsLoading, setDetailsLoading] = useState<boolean>(false)
   const [detailsError, setDetailsError] = useState<string | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
+  const { isLoading: loading, setIsLoading } = useLoadingState(150)
 
   // Error state management for main data fetch
   const mainError = useErrorHandler()
@@ -150,7 +151,7 @@ export default function AnimeDetailPage() {
       } catch (error) {
         mainError.setError(error, 'Failed to fetch anime details')
       } finally {
-        setLoading(false)
+        setIsLoading(false)
       }
     }
 
