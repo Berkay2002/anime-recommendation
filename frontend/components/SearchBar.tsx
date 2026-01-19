@@ -20,7 +20,7 @@ import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut"
 import { useClickOutside } from "@/hooks/useClickOutside"
 import { useAnimeSearch } from '@/lib/queries/anime'
 
-const SEARCH_DEBOUNCE_MS = 300
+const SEARCH_DEBOUNCE_MS = 150
 
 export default function SearchBar() {
   const router = useRouter()
@@ -53,8 +53,13 @@ export default function SearchBar() {
 
   // Debounce search query
   useEffect(() => {
+    const trimmedQuery = query.trim()
+    if (!trimmedQuery) {
+      setDebouncedQuery('')
+      return
+    }
     const timeout = window.setTimeout(() => {
-      setDebouncedQuery(query)
+      setDebouncedQuery(trimmedQuery)
     }, SEARCH_DEBOUNCE_MS)
 
     return () => clearTimeout(timeout)
