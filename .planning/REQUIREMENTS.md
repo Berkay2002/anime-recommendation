@@ -13,8 +13,8 @@
 
 ### Code Quality - Component Structure
 
-- [ ] **COMP-01**: Break down anime detail page (748 lines) into smaller focused components
-- [ ] **COMP-03**: Implement component composition patterns to reduce code duplication
+- [x] **COMP-01**: Break down anime detail page (748 lines) into smaller focused components
+- [x] **COMP-03**: Implement component composition patterns to reduce code duplication
 
 **Note:** COMP-02 (sidebar component refactoring) excluded - frontend/components/ui/sidebar.tsx is a shadcn/ui library component (726 lines), not custom application code. Library components are maintained separately and should not be modified.
 
@@ -81,8 +81,8 @@
 | LOG-01 | Phase 1 | Complete |
 | LOG-02 | Phase 1 | Complete |
 | LOG-03 | Phase 1 | Complete |
-| COMP-01 | Phase 2 | Pending |
-| COMP-03 | Phase 2 | Pending |
+| COMP-01 | Phase 2 | Complete |
+| COMP-03 | Phase 2 | Complete |
 | ERR-01 | Phase 3 | Pending |
 | ERR-02 | Phase 3 | Pending |
 | ERR-03 | Phase 3 | Pending |
