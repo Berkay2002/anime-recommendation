@@ -135,6 +135,9 @@ Incremental cleanup approach: Services → Components → API Routes
 
 **Goal:** Improve user experience with proper loading indicators and skeleton screens
 
+**Status:** Planning complete - Ready for execution
+**Plans:** 5 plans in 2 waves
+
 **Requirements:**
 - LOAD-01: Add skeleton loaders for data fetching components
 - LOAD-02: Implement loading indicators for API operations
@@ -151,10 +154,20 @@ Incremental cleanup approach: Services → Components → API Routes
 5. Loading states are consistent across all pages
 6. Loading indicators have proper accessibility attributes
 
+**Plans:**
+- [ ] 04-01-PLAN.md — Add shimmer animation and accessibility to base Skeleton component
+- [ ] 04-02-PLAN.md — Create reusable loading state hooks with delay mechanism
+- [ ] 04-03-PLAN.md — Create reusable loading indicator components
+- [ ] 04-04-PLAN.md — Add progress indicators for recommendation generation
+- [ ] 04-05-PLAN.md — Integrate loading states into browse and detail pages
+
 **Notes:**
-- Use framer-motion for smooth transitions
-- Maintain aspect ratios in skeleton loaders
-- Show progress for long-running operations like embedding generation
+- Shimmer animation provides professional gradient effect (superior to basic pulse)
+- Loading delay (150ms) prevents flicker on fast operations
+- ARIA attributes required for accessibility (role="status", aria-live="polite", aria-busy)
+- Progressive loading reveals content as it loads (not all-or-nothing)
+- Framer Motion available for smooth transitions
+- All dependencies already installed (no new packages needed)
 
 ---
 
@@ -238,11 +251,11 @@ Incremental cleanup approach: Services → Components → API Routes
 
 ## Next Steps
 
-1. Execute Phase 3 plans to implement error handling
+1. Execute Phase 4 plans to implement loading states
 2. Proceed through phases sequentially or in parallel based on capacity
 3. Track progress in .planning/STATE.md
 
 ---
 
 *Roadmap created: 2025-01-19*
-*Last updated: 2026-01-19 (Phase 3 planning complete)*
+*Last updated: 2026-01-19 (Phase 4 planning complete)*
