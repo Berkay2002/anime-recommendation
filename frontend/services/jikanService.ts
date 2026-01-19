@@ -1,6 +1,9 @@
 import { JikanClient } from '@tutkli/jikan-ts';
 import { setupCache } from 'axios-cache-interceptor';
 import axios from 'axios';
+import logger from '@/lib/logger';
+
+const jikanLogger = logger.child({ service: 'JikanService' });
 
 // Create axios instance with caching
 const axiosInstance = setupCache(
@@ -121,7 +124,7 @@ export async function searchJikanAnime(query: string, limit: number = 10): Promi
 
     return result.data.map((anime: any) => normalizeJikanData(anime));
   } catch (error) {
-    console.error('Error searching Jikan anime:', error);
+    jikanLogger.error({ error, query, limit }, 'Error searching Jikan anime');
     throw new Error('Failed to search anime on Jikan');
   }
 }
@@ -137,7 +140,7 @@ export async function getJikanAnimeById(malId: number): Promise<NormalizedAnimeD
 
     return normalizeJikanData(result.data as any);
   } catch (error) {
-    console.error(`Error fetching anime ${malId} from Jikan:`, error);
+    jikanLogger.error({ error, malId }, 'Error fetching anime from Jikan');
     throw new Error(`Failed to fetch anime ${malId} from Jikan`);
   }
 }
@@ -170,7 +173,7 @@ export async function getCurrentSeasonAnime(limit: number = 25): Promise<Normali
 
     return result.data.map((anime: any) => normalizeJikanData(anime));
   } catch (error) {
-    console.error('Error fetching current season anime:', error);
+    jikanLogger.error({ error, limit }, 'Error fetching current season anime');
     throw new Error('Failed to fetch current season anime');
   }
 }
@@ -188,7 +191,7 @@ export async function getUpcomingAnime(limit: number = 25): Promise<NormalizedAn
 
     return result.data.map((anime: any) => normalizeJikanData(anime));
   } catch (error) {
-    console.error('Error fetching upcoming anime:', error);
+    jikanLogger.error({ error, limit }, 'Error fetching upcoming anime');
     throw new Error('Failed to fetch upcoming anime');
   }
 }
