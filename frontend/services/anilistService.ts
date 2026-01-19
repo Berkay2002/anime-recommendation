@@ -1,4 +1,8 @@
+import logger from '@/lib/logger';
+
 const ANILIST_ENDPOINT = "https://graphql.anilist.co"
+
+const anilistLogger = logger.child({ service: 'AniListService' });
 
 const MEDIA_QUERY = `
   query ($idMal: Int, $search: String) {
@@ -73,7 +77,7 @@ export async function getAniListImages({
       coverImage,
     }
   } catch (error) {
-    console.error("Failed to fetch AniList images:", error)
+    anilistLogger.error({ error, malId, search }, 'Failed to fetch AniList images');
     return { bannerImage: null, coverImage: null }
   }
 }
