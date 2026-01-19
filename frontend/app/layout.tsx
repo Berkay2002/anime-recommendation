@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { ConsoleFilter } from "@/components/ConsoleFilter"
 import ClerkThemeProvider from "@/components/ClerkThemeProvider"
 import ErrorBoundary from "@/components/ErrorBoundary"
+import { Providers } from "./providers"
 import Navbar from "../components/Navbar"
 import "../styles/globals.css"
 
@@ -22,7 +23,7 @@ export default function RootLayout({
               <Suspense fallback={null}>
                 <Navbar />
               </Suspense>
-              {children}
+              <Providers>{children}</Providers>
             </ErrorBoundary>
           </ClerkThemeProvider>
         </ThemeProvider>
