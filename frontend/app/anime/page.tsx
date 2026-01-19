@@ -1,18 +1,14 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { X } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import AnimeBrowseHeader from "@/components/AnimeBrowseHeader"
 import AnimeBrowseFilters from "@/components/AnimeBrowseFilters"
 import AnimeBrowseGrid from "@/components/AnimeBrowseGrid"
 import AnimeBrowsePagination from "@/components/AnimeBrowsePagination"
-import { Skeleton } from "@/components/ui/skeleton"
+import AnimeBrowseActiveFilters from "@/components/AnimeBrowseActiveFilters"
 import { useDebounce } from "@/hooks/useDebounce"
 import { useLocalStorage } from "@/hooks/useLocalStorage"
-import { cn } from "@/lib/utils"
 import { clientLogger } from "@/lib/client-logger"
 
 type GenreOption = "Action" | "Adventure" | "Comedy" | "Drama" | "Fantasy" | "Horror" | "Romance" | "Sci-Fi"
@@ -34,8 +30,6 @@ interface ApiResponse {
   totalPages: number
   currentPage: number
 }
-
-const badgeSkeletonPlaceholders = Array.from({ length: 3 })
 
 
 const AnimePage: React.FC = () => {
@@ -112,8 +106,6 @@ const AnimePage: React.FC = () => {
     [setSelectedGenres]
   )
 
-  const hasSelection = selectedGenres.length > 0
-
   return (
     <div className="container mx-auto flex flex-col gap-6 px-4 py-6 sm:px-6 lg:gap-8 lg:py-8">
       <AnimeBrowseHeader loading={loading} isInitialLoad={isInitialLoad} />
@@ -131,47 +123,12 @@ const AnimePage: React.FC = () => {
         />
       </div>
 
-      {loading ? (
-        <div className="flex flex-wrap items-center gap-2">
-          {badgeSkeletonPlaceholders.map((_, index) => (
-            <Skeleton
-              key={`selected-skeleton-${index}`}
-              className="h-8 w-24 rounded-full border border-border/40 bg-background/60"
-            />
-          ))}
-        </div>
-      ) : hasSelection ? (
-        <div className="flex flex-wrap items-center gap-2">
-          {selectedGenres.map((genre) => (
-            <Badge
-              key={`selected-${genre}`}
-              variant="default"
-              className="flex items-center gap-1.5 pr-0"
-            >
-              {genre}
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                className="h-6 w-6 rounded-full text-muted-foreground hover:text-destructive"
-                onClick={() => removeGenre(genre)}
-              >
-                <X className="size-3" aria-hidden="true" />
-                <span className="sr-only">Remove {genre}</span>
-              </Button>
-            </Badge>
-          ))}
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() => setSelectedGenres([])}
-            className="text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            Clear all
-          </Button>
-        </div>
-      ) : null}
+      <AnimeBrowseActiveFilters
+        selectedGenres={selectedGenres}
+        loading={loading}
+        onRemoveGenre={removeGenre}
+        onClearGenres={() => setSelectedGenres([])}
+      />
 
       <AnimeBrowseGrid
         animeList={animeList}
