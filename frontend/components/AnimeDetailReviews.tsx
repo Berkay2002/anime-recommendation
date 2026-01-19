@@ -4,17 +4,20 @@ import { useMemo, useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import ReviewCard from "@/components/ReviewCard"
 import SectionHeader from "@/components/SectionHeader"
+import { LoadingSpinner } from "@/components/loading"
 import { EmptyState } from "@/components/DataLoadingStates"
 import { Button } from "@/components/ui/button"
 
 interface AnimeDetailReviewsProps {
   reviews: string[]
   reviewsPerPage?: number
+  isLoading?: boolean
 }
 
 export default function AnimeDetailReviews({
   reviews,
   reviewsPerPage = 3,
+  isLoading = false,
 }: AnimeDetailReviewsProps) {
   const [currentPage, setCurrentPage] = useState<number>(1)
 
@@ -27,7 +30,13 @@ export default function AnimeDetailReviews({
   const totalPages = Math.ceil(reviews.length / reviewsPerPage)
 
   return (
-    <section className="space-y-6" id="reviews">
+    <section
+      className="space-y-6"
+      id="reviews"
+      role="status"
+      aria-live="polite"
+      aria-busy={isLoading}
+    >
       <SectionHeader
         title={
           <>
@@ -41,7 +50,11 @@ export default function AnimeDetailReviews({
         }
         description="What fans are saying about this anime."
       />
-      {reviews.length ? (
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <LoadingSpinner size="md" message="Loading reviews..." />
+        </div>
+      ) : reviews.length ? (
         <>
           <div className="grid gap-5">
             {paginatedReviews.map((review, index) => (

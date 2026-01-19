@@ -11,6 +11,7 @@ import AnimeDetailExtraDetails from "@/components/AnimeDetailExtraDetails"
 import AnimeDetailReviews from "@/components/AnimeDetailReviews"
 import SectionHeader from "@/components/SectionHeader"
 import { ErrorMessage } from "@/components/ErrorMessage"
+import { LoadingSpinner } from "@/components/loading"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent } from "@/components/ui/card"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
@@ -103,6 +104,8 @@ export default function AnimeDetailPage() {
   const [detailsLoading, setDetailsLoading] = useState<boolean>(false)
   const [detailsError, setDetailsError] = useState<string | null>(null)
   const { isLoading: loading, setIsLoading } = useLoadingState(150)
+  const { isLoading: recommendationsLoading, setIsLoading: setRecommendationsLoading } = useLoadingState(150)
+  const { isLoading: reviewsLoading, setIsLoading: setReviewsLoading } = useLoadingState(150)
 
   // Error state management for main data fetch
   const mainError = useErrorHandler()
@@ -166,6 +169,7 @@ export default function AnimeDetailPage() {
 
     async function fetchRecommendations() {
       try {
+        setRecommendationsLoading(true)
         const response = await fetch(`/api/anime/recommendation/${anime.anime_id}`, { signal })
 
         if (!response.ok) {
@@ -194,13 +198,15 @@ export default function AnimeDetailPage() {
         if (error instanceof Error && error.name !== 'AbortError') {
           recommendationsError.setError(error, 'Failed to fetch recommendations')
         }
+      } finally {
+        setRecommendationsLoading(false)
       }
     }
 
     fetchRecommendations()
 
     return () => controller.abort()
-  }, [anime, recommendationsError])
+  }, [anime, recommendationsError, setRecommendationsLoading])
 
   useEffect(() => {
     if (!anime) return
@@ -210,6 +216,7 @@ export default function AnimeDetailPage() {
 
     async function fetchReviews() {
       try {
+        setReviewsLoading(true)
         const reviewId = anime.mal_id ?? anime.anime_id
         setReviews([])
         const response = await fetch(`/api/anime/reviews/${reviewId}`, { signal })
@@ -233,6 +240,8 @@ export default function AnimeDetailPage() {
         } else {
           reviewsErrorHandler.setError(new Error('Unknown error fetching reviews'), 'Failed to fetch reviews')
         }
+      } finally {
+        setReviewsLoading(false)
       }
     }
 
@@ -241,7 +250,7 @@ export default function AnimeDetailPage() {
     return () => {
       controller.abort()
     }
-  }, [anime, reviewsErrorHandler])
+  }, [anime, reviewsErrorHandler, setReviewsLoading])
 
   useEffect(() => {
     if (!anime) return
@@ -327,12 +336,22 @@ export default function AnimeDetailPage() {
         </CardContent>
       </Card>
 
-      <section className="space-y-4" id="recommendations">
+      <section
+        className="space-y-4"
+        id="recommendations"
+        role="status"
+        aria-live="polite"
+        aria-busy={recommendationsLoading}
+      >
         <SectionHeader
           title="Recommendations"
           description="Similar shows based on description, genres, demographics, and themes."
         />
-        {recommendationsError.error.hasError ? (
+        {recommendationsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <LoadingSpinner size="md" message="Loading recommendations..." />
+          </div>
+        ) : recommendationsError.error.hasError ? (
           <ErrorMessage
             error={recommendationsError.error}
             onRetry={() => recommendationsError.retry()}
@@ -355,7 +374,7 @@ export default function AnimeDetailPage() {
         detailsError={detailsError}
       />
 
-      <AnimeDetailReviews reviews={reviews} />
+      <AnimeDetailReviews reviews={reviews} isLoading={reviewsLoading} />
     </div>
   )
 }
