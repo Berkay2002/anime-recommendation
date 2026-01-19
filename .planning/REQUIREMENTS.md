@@ -35,7 +35,7 @@
 ### Performance - API Optimization
 
 - [ ] **PERF-01**: Convert sequential API calls to parallel execution using Promise.all()
-- [ ] **PERF-02**: Implement React Suspense for concurrent data fetching
+- [ ] **PERF-02**: Implement React Query for concurrent data fetching
 - [ ] **PERF-03**: Add caching layer to reduce redundant API calls
 - [ ] **PERF-04**: Optimize database queries to reduce latency
 
@@ -107,4 +107,4 @@
 
 ---
 *Requirements defined: 2025-01-19*
-*Last updated: 2026-01-19 (Phase 4 requirements completed)*
+*Last updated: 2026-01-19 (Phase 4 requirements completed, PERF-02 corrected to React Query)*
