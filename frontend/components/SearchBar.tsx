@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/input-group"
 import { Kbd } from "@/components/ui/kbd"
 import { clientLogger } from "@/lib/client-logger"
+import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut"
 
 type Anime = {
   anime_id: number
@@ -51,33 +52,10 @@ export default function SearchBar() {
     }
   }, [])
 
-  useEffect(() => {
-    const handleGlobalShortcut = (event: KeyboardEvent) => {
-      if (
-        event.key.toLowerCase() !== "k" ||
-        !(event.metaKey || event.ctrlKey) ||
-        event.altKey ||
-        event.shiftKey
-      ) {
-        return
-      }
-
-      const target = event.target as HTMLElement | null
-      if (!target) return
-
-      const isEditable =
-        target.isContentEditable ||
-        ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)
-
-      if (isEditable) return
-
-      event.preventDefault()
-      focusInput()
-    }
-
-    window.addEventListener("keydown", handleGlobalShortcut)
-    return () => window.removeEventListener("keydown", handleGlobalShortcut)
-  }, [focusInput])
+  useKeyboardShortcut('k', focusInput, {
+    ctrlOrCmd: true,
+    preventDefault: true
+  })
 
   useEffect(() => {
     const closeOnOutsideClick = (event: MouseEvent | TouchEvent) => {
