@@ -11,6 +11,7 @@ import TrendingSection from "@/components/TrendingSection"
 import UpcomingSection from "@/components/UpcomingSection"
 import YourChoiceSection from "@/components/YourChoiceSection"
 import { Button } from "@/components/ui/button"
+import { clientLogger } from "@/lib/client-logger"
 
 interface Anime {
   anime_id: number
@@ -27,7 +28,7 @@ const HomePage = () => {
     try {
       return JSON.parse(savedChoices) as Anime[]
     } catch (parseError) {
-      console.error(
+      clientLogger.error(
         "Failed to parse saved choices from localStorage:",
         parseError
       )

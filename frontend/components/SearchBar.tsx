@@ -15,6 +15,7 @@ import {
   InputGroupAddon,
 } from "@/components/ui/input-group"
 import { Kbd } from "@/components/ui/kbd"
+import { clientLogger } from "@/lib/client-logger"
 
 type Anime = {
   anime_id: number
@@ -121,7 +122,7 @@ export default function SearchBar() {
         if (error instanceof DOMException && error.name === "AbortError") {
           return
         }
-        console.error("Error performing search:", error)
+        clientLogger.error("Error performing search:", error)
       } finally {
         setIsLoading(false)
       }

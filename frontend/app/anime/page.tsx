@@ -48,6 +48,7 @@ import {
 import { useDebounce } from "@/hooks/useDebounce"
 import { useLocalStorage } from "@/hooks/useLocalStorage"
 import { cn } from "@/lib/utils"
+import { clientLogger } from "@/lib/client-logger"
 
 const genreOptions = [
   "Action",
@@ -138,7 +139,7 @@ const AnimePage: React.FC = () => {
           setIsInitialLoad((prev) => (prev ? false : prev))
         })
         .catch((fetchError: Error) => {
-          console.error("Error fetching anime list:", fetchError)
+          clientLogger.error("Error fetching anime list:", fetchError)
           setError(
             `Failed to load anime list. Please try again later. (${fetchError.message})`
           )

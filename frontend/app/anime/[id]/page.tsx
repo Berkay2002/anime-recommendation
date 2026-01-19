@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { clientLogger } from "@/lib/client-logger"
 
 interface Anime {
   anime_id: number
@@ -180,7 +181,7 @@ export default function AnimeDetailPage() {
           setAnime(selectedAnime)
         }
       } catch (error) {
-        console.error("Error fetching anime:", error)
+        clientLogger.error("Error fetching anime:", error)
       } finally {
         setLoading(false)
       }
@@ -201,7 +202,7 @@ export default function AnimeDetailPage() {
         
         if (!response.ok) {
           if (response.status === 404) {
-            console.log('No recommendations found for this anime')
+            clientLogger.debug('No recommendations found for this anime')
             setRecommendations([])
             return
           }
@@ -223,7 +224,7 @@ export default function AnimeDetailPage() {
         setRecommendations(transformedRecs)
       } catch (error: unknown) {
         if (error instanceof Error && error.name !== 'AbortError') {
-          console.error('Error fetching recommendations:', error)
+          clientLogger.error('Error fetching recommendations:', error)
         }
       }
     }
@@ -260,10 +261,10 @@ export default function AnimeDetailPage() {
       } catch (reviewsError: unknown) {
         if (reviewsError instanceof Error) {
           if (reviewsError.name !== "AbortError") {
-            console.error("Error fetching reviews:", reviewsError)
+            clientLogger.error("Error fetching reviews:", reviewsError)
           }
         } else {
-          console.error("An unknown error occurred:", reviewsError)
+          clientLogger.error("An unknown error occurred:", reviewsError)
         }
       }
     }
@@ -298,11 +299,11 @@ export default function AnimeDetailPage() {
       } catch (detailsError: unknown) {
         if (detailsError instanceof Error) {
           if (detailsError.name !== "AbortError") {
-            console.error("Error fetching details:", detailsError)
+            clientLogger.error("Error fetching details:", detailsError)
             setDetailsError("Unable to load extra details right now.")
           }
         } else {
-          console.error("An unknown error occurred:", detailsError)
+          clientLogger.error("An unknown error occurred:", detailsError)
           setDetailsError("Unable to load extra details right now.")
         }
       } finally {
